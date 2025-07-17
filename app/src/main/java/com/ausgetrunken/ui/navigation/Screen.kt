@@ -14,6 +14,7 @@ sealed class Screen(val route: String) {
     }
     object Profile : Screen("profile")
     object CreateWineyard : Screen("create_wineyard")
+    object AddWineyard : Screen("add_wineyard")
     object ManageWines : Screen("manage_wines")
     object Map : Screen("map")
 }

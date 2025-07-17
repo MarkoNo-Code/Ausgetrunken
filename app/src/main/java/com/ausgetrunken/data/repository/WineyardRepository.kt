@@ -69,6 +69,22 @@ class WineyardRepository(
         }
     }
 
+    suspend fun deleteWineyard(wineyardId: String): Result<Unit> {
+        return try {
+            wineyardDao.deleteWineyard(wineyardId)
+            
+            postgrest.from("wineyards")
+                .delete {
+                    filter {
+                        eq("id", wineyardId)
+                    }
+                }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getWineyardsNearLocation(lat: Double, lng: Double, radiusKm: Double): List<WineyardEntity> {
         val radiusSquared = radiusKm * radiusKm / (111.0 * 111.0) // Rough conversion from km to degrees
         return wineyardDao.getWineyardsNearLocation(lat, lng, radiusSquared)

@@ -3,6 +3,8 @@ package com.ausgetrunken.ui.wineyard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.WineyardEntity
+import com.ausgetrunken.data.repository.WineyardRepository
+import com.ausgetrunken.domain.usecase.DeleteWineyardUseCase
 import com.ausgetrunken.domain.usecase.GetWineyardByIdUseCase
 import com.ausgetrunken.domain.usecase.UpdateWineyardUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +14,8 @@ import kotlinx.coroutines.launch
 
 class WineyardDetailViewModel(
     private val getWineyardByIdUseCase: GetWineyardByIdUseCase,
-    private val updateWineyardUseCase: UpdateWineyardUseCase
+    private val updateWineyardUseCase: UpdateWineyardUseCase,
+    private val deleteWineyardUseCase: DeleteWineyardUseCase
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(WineyardDetailUiState())
@@ -104,6 +107,28 @@ class WineyardDetailViewModel(
                         _uiState.value = _uiState.value.copy(
                             isUpdating = false,
                             errorMessage = "Failed to update wineyard: ${error.message}"
+                        )
+                    }
+            }
+        }
+    }
+    
+    fun deleteWineyard() {
+        _uiState.value.wineyard?.let { wineyard ->
+            viewModelScope.launch {
+                _uiState.value = _uiState.value.copy(isDeleting = true)
+                
+                deleteWineyardUseCase(wineyard.id)
+                    .onSuccess {
+                        _uiState.value = _uiState.value.copy(
+                            isDeleting = false,
+                            navigateBackAfterDelete = true
+                        )
+                    }
+                    .onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isDeleting = false,
+                            errorMessage = "Failed to delete wineyard: ${error.message}"
                         )
                     }
             }

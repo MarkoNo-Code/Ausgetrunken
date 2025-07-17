@@ -36,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +53,7 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onNavigateToWineyardDetail: (String) -> Unit,
     onNavigateToCreateWineyard: () -> Unit,
+    newWineyardId: String? = null,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -61,6 +63,14 @@ fun ProfileScreen(
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
             viewModel.clearError()
+        }
+    }
+    
+    // Clear the newWineyardId after animation completes
+    LaunchedEffect(newWineyardId) {
+        newWineyardId?.let {
+            // Wait for animation to complete then clear the saved state
+            kotlinx.coroutines.delay(2000) // 2 seconds
         }
     }
     
@@ -122,7 +132,8 @@ fun ProfileScreen(
                     items(uiState.wineyards) { wineyard ->
                         WineyardCard(
                             wineyard = wineyard,
-                            onWineyardClick = onNavigateToWineyardDetail
+                            onWineyardClick = onNavigateToWineyardDetail,
+                            isNewlyAdded = newWineyardId == wineyard.id
                         )
                     }
                     

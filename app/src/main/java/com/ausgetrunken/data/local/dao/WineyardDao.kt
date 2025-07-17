@@ -32,4 +32,7 @@ interface WineyardDao {
     
     @Delete
     suspend fun deleteWineyard(wineyard: WineyardEntity)
+    
+    @Query("DELETE FROM wineyards WHERE id = :wineyardId")
+    suspend fun deleteWineyard(wineyardId: String)
 }

@@ -44,6 +44,14 @@ class UpdateWineyardUseCase(
     }
 }
 
+class DeleteWineyardUseCase(
+    private val wineyardRepository: WineyardRepository
+) {
+    suspend operator fun invoke(wineyardId: String): Result<Unit> {
+        return wineyardRepository.deleteWineyard(wineyardId)
+    }
+}
+
 class GetNearbyWineyardsUseCase(
     private val wineyardRepository: WineyardRepository
 ) {

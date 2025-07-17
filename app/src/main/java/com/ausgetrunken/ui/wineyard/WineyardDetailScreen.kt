@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Photo
@@ -74,6 +75,12 @@ fun WineyardDetailScreen(
         }
     }
     
+    LaunchedEffect(uiState.navigateBackAfterDelete) {
+        if (uiState.navigateBackAfterDelete) {
+            onNavigateBack()
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -107,6 +114,23 @@ fun WineyardDetailScreen(
                     } else {
                         IconButton(onClick = { viewModel.toggleEdit() }) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
+                        IconButton(
+                            onClick = { viewModel.deleteWineyard() },
+                            enabled = !uiState.isDeleting
+                        ) {
+                            if (uiState.isDeleting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Delete, 
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }

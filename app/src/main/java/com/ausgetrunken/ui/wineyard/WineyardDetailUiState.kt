@@ -8,8 +8,10 @@ data class WineyardDetailUiState(
     val wines: List<WineEntity> = emptyList(),
     val isLoading: Boolean = false,
     val isUpdating: Boolean = false,
+    val isDeleting: Boolean = false,
     val errorMessage: String? = null,
     val isEditing: Boolean = false,
     val showImagePicker: Boolean = false,
-    val showLocationPicker: Boolean = false
+    val showLocationPicker: Boolean = false,
+    val navigateBackAfterDelete: Boolean = false
 )

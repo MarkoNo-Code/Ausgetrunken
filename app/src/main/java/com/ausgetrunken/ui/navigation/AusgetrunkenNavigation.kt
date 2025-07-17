@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ausgetrunken.ui.auth.LoginScreen
 import com.ausgetrunken.ui.auth.RegisterScreen
 import com.ausgetrunken.ui.profile.ProfileScreen
+import com.ausgetrunken.ui.wineyard.AddWineyardScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
 
 @Composable
@@ -100,13 +101,24 @@ fun AusgetrunkenNavigation(
             }
         }
         
-        composable(Screen.Profile.route) {
+        composable(Screen.Profile.route) { backStackEntry ->
             ProfileScreen(
                 onNavigateToWineyardDetail = { wineyardId ->
                     navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
                 },
                 onNavigateToCreateWineyard = {
-                    navController.navigate(Screen.CreateWineyard.route)
+                    navController.navigate(Screen.AddWineyard.route)
+                },
+                newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId")
+            )
+        }
+        
+        composable(Screen.AddWineyard.route) {
+            AddWineyardScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateBackWithSuccess = { wineyardId ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("newWineyardId", wineyardId)
+                    navController.popBackStack()
                 }
             )
         }

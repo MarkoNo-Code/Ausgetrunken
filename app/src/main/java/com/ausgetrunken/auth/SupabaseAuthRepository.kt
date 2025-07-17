@@ -1,5 +1,6 @@
 package com.ausgetrunken.auth
 
+import com.ausgetrunken.data.local.TokenStorage
 import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.remote.model.UserProfile
 import io.github.jan.supabase.gotrue.Auth
@@ -13,13 +14,14 @@ import kotlinx.serialization.json.put
 
 class SupabaseAuthRepository(
     private val auth: Auth,
-    private val postgrest: Postgrest
+    private val postgrest: Postgrest,
+    private val tokenStorage: TokenStorage
 ) {
     
     val currentUser: UserInfo?
         get() = auth.currentUserOrNull()
     
-    fun isUserLoggedIn(): Boolean = currentUser != null
+    fun isUserLoggedIn(): Boolean = tokenStorage.isTokenValid() || currentUser != null
     
     fun getCurrentUserFlow(): Flow<UserInfo?> = flow {
         emit(currentUser)
@@ -104,6 +106,16 @@ class SupabaseAuthRepository(
                 println("Warning: Could not create/check user profile: ${dbError.message}")
             }
             
+            // Save session tokens for persistent login
+            val session = auth.currentSessionOrNull()
+            session?.let {
+                tokenStorage.saveLoginSession(
+                    accessToken = it.accessToken,
+                    refreshToken = it.refreshToken ?: "",
+                    userId = user.id
+                )
+            }
+            
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -113,11 +125,38 @@ class SupabaseAuthRepository(
     suspend fun signOut(): Result<Unit> {
         return try {
             auth.signOut()
+            tokenStorage.clearSession()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+    
+    suspend fun restoreSession(): Result<UserInfo?> {
+        return try {
+            val sessionInfo = tokenStorage.getSessionInfo()
+            if (sessionInfo != null) {
+                // Try to restore the session with Supabase
+                // Note: This is a simplified approach - in production you'd want to
+                // validate the token with the server
+                val user = auth.currentUserOrNull()
+                if (user != null) {
+                    Result.success(user)
+                } else {
+                    // Token might be invalid, clear it
+                    tokenStorage.clearSession()
+                    Result.success(null)
+                }
+            } else {
+                Result.success(null)
+            }
+        } catch (e: Exception) {
+            tokenStorage.clearSession()
+            Result.failure(e)
+        }
+    }
+    
+    fun hasValidSession(): Boolean = tokenStorage.isTokenValid()
     
     suspend fun getUserType(userId: String): Result<UserType> {
         return try {

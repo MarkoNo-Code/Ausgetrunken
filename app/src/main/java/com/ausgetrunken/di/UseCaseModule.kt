@@ -17,18 +17,18 @@ val useCaseModule = module {
     factory { GetWineyardByIdUseCase(get()) }
     factory { CreateWineyardUseCase(get()) }
     factory { UpdateWineyardUseCase(get()) }
+    factory { DeleteWineyardUseCase(get()) }
     factory { GetNearbyWineyardsUseCase(get()) }
     factory { SyncWineyardsUseCase(get()) }
 
     // Wine Use Cases
-    // factory { GetWinesByWineyardUseCase(get()) }
-    // factory { GetWinesByOwnerUseCase(get()) }
-    // factory { GetWineByIdUseCase(get()) }
-    // factory { CreateWineUseCase(get()) }
-    // factory { UpdateWineUseCase(get()) }
-    // factory { UpdateWineStockUseCase(get()) }
-    // factory { GetLowStockWinesUseCase(get()) }
-    // factory { SyncWinesUseCase(get()) }
+    factory { GetAllWinesUseCase(get()) }
+    factory { GetWinesByWineyardUseCase(get()) }
+    factory { GetWineByIdUseCase(get()) }
+    factory { CreateWineUseCase(get()) }
+    factory { UpdateWineUseCase(get()) }
+    factory { DeleteWineUseCase(get()) }
+    factory { SyncWinesUseCase(get()) }
 
     // Notification Use Cases
     // factory { CheckLowStockNotificationsUseCase(get(), get(), get()) }
