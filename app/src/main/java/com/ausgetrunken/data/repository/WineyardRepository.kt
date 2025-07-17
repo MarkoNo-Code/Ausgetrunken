@@ -7,6 +7,8 @@ import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 class WineyardRepository(
     private val wineyardDao: WineyardDao,
@@ -34,8 +36,8 @@ class WineyardRepository(
                         put("address", wineyard.address)
                         put("latitude", wineyard.latitude)
                         put("longitude", wineyard.longitude)
-                        put("created_at", wineyard.createdAt.toString())
-                        put("updated_at", wineyard.updatedAt.toString())
+                        put("created_at", Instant.now().toString()) // Use current time in ISO format
+                        put("updated_at", Instant.now().toString()) // Use current time in ISO format
                     }
                 )
             Result.success(wineyard)
@@ -56,7 +58,7 @@ class WineyardRepository(
                         put("address", wineyard.address)
                         put("latitude", wineyard.latitude)
                         put("longitude", wineyard.longitude)
-                        put("updated_at", System.currentTimeMillis().toString())
+                        put("updated_at", Instant.now().toString()) // Use current time in ISO format
                     }
                 ) {
                     filter {
@@ -105,8 +107,8 @@ class WineyardRepository(
                     address = wineyardData.address,
                     latitude = wineyardData.latitude,
                     longitude = wineyardData.longitude,
-                    createdAt = wineyardData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                    updatedAt = wineyardData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
+                    createdAt = (wineyardData.createdAt.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000, // Convert seconds to milliseconds for local storage
+                    updatedAt = (wineyardData.updatedAt?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000 // Convert seconds to milliseconds for local storage
                 )
                 wineyardDao.insertWineyard(entity)
             }

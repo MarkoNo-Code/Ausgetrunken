@@ -9,11 +9,17 @@ import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.repository.WineyardRepository
 import com.ausgetrunken.domain.usecase.CreateWineyardUseCase
 import com.ausgetrunken.domain.usecase.CreateWineUseCase
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+
+sealed class AddWineyardNavigationEvent {
+    data class NavigateBackWithSuccess(val wineyardId: String) : AddWineyardNavigationEvent()
+}
 
 class AddWineyardViewModel(
     private val createWineyardUseCase: CreateWineyardUseCase,
@@ -23,6 +29,9 @@ class AddWineyardViewModel(
 
     private val _uiState = MutableStateFlow(AddWineyardUiState())
     val uiState: StateFlow<AddWineyardUiState> = _uiState.asStateFlow()
+    
+    private val _navigationEvent = Channel<AddWineyardNavigationEvent>(capacity = Channel.CONFLATED)
+    val navigationEvent = _navigationEvent.receiveAsFlow()
 
     fun onNameChanged(name: String) {
         _uiState.value = _uiState.value.copy(name = name)
@@ -134,14 +143,20 @@ class AddWineyardViewModel(
     }
 
     fun submitWineyard() {
-        if (!_uiState.value.canSubmit) return
+        if (!_uiState.value.canSubmit) {
+            println("🔥 AddWineyardViewModel: Cannot submit - form not valid")
+            return
+        }
 
+        println("🔥 AddWineyardViewModel: Starting wineyard submission...")
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSubmitting = true, error = null)
 
             try {
                 val currentUser = authRepository.currentUser
+                println("🔥 AddWineyardViewModel: Current user: ${currentUser?.id}")
                 if (currentUser == null) {
+                    println("🔥 AddWineyardViewModel: ERROR - User not authenticated")
                     _uiState.value = _uiState.value.copy(
                         error = "User not authenticated",
                         isSubmitting = false
@@ -165,7 +180,9 @@ class AddWineyardViewModel(
                 )
 
                 // Create wineyard
+                println("🔥 AddWineyardViewModel: Creating wineyard entity: $wineyardEntity")
                 val result = createWineyardUseCase(wineyardEntity)
+                println("🔥 AddWineyardViewModel: Create result - isSuccess: ${result.isSuccess}")
                 
                 if (result.isSuccess) {
                     // Create wines if any
@@ -188,18 +205,24 @@ class AddWineyardViewModel(
                         }
                     }
 
+                    println("AddWineyardViewModel: Wineyard created successfully, wineyardId: $wineyardId")
                     _uiState.value = _uiState.value.copy(
                         isSubmitting = false,
-                        error = null,
-                        navigateBackWithSuccess = wineyardId
+                        error = null
                     )
+                    
+                    // Send navigation event through channel
+                    _navigationEvent.trySend(AddWineyardNavigationEvent.NavigateBackWithSuccess(wineyardId))
                 } else {
+                    println("🔥 AddWineyardViewModel: ERROR - Create failed: ${result.exceptionOrNull()?.message}")
                     _uiState.value = _uiState.value.copy(
                         error = result.exceptionOrNull()?.message ?: "Failed to create wineyard",
                         isSubmitting = false
                     )
                 }
             } catch (e: Exception) {
+                println("🔥 AddWineyardViewModel: EXCEPTION - ${e.message}")
+                e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Unknown error occurred",
                     isSubmitting = false
@@ -214,5 +237,11 @@ class AddWineyardViewModel(
     
     fun clearNavigationFlag() {
         _uiState.value = _uiState.value.copy(navigateBackWithSuccess = null)
+    }
+    
+    fun onNavigateBackWithSuccess(onNavigateBack: (String) -> Unit) {
+        // Clear any form state if needed
+        // Then trigger navigation
+        // This will be called from the screen when navigation event is received
     }
 }

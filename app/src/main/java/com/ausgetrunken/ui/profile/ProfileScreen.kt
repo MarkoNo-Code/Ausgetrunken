@@ -69,6 +69,7 @@ fun ProfileScreen(
     // Clear the newWineyardId after animation completes
     LaunchedEffect(newWineyardId) {
         newWineyardId?.let {
+            println("ProfileScreen: Received newWineyardId: $it")
             // Wait for animation to complete then clear the saved state
             kotlinx.coroutines.delay(2000) // 2 seconds
         }

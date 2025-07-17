@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -15,6 +16,7 @@ import com.ausgetrunken.ui.auth.RegisterScreen
 import com.ausgetrunken.ui.profile.ProfileScreen
 import com.ausgetrunken.ui.wineyard.AddWineyardScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
+import kotlinx.coroutines.launch
 
 @Composable
 fun AusgetrunkenNavigation(
@@ -22,6 +24,8 @@ fun AusgetrunkenNavigation(
     startDestination: String = Screen.Login.route,
     modifier: Modifier = Modifier
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -117,8 +121,11 @@ fun AusgetrunkenNavigation(
             AddWineyardScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateBackWithSuccess = { wineyardId ->
+                    println("🔥 AusgetrunkenNavigation: SUCCESS CALLBACK TRIGGERED! wineyardId: $wineyardId")
                     navController.previousBackStackEntry?.savedStateHandle?.set("newWineyardId", wineyardId)
+                    println("🔥 AusgetrunkenNavigation: About to call popBackStack()")
                     navController.popBackStack()
+                    println("🔥 AusgetrunkenNavigation: popBackStack() called")
                 }
             )
         }

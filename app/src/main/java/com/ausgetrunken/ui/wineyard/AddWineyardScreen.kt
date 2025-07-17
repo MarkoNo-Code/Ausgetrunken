@@ -25,7 +25,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import coil.compose.AsyncImage
 import com.ausgetrunken.ui.wineyard.components.WineFormCard
 import org.koin.androidx.compose.koinViewModel
@@ -39,6 +41,7 @@ fun AddWineyardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     // Image picker launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -48,16 +51,27 @@ fun AddWineyardScreen(
     }
 
     LaunchedEffect(uiState.error) {
-        uiState.error?.let {
+        uiState.error?.let { error ->
+            println("🔥 AddWineyardScreen: ERROR DETECTED: $error")
             // TODO: Show snackbar with error
         }
     }
-    
-    LaunchedEffect(uiState.navigateBackWithSuccess) {
-        uiState.navigateBackWithSuccess?.let { wineyardId ->
-            onNavigateBackWithSuccess(wineyardId)
-            viewModel.clearNavigationFlag()
-        }
+
+    // Channel-based navigation event handling
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent
+            .flowWithLifecycle(lifecycle = lifecycle)
+            .collect { event ->
+                when (event) {
+                    is AddWineyardNavigationEvent.NavigateBackWithSuccess -> {
+                        println("AddWineyardScreen: Channel navigation event received, wineyardId: ${event.wineyardId}")
+                        viewModel.onNavigateBackWithSuccess { wineyardId ->
+                            onNavigateBackWithSuccess(wineyardId)
+                        }
+                        onNavigateBackWithSuccess(event.wineyardId)
+                    }
+                }
+            }
     }
 
     Scaffold(
@@ -87,50 +101,83 @@ fun AddWineyardScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Image Upload Section
+                item {
+                    WineyardImageSection(
+                        images = uiState.selectedImages,
+                        onAddImage = { imagePickerLauncher.launch("image/*") },
+                        onRemoveImage = viewModel::onImageRemoved
+                    )
+                }
+
+                // Basic Information Section
+                item {
+                    WineyardBasicInfoSection(
+                        name = uiState.name,
+                        description = uiState.description,
+                        address = uiState.address,
+                        onNameChanged = viewModel::onNameChanged,
+                        onDescriptionChanged = viewModel::onDescriptionChanged,
+                        onAddressChanged = viewModel::onAddressChanged
+                    )
+                }
+
+                // Wine List Section
+                item {
+                    WineListSection(
+                        wines = uiState.wines,
+                        onAddWine = viewModel::addWine,
+                        onRemoveWine = viewModel::removeWine,
+                        onWineChanged = viewModel::updateWine
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
 
-            // Image Upload Section
-            item {
-                WineyardImageSection(
-                    images = uiState.selectedImages,
-                    onAddImage = { imagePickerLauncher.launch("image/*") },
-                    onRemoveImage = viewModel::onImageRemoved
-                )
-            }
-
-            // Basic Information Section
-            item {
-                WineyardBasicInfoSection(
-                    name = uiState.name,
-                    description = uiState.description,
-                    address = uiState.address,
-                    onNameChanged = viewModel::onNameChanged,
-                    onDescriptionChanged = viewModel::onDescriptionChanged,
-                    onAddressChanged = viewModel::onAddressChanged
-                )
-            }
-
-            // Wine List Section
-            item {
-                WineListSection(
-                    wines = uiState.wines,
-                    onAddWine = viewModel::addWine,
-                    onRemoveWine = viewModel::removeWine,
-                    onWineChanged = viewModel::updateWine
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+            // Loading overlay
+            if (uiState.isSubmitting) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier.padding(32.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Creating wineyard...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
             }
         }
     }
