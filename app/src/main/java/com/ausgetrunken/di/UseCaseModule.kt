@@ -1,0 +1,36 @@
+package com.ausgetrunken.di
+
+import com.ausgetrunken.domain.usecase.*
+import org.koin.dsl.module
+
+val useCaseModule = module {
+    // Auth Use Cases
+    factory { SignUpUseCase(get(), get()) }
+    factory { SignInUseCase(get(), get()) }
+    factory { SignOutUseCase(get()) }
+    factory { GetCurrentUserUseCase(get()) }
+    factory { CheckUserTypeUseCase(get()) }
+
+    // Wineyard Use Cases
+    factory { GetAllWineyardsUseCase(get()) }
+    factory { GetWineyardsByOwnerUseCase(get()) }
+    factory { GetWineyardByIdUseCase(get()) }
+    factory { CreateWineyardUseCase(get()) }
+    factory { UpdateWineyardUseCase(get()) }
+    factory { GetNearbyWineyardsUseCase(get()) }
+    factory { SyncWineyardsUseCase(get()) }
+
+    // Wine Use Cases
+    // factory { GetWinesByWineyardUseCase(get()) }
+    // factory { GetWinesByOwnerUseCase(get()) }
+    // factory { GetWineByIdUseCase(get()) }
+    // factory { CreateWineUseCase(get()) }
+    // factory { UpdateWineUseCase(get()) }
+    // factory { UpdateWineStockUseCase(get()) }
+    // factory { GetLowStockWinesUseCase(get()) }
+    // factory { SyncWinesUseCase(get()) }
+
+    // Notification Use Cases
+    // factory { CheckLowStockNotificationsUseCase(get(), get(), get()) }
+    // factory { SendStockAlertToOwnerUseCase(get()) }
+}

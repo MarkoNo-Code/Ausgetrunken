@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="slate_black">#FF2F2F2F</color>
+    <color name="dark_brownish_tan">#FF8B5A3C</color>
+    <color name="wine_red">#FF722F37</color>
+    <color name="gold">#FFD4AF37</color>
+    
+    <color name="light_slate_gray">#FF4A4A4A</color>
+    <color name="light_brownish_tan">#FFA0714D</color>
+    <color name="light_wine_red">#FF8E3A42</color>
+    <color name="light_gold">#FFE6C547</color>
+    
+    <color name="surface">#FF1A1A1A</color>
+    <color name="surface_variant">#FF353535</color>
+    <color name="on_surface">#FFE0E0E0</color>
+    <color name="on_surface_variant">#FFB0B0B0</color>
+</resources>
