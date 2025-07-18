@@ -89,93 +89,23 @@ fun WineyardPlaceholderImage(
         modifier = modifier.aspectRatio(aspectRatio),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Canvas(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF87CEEB), // Sky blue
-                            Color(0xFFDDA0DD), // Plum for sunset
-                            Color(0xFF228B22)  // Forest green
-                        )
+                            Color(0xFF000000), // Black at bottom
+                            Color(0xFF722F37)  // Burgundy red at top
+                        ),
+                        startY = Float.POSITIVE_INFINITY, // Start from bottom
+                        endY = 0f // End at top
                     )
                 )
-        ) {
-            drawWineyardScene(size)
-        }
+        )
     }
 }
 
-private fun DrawScope.drawWineyardScene(size: Size) {
-    // Draw rolling hills
-    val hillPath = Path()
-    hillPath.moveTo(0f, size.height * 0.6f)
-    hillPath.quadraticBezierTo(
-        size.width * 0.3f, size.height * 0.5f,
-        size.width * 0.6f, size.height * 0.55f
-    )
-    hillPath.quadraticBezierTo(
-        size.width * 0.8f, size.height * 0.6f,
-        size.width, size.height * 0.65f
-    )
-    hillPath.lineTo(size.width, size.height)
-    hillPath.lineTo(0f, size.height)
-    hillPath.close()
-    
-    drawPath(
-        path = hillPath,
-        color = Color(0xFF32CD32) // Lime green
-    )
-    
-    // Draw vineyard rows
-    for (i in 0..4) {
-        val y = size.height * (0.65f + i * 0.05f)
-        val startX = size.width * 0.1f
-        val endX = size.width * 0.9f
-        
-        drawLine(
-            color = Color(0xFF228B22),
-            start = Offset(startX, y),
-            end = Offset(endX, y),
-            strokeWidth = 3.dp.toPx()
-        )
-        
-        // Draw grape vines
-        for (j in 0..8) {
-            val x = startX + (endX - startX) * j / 8f
-            drawCircle(
-                color = Color(0xFF800080), // Purple grapes
-                radius = 2.dp.toPx(),
-                center = Offset(x, y - 8.dp.toPx())
-            )
-        }
-    }
-    
-    // Draw a simple winery building
-    val buildingWidth = size.width * 0.15f
-    val buildingHeight = size.height * 0.2f
-    val buildingX = size.width * 0.75f
-    val buildingY = size.height * 0.45f
-    
-    drawRect(
-        color = Color(0xFF8B4513), // Saddle brown
-        topLeft = Offset(buildingX, buildingY),
-        size = Size(buildingWidth, buildingHeight)
-    )
-    
-    // Roof
-    val roofPath = Path()
-    roofPath.moveTo(buildingX - buildingWidth * 0.1f, buildingY)
-    roofPath.lineTo(buildingX + buildingWidth * 0.5f, buildingY - buildingHeight * 0.3f)
-    roofPath.lineTo(buildingX + buildingWidth * 1.1f, buildingY)
-    roofPath.close()
-    
-    drawPath(
-        path = roofPath,
-        color = Color(0xFFDC143C) // Crimson roof
-    )
-}
 
 @Composable
 fun WineBottlePlaceholder(

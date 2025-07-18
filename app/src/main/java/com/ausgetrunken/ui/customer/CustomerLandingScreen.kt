@@ -7,9 +7,20 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.clipToBounds
+import kotlin.math.min
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +44,37 @@ fun CustomerLandingScreen(
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val pullToRefreshState = rememberPullToRefreshState()
+    
+    // Handle pull-to-refresh
+    LaunchedEffect(pullToRefreshState.isRefreshing) {
+        if (pullToRefreshState.isRefreshing) {
+            viewModel.refreshData()
+        }
+    }
+    
+    // Handle loading completion with finished state and smooth dismissal
+    var showFinished by remember { mutableStateOf(false) }
+    var isDismissing by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading && pullToRefreshState.isRefreshing && !showFinished) {
+            showFinished = true
+            delay(1050) // Show "Finished" for 1.05 seconds
+            isDismissing = true // Start smooth dismissal
+            delay(400) // Wait for dismissal animation
+            showFinished = false
+            isDismissing = false
+            pullToRefreshState.endRefresh()
+        }
+    }
+    
+    // Reset states when starting new refresh
+    LaunchedEffect(pullToRefreshState.isRefreshing) {
+        if (pullToRefreshState.isRefreshing) {
+            showFinished = false
+            isDismissing = false
+        }
+    }
     
     // Handle error messages
     LaunchedEffect(uiState.errorMessage) {
@@ -117,7 +159,15 @@ fun CustomerLandingScreen(
                 )
             }
             
-            // Content with pull-to-refresh
+            // Pull-to-refresh accordion that follows finger movement
+            PullToRefreshAccordion(
+                pullToRefreshState = pullToRefreshState,
+                isLoading = uiState.isLoading,
+                showFinished = showFinished,
+                isDismissing = isDismissing
+            )
+            
+            // Content with pull-to-refresh (but hiding default indicator)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -144,25 +194,7 @@ fun CustomerLandingScreen(
                         )
                     }
                 }
-                
-                PullToRefreshContainer(
-                    state = pullToRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
             }
-        }
-    }
-    
-    // Handle pull-to-refresh
-    LaunchedEffect(pullToRefreshState.isRefreshing) {
-        if (pullToRefreshState.isRefreshing) {
-            viewModel.refreshData()
-        }
-    }
-    
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading && pullToRefreshState.isRefreshing) {
-            pullToRefreshState.endRefresh()
         }
     }
 }
@@ -267,6 +299,130 @@ private fun WinesList(
                     )
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PullToRefreshAccordion(
+    pullToRefreshState: PullToRefreshState,
+    isLoading: Boolean,
+    showFinished: Boolean,
+    isDismissing: Boolean
+) {
+    // Calculate the accordion height based on pull progress (slimmer)
+    val maxHeight = 56.dp
+    val pullProgress = pullToRefreshState.progress
+    
+    val targetHeight = when {
+        isDismissing -> 0.dp // Smooth dismissal to 0
+        isLoading || pullToRefreshState.isRefreshing || showFinished -> maxHeight
+        else -> (maxHeight * min(pullProgress, 1f))
+    }
+    
+    // Animate height changes smoothly
+    val accordionHeight by animateDpAsState(
+        targetValue = targetHeight,
+        animationSpec = tween(
+            durationMillis = if (isDismissing) 400 else 200,
+            delayMillis = 0
+        ),
+        label = "accordionHeight"
+    )
+    
+    // Only show if there's some progress or we're loading
+    if (accordionHeight.value > 0) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(accordionHeight)
+                .clipToBounds(),
+            shape = RoundedCornerShape(0.dp), // Remove rounded corners
+            colors = CardDefaults.cardColors(
+                containerColor = when {
+                    showFinished -> Color(0xFF4CAF50) // Green when finished
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    showFinished -> {
+                        // Show finished state
+                        Text(
+                            text = "Finished",
+                            style = MaterialTheme.typography.bodySmall, // Smaller text
+                            color = Color.White
+                        )
+                    }
+                    isLoading || pullToRefreshState.isRefreshing -> {
+                        // Show loading indicator
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp), // Smaller indicator
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Loading...",
+                                style = MaterialTheme.typography.bodySmall, // Smaller text
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    else -> {
+                        // Show pull-to-refresh hint based on progress
+                        val alpha = min(pullProgress * 2f, 1f)
+                        Text(
+                            text = if (pullProgress >= 1f) "Release to refresh" else "Pull to refresh",
+                            style = MaterialTheme.typography.bodySmall, // Smaller text
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingAccordion() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Loading...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
