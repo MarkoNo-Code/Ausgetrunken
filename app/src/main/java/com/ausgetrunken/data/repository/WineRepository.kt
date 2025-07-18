@@ -22,8 +22,6 @@ class WineRepository(
 
     suspend fun createWine(wine: WineEntity): Result<WineEntity> {
         return try {
-            wineDao.insertWine(wine)
-            
             postgrest.from("wines")
                 .insert(
                     buildJsonObject {
@@ -34,14 +32,12 @@ class WineRepository(
                         put("wine_type", wine.wineType.name)
                         put("vintage", wine.vintage)
                         put("price", wine.price)
-                        wine.discountedPrice?.let { put("discounted_price", it) }
                         put("stock_quantity", wine.stockQuantity)
-                        put("low_stock_threshold", wine.lowStockThreshold)
-                        put("photos", wine.photos.joinToString(","))
-                        put("created_at", wine.createdAt.toString())
-                        put("updated_at", wine.updatedAt.toString())
+                        // Only include columns that exist in the database schema
+                        // discounted_price, low_stock_threshold, photos are not in the current schema
                     }
                 )
+            
             Result.success(wine)
         } catch (e: Exception) {
             Result.failure(e)
@@ -60,11 +56,9 @@ class WineRepository(
                         put("wine_type", wine.wineType.name)
                         put("vintage", wine.vintage)
                         put("price", wine.price)
-                        wine.discountedPrice?.let { put("discounted_price", it) }
                         put("stock_quantity", wine.stockQuantity)
-                        put("low_stock_threshold", wine.lowStockThreshold)
-                        put("photos", wine.photos.joinToString(","))
-                        put("updated_at", System.currentTimeMillis().toString())
+                        // Only include columns that exist in the database schema
+                        // discounted_price, low_stock_threshold, photos are not in the current schema
                     }
                 ) {
                     filter {
@@ -96,6 +90,38 @@ class WineRepository(
     suspend fun getLowStockWines(threshold: Int = 20): List<WineEntity> {
         return wineDao.getLowStockWines(threshold)
     }
+    
+    suspend fun getWinesByWineyardFromSupabase(wineyardId: String): List<WineEntity> {
+        return try {
+            val response = postgrest.from("wines")
+                .select() {
+                    filter {
+                        eq("wineyard_id", wineyardId)
+                    }
+                }
+                .decodeList<Wine>()
+            
+            response.map { wineData ->
+                WineEntity(
+                    id = wineData.id,
+                    wineyardId = wineData.wineyardId,
+                    name = wineData.name,
+                    description = wineData.description,
+                    wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
+                    vintage = wineData.vintage,
+                    price = wineData.price,
+                    discountedPrice = null, // Not in current database schema
+                    stockQuantity = wineData.stockQuantity,
+                    lowStockThreshold = 20, // Default value since not in database schema
+                    photos = emptyList(), // Not in current database schema
+                    createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                    updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
     suspend fun syncWinesFromSupabase(): Result<Unit> {
         return try {
@@ -112,14 +138,18 @@ class WineRepository(
                     wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
                     vintage = wineData.vintage,
                     price = wineData.price,
-                    discountedPrice = wineData.discountedPrice,
+                    discountedPrice = null, // Not in current database schema
                     stockQuantity = wineData.stockQuantity,
-                    lowStockThreshold = wineData.lowStockThreshold,
-                    photos = wineData.photos?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+                    lowStockThreshold = 20, // Default value since not in database schema
+                    photos = emptyList(), // Not in current database schema
                     createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
                     updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
                 )
-                wineDao.insertWine(entity)
+                try {
+                    wineDao.insertWine(entity)
+                } catch (e: Exception) {
+                    // Continue with other wines even if one fails
+                }
             }
             Result.success(Unit)
         } catch (e: Exception) {

@@ -14,14 +14,19 @@ import androidx.navigation.compose.rememberNavController
 import com.ausgetrunken.ui.auth.LoginScreen
 import com.ausgetrunken.ui.auth.RegisterScreen
 import com.ausgetrunken.ui.profile.ProfileScreen
+import com.ausgetrunken.ui.splash.SplashScreen
 import com.ausgetrunken.ui.wineyard.AddWineyardScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
+import com.ausgetrunken.ui.wines.ManageWinesScreen
+import com.ausgetrunken.ui.wines.WineDetailScreen
+import com.ausgetrunken.ui.wines.AddWineScreen
+import com.ausgetrunken.ui.wines.EditWineScreen
 import kotlinx.coroutines.launch
 
 @Composable
 fun AusgetrunkenNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route,
+    startDestination: String = Screen.Splash.route,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -31,6 +36,26 @@ fun AusgetrunkenNavigation(
         startDestination = startDestination,
         modifier = modifier
     ) {
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToWineyardList = {
+                    navController.navigate(Screen.WineyardList.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
         composable(Screen.Login.route) {
             LoginScreen(
                 onNavigateToWineyardList = {
@@ -90,19 +115,20 @@ fun AusgetrunkenNavigation(
                 wineyardId = wineyardId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToWineManagement = { wineyardId ->
-                    navController.navigate(Screen.ManageWines.route + "/$wineyardId")
+                    navController.navigate(Screen.ManageWines.createRoute(wineyardId))
                 }
             )
         }
         
         composable(Screen.WineDetail.route) { backStackEntry ->
             val wineId = backStackEntry.arguments?.getString("wineId") ?: ""
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Wine Detail Screen - ID: $wineId")
-            }
+            WineDetailScreen(
+                wineId = wineId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { wineId ->
+                    navController.navigate(Screen.EditWine.createRoute(wineId))
+                }
+            )
         }
         
         composable(Screen.Profile.route) { backStackEntry ->
@@ -139,13 +165,45 @@ fun AusgetrunkenNavigation(
             }
         }
         
-        composable(Screen.ManageWines.route) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Manage Wines Screen - To be implemented")
-            }
+        composable(Screen.ManageWines.route) { backStackEntry ->
+            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            println("🔥 Navigation: ManageWines with wineyardId: $wineyardId")
+            ManageWinesScreen(
+                wineyardId = wineyardId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToWineDetail = { wineId ->
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
+                },
+                onNavigateToAddWine = { wineyardId ->
+                    navController.navigate(Screen.AddWine.createRoute(wineyardId))
+                }
+            )
+        }
+        
+        composable(Screen.AddWine.route) { backStackEntry ->
+            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            println("🔥 Navigation: AddWine with wineyardId: $wineyardId")
+            AddWineScreen(
+                wineyardId = wineyardId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateBackWithSuccess = {
+                    println("🔥 AddWine SUCCESS CALLBACK TRIGGERED!")
+                    navController.popBackStack()
+                    println("🔥 AddWine popBackStack() called")
+                }
+            )
+        }
+        
+        composable(Screen.EditWine.route) { backStackEntry ->
+            val wineId = backStackEntry.arguments?.getString("wineId") ?: ""
+            EditWineScreen(
+                wineId = wineId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateBackWithSuccess = {
+                    // Navigate back to the wine detail screen
+                    navController.popBackStack()
+                }
+            )
         }
         
         composable(Screen.Map.route) {

@@ -20,6 +20,11 @@ class TokenStorage(context: Context) {
     fun saveLoginSession(accessToken: String, refreshToken: String, userId: String) {
         val expirationTime = System.currentTimeMillis() + TOKEN_EXPIRATION_DURATION
         
+        println("💾 TokenStorage: Saving login session for user: $userId")
+        println("💾 TokenStorage: Access token length: ${accessToken.length}")
+        println("💾 TokenStorage: Refresh token length: ${refreshToken.length}")
+        println("💾 TokenStorage: Expiration time: $expirationTime")
+        
         preferences.edit().apply {
             putString(KEY_ACCESS_TOKEN, accessToken)
             putString(KEY_REFRESH_TOKEN, refreshToken)
@@ -29,6 +34,7 @@ class TokenStorage(context: Context) {
             apply()
         }
         
+        println("✅ TokenStorage: Session saved successfully")
         _isLoggedIn.value = true
     }
     
@@ -103,15 +109,33 @@ class TokenStorage(context: Context) {
     }
     
     fun getSessionInfo(): SessionInfo? {
-        return if (isTokenValid()) {
-            SessionInfo(
-                accessToken = getAccessToken() ?: return null,
-                refreshToken = getRefreshToken() ?: return null,
-                userId = getUserId() ?: return null,
-                expirationTime = preferences.getLong(KEY_EXPIRATION_TIME, 0),
-                loginTime = preferences.getLong(KEY_LOGIN_TIME, 0)
-            )
+        println("🔄 TokenStorage: Getting session info...")
+        val isValid = isTokenValid()
+        println("🔄 TokenStorage: Token valid = $isValid")
+        
+        return if (isValid) {
+            val accessToken = getAccessToken()
+            val refreshToken = getRefreshToken()
+            val userId = getUserId()
+            
+            println("🔄 TokenStorage: AccessToken = ${if (accessToken != null) "EXISTS" else "NULL"}")
+            println("🔄 TokenStorage: RefreshToken = ${if (refreshToken != null) "EXISTS" else "NULL"}")
+            println("🔄 TokenStorage: UserId = $userId")
+            
+            if (accessToken != null && refreshToken != null && userId != null) {
+                SessionInfo(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                    userId = userId,
+                    expirationTime = preferences.getLong(KEY_EXPIRATION_TIME, 0),
+                    loginTime = preferences.getLong(KEY_LOGIN_TIME, 0)
+                )
+            } else {
+                println("❌ TokenStorage: Missing required tokens")
+                null
+            }
         } else {
+            println("❌ TokenStorage: Tokens invalid or expired")
             null
         }
     }

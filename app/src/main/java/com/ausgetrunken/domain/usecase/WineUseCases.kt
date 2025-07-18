@@ -59,3 +59,11 @@ class SyncWinesUseCase(
         return wineRepository.syncWinesFromSupabase()
     }
 }
+
+class GetWinesByWineyardFromSupabaseUseCase(
+    private val wineRepository: WineRepository
+) {
+    suspend operator fun invoke(wineyardId: String): List<WineEntity> {
+        return wineRepository.getWinesByWineyardFromSupabase(wineyardId)
+    }
+}

@@ -14,7 +14,13 @@ class LoginViewModel(
     private val checkUserTypeUseCase: CheckUserTypeUseCase
 ) : ViewModel() {
     
-    private val _uiState = MutableStateFlow(LoginUiState())
+    // Pre-fill with test credentials for faster testing
+    private val _uiState = MutableStateFlow(
+        LoginUiState(
+            email = "marko.nonninger@gmail.com",
+            password = "123456"
+        )
+    )
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
     
     fun updateEmail(email: String) {

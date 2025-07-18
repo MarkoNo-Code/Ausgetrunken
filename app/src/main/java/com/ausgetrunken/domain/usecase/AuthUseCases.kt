@@ -56,3 +56,11 @@ class CheckUserTypeUseCase(
         return authRepository.getUserType(userId)
     }
 }
+
+class RestoreSessionUseCase(
+    private val authRepository: SupabaseAuthRepository
+) {
+    suspend operator fun invoke(): Result<UserInfo?> {
+        return authRepository.restoreSession()
+    }
+}

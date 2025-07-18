@@ -10,6 +10,7 @@ val useCaseModule = module {
     factory { SignOutUseCase(get()) }
     factory { GetCurrentUserUseCase(get()) }
     factory { CheckUserTypeUseCase(get()) }
+    factory { RestoreSessionUseCase(get()) }
 
     // Wineyard Use Cases
     factory { GetAllWineyardsUseCase(get()) }
@@ -29,6 +30,7 @@ val useCaseModule = module {
     factory { UpdateWineUseCase(get()) }
     factory { DeleteWineUseCase(get()) }
     factory { SyncWinesUseCase(get()) }
+    factory { GetWinesByWineyardFromSupabaseUseCase(get()) }
 
     // Notification Use Cases
     // factory { CheckLowStockNotificationsUseCase(get(), get(), get()) }
