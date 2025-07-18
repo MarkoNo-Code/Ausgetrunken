@@ -12,7 +12,9 @@ data class ProfileUiState(
     val showProfilePicturePicker: Boolean = false,
     val profilePictureUrl: String? = null,
     val userName: String = "",
-    val userEmail: String = ""
+    val userEmail: String = "",
+    val isLoggingOut: Boolean = false,
+    val logoutSuccess: Boolean = false
 ) {
     val maxWineyards = 5
     val remainingWineyards = maxWineyards - wineyards.size

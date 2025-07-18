@@ -2,16 +2,14 @@ package com.ausgetrunken.ui.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ausgetrunken.domain.usecase.CheckUserTypeUseCase
-import com.ausgetrunken.domain.usecase.RestoreSessionUseCase
+import com.ausgetrunken.domain.service.AuthService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SplashViewModel(
-    private val restoreSessionUseCase: RestoreSessionUseCase,
-    private val checkUserTypeUseCase: CheckUserTypeUseCase
+    private val authService: AuthService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(SplashUiState())
@@ -25,13 +23,13 @@ class SplashViewModel(
         viewModelScope.launch {
             try {
                 println("🚀 SplashViewModel: Starting authentication check")
-                restoreSessionUseCase()
+                authService.restoreSession()
                     .onSuccess { user ->
                         println("🔄 SplashViewModel: RestoreSessionUseCase result - user = ${user?.email ?: "NULL"}")
                         if (user != null) {
                             println("✅ SplashViewModel: User authenticated, getting user type...")
                             // User is authenticated, get their type
-                            checkUserTypeUseCase(user.id)
+                            authService.checkUserType(user.id)
                                 .onSuccess { userType ->
                                     println("✅ SplashViewModel: User type = $userType")
                                     _uiState.value = _uiState.value.copy(

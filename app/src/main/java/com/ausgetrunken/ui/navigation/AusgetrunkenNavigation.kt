@@ -21,6 +21,8 @@ import com.ausgetrunken.ui.wines.ManageWinesScreen
 import com.ausgetrunken.ui.wines.WineDetailScreen
 import com.ausgetrunken.ui.wines.AddWineScreen
 import com.ausgetrunken.ui.wines.EditWineScreen
+import com.ausgetrunken.ui.customer.CustomerLandingScreen
+import com.ausgetrunken.ui.customer.CustomerProfileScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -101,12 +103,42 @@ fun AusgetrunkenNavigation(
         }
         
         composable(Screen.WineyardList.route) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Wineyard List Screen - To be implemented")
-            }
+            CustomerLandingScreen(
+                onWineyardClick = { wineyardId ->
+                    navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
+                },
+                onWineClick = { wineId ->
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.CustomerProfile.route)
+                }
+            )
+        }
+        
+        composable(Screen.CustomerLanding.route) {
+            CustomerLandingScreen(
+                onWineyardClick = { wineyardId ->
+                    navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
+                },
+                onWineClick = { wineId ->
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.CustomerProfile.route)
+                }
+            )
+        }
+        
+        composable(Screen.CustomerProfile.route) {
+            CustomerProfileScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLogoutSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
         
         composable(Screen.WineyardDetail.route) { backStackEntry ->
@@ -138,6 +170,11 @@ fun AusgetrunkenNavigation(
                 },
                 onNavigateToCreateWineyard = {
                     navController.navigate(Screen.AddWineyard.route)
+                },
+                onLogoutSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 },
                 newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId")
             )

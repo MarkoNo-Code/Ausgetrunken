@@ -19,6 +19,9 @@ class WineRepository(
     
     fun getWineById(wineId: String): Flow<WineEntity?> = 
         wineDao.getWineByIdFlow(wineId)
+    
+    suspend fun getAllWinesPaginated(limit: Int, offset: Int): List<WineEntity> = 
+        wineDao.getWinesPaginated(limit, offset)
 
     suspend fun createWine(wine: WineEntity): Result<WineEntity> {
         return try {

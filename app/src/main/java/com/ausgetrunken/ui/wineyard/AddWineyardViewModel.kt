@@ -7,8 +7,8 @@ import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.local.entities.WineType
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.repository.WineyardRepository
-import com.ausgetrunken.domain.usecase.CreateWineyardUseCase
-import com.ausgetrunken.domain.usecase.CreateWineUseCase
+import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,8 +22,8 @@ sealed class AddWineyardNavigationEvent {
 }
 
 class AddWineyardViewModel(
-    private val createWineyardUseCase: CreateWineyardUseCase,
-    private val createWineUseCase: CreateWineUseCase,
+    private val wineyardService: WineyardService,
+    private val wineService: WineService,
     private val authRepository: SupabaseAuthRepository
 ) : ViewModel() {
 
@@ -181,7 +181,7 @@ class AddWineyardViewModel(
 
                 // Create wineyard
                 println("🔥 AddWineyardViewModel: Creating wineyard entity: $wineyardEntity")
-                val result = createWineyardUseCase(wineyardEntity)
+                val result = wineyardService.createWineyard(wineyardEntity)
                 println("🔥 AddWineyardViewModel: Create result - isSuccess: ${result.isSuccess}")
                 
                 if (result.isSuccess) {
@@ -201,7 +201,7 @@ class AddWineyardViewModel(
                                 lowStockThreshold = wineForm.lowStockThreshold.toIntOrNull() ?: 20,
                                 photos = wineForm.photos
                             )
-                            createWineUseCase(wineEntity)
+                            wineService.createWine(wineEntity)
                         }
                     }
 

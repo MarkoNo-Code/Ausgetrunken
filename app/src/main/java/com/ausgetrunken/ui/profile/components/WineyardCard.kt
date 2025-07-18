@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.data.local.entities.WineyardEntity
+import com.ausgetrunken.ui.theme.WineyardPlaceholderImage
 
 @Composable
 fun WineyardCard(
@@ -75,16 +76,12 @@ fun WineyardCard(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(16.dp))
-                .background(
-                    // Default gradient background (placeholder for image)
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                        )
-                    )
-                )
         ) {
+            // Sophisticated wineyard scene placeholder
+            WineyardPlaceholderImage(
+                modifier = Modifier.fillMaxSize(),
+                aspectRatio = 16f / 9f
+            )
             // Overlay gradient for text readability
             Box(
                 modifier = Modifier

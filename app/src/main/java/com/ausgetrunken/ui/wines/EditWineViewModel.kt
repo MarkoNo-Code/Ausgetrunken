@@ -4,8 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.local.entities.WineType
-import com.ausgetrunken.domain.usecase.GetWineByIdUseCase
-import com.ausgetrunken.domain.usecase.UpdateWineUseCase
+import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,8 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EditWineViewModel(
-    private val getWineByIdUseCase: GetWineByIdUseCase,
-    private val updateWineUseCase: UpdateWineUseCase
+    private val wineService: WineService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(EditWineUiState())
@@ -28,7 +26,7 @@ class EditWineViewModel(
         
         viewModelScope.launch {
             try {
-                val wine = getWineByIdUseCase(wineId).first()
+                val wine = wineService.getWineById(wineId).first()
                 if (wine != null) {
                     originalWine = wine
                     _uiState.update {
@@ -190,7 +188,7 @@ class EditWineViewModel(
                     updatedAt = System.currentTimeMillis()
                 )
                 
-                updateWineUseCase(updatedWine)
+                wineService.updateWine(updatedWine)
                     .onSuccess {
                         _uiState.update {
                             it.copy(

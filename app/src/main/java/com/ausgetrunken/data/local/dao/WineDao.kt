@@ -27,6 +27,9 @@ interface WineDao {
     @Query("SELECT * FROM wines WHERE wineyardId IN (SELECT id FROM wineyards WHERE ownerId = :ownerId)")
     fun getWinesByOwner(ownerId: String): Flow<List<WineEntity>>
     
+    @Query("SELECT * FROM wines ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
+    suspend fun getWinesPaginated(limit: Int, offset: Int): List<WineEntity>
+    
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWine(wine: WineEntity)
     

@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.ausgetrunken.ui.theme.UserPlaceholderIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,18 +76,14 @@ fun ProfileHeader(
                 ) {
                     if (profilePictureUrl != null) {
                         // TODO: Load actual image from URL
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile Picture",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(60.dp)
+                        UserPlaceholderIcon(
+                            modifier = Modifier.size(120.dp),
+                            size = 120.dp
                         )
                     } else {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Default Profile Picture",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(60.dp)
+                        UserPlaceholderIcon(
+                            modifier = Modifier.size(120.dp),
+                            size = 120.dp
                         )
                     }
                 }

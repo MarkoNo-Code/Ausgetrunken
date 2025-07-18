@@ -5,7 +5,11 @@
       "Bash(export JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\")",
       "Bash(./gradlew:*)",
       "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell am start -n com.ausgetrunken/.MainActivity)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

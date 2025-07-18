@@ -3,14 +3,14 @@ package com.ausgetrunken.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.UserType
-import com.ausgetrunken.domain.usecase.SignUpUseCase
+import com.ausgetrunken.domain.service.AuthService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
-    private val signUpUseCase: SignUpUseCase
+    private val authService: AuthService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(RegisterUiState())
@@ -57,7 +57,7 @@ class RegisterViewModel(
         viewModelScope.launch {
             _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
             
-            signUpUseCase(currentState.email, currentState.password, currentState.selectedUserType)
+            authService.signUp(currentState.email, currentState.password, currentState.selectedUserType)
                 .onSuccess { _ ->
                     _uiState.value = currentState.copy(
                         isLoading = false,

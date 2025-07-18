@@ -18,6 +18,9 @@ interface WineyardDao {
     @Query("SELECT * FROM wineyards WHERE ownerId = :ownerId")
     fun getWineyardsByOwner(ownerId: String): Flow<List<WineyardEntity>>
     
+    @Query("SELECT * FROM wineyards ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
+    suspend fun getWineyardsPaginated(limit: Int, offset: Int): List<WineyardEntity>
+    
     @Query("""
         SELECT * FROM wineyards 
         WHERE (:lat - latitude) * (:lat - latitude) + (:lng - longitude) * (:lng - longitude) < :radiusSquared

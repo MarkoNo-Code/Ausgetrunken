@@ -17,7 +17,7 @@ class AusgetrunkenApplication : Application() {
                 databaseModule,
                 supabaseModule,
                 repositoryModule,
-                useCaseModule,
+                serviceModule,
                 viewModelModule
             )
         }

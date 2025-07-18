@@ -4,8 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.local.entities.WineType
-import com.ausgetrunken.domain.usecase.CreateWineUseCase
-import com.ausgetrunken.domain.usecase.GetWinesByWineyardUseCase
+import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +16,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class AddWineViewModel(
-    private val createWineUseCase: CreateWineUseCase,
-    private val getWinesByWineyardUseCase: GetWinesByWineyardUseCase
+    private val wineService: WineService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AddWineUiState())
@@ -126,7 +124,7 @@ class AddWineViewModel(
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 
                 // Check wine limit
-                val existingWines = getWinesByWineyardUseCase(currentState.wineyardId).first()
+                val existingWines = wineService.getWinesByWineyard(currentState.wineyardId).first()
                 if (existingWines.size >= 20) {
                     _uiState.update { 
                         it.copy(
@@ -148,7 +146,7 @@ class AddWineViewModel(
                     stockQuantity = currentState.stockQuantity.toInt()
                 )
                 
-                createWineUseCase(wine)
+                wineService.createWine(wine)
                     .onSuccess {
                         _uiState.update { 
                             it.copy(

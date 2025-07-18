@@ -3,9 +3,7 @@ package com.ausgetrunken.ui.wines
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.WineEntity
-import com.ausgetrunken.domain.usecase.DeleteWineUseCase
-import com.ausgetrunken.domain.usecase.GetWinesByWineyardUseCase
-import com.ausgetrunken.domain.usecase.GetWinesByWineyardFromSupabaseUseCase
+import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,9 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ManageWinesViewModel(
-    private val getWinesByWineyardUseCase: GetWinesByWineyardUseCase,
-    private val getWinesByWineyardFromSupabaseUseCase: GetWinesByWineyardFromSupabaseUseCase,
-    private val deleteWineUseCase: DeleteWineUseCase
+    private val wineService: WineService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ManageWinesUiState())
@@ -31,7 +27,7 @@ class ManageWinesViewModel(
         
         viewModelScope.launch {
             try {
-                val wines = getWinesByWineyardFromSupabaseUseCase(testWineyardId)
+                val wines = wineService.getWinesByWineyardFromSupabase(testWineyardId)
                 _uiState.update { 
                     it.copy(
                         wines = wines,
@@ -58,7 +54,7 @@ class ManageWinesViewModel(
         }
         
         viewModelScope.launch {
-            deleteWineUseCase(wineId)
+            wineService.deleteWine(wineId)
                 .onSuccess {
                     _uiState.update { 
                         it.copy(
@@ -84,7 +80,7 @@ class ManageWinesViewModel(
         
         viewModelScope.launch {
             try {
-                val wines = getWinesByWineyardFromSupabaseUseCase(currentWineyardId)
+                val wines = wineService.getWinesByWineyardFromSupabase(currentWineyardId)
                 _uiState.update { 
                     it.copy(
                         wines = wines,

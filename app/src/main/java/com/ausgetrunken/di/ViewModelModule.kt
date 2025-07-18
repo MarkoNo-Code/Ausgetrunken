@@ -10,18 +10,22 @@ import com.ausgetrunken.ui.wines.ManageWinesViewModel
 import com.ausgetrunken.ui.wines.WineDetailViewModel
 import com.ausgetrunken.ui.wines.AddWineViewModel
 import com.ausgetrunken.ui.wines.EditWineViewModel
+import com.ausgetrunken.ui.customer.CustomerLandingViewModel
+import com.ausgetrunken.ui.customer.CustomerProfileViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val viewModelModule = module {
-    viewModel { LoginViewModel(get(), get()) }
+    viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get()) }
-    viewModel { ProfileViewModel(get(), get()) }
-    viewModel { SplashViewModel(get(), get()) }
+    viewModel { ProfileViewModel(get(), get(), get()) }
+    viewModel { SplashViewModel(get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
-    viewModel { WineyardDetailViewModel(get(), get(), get()) }
-    viewModel { ManageWinesViewModel(get(), get(), get()) }
+    viewModel { WineyardDetailViewModel(get()) }
+    viewModel { ManageWinesViewModel(get()) }
     viewModel { WineDetailViewModel(get()) }
-    viewModel { AddWineViewModel(get(), get()) }
-    viewModel { EditWineViewModel(get(), get()) }
+    viewModel { AddWineViewModel(get()) }
+    viewModel { EditWineViewModel(get()) }
+    viewModel { CustomerLandingViewModel(get(), get()) }
+    viewModel { CustomerProfileViewModel(get()) }
 }

@@ -4,18 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.repository.WineyardRepository
-import com.ausgetrunken.domain.usecase.DeleteWineyardUseCase
-import com.ausgetrunken.domain.usecase.GetWineyardByIdUseCase
-import com.ausgetrunken.domain.usecase.UpdateWineyardUseCase
+import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class WineyardDetailViewModel(
-    private val getWineyardByIdUseCase: GetWineyardByIdUseCase,
-    private val updateWineyardUseCase: UpdateWineyardUseCase,
-    private val deleteWineyardUseCase: DeleteWineyardUseCase
+    private val wineyardService: WineyardService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(WineyardDetailUiState())
@@ -25,7 +21,7 @@ class WineyardDetailViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             
-            getWineyardByIdUseCase(wineyardId).collect { wineyard ->
+            wineyardService.getWineyardById(wineyardId).collect { wineyard ->
                 _uiState.value = _uiState.value.copy(
                     wineyard = wineyard,
                     isLoading = false
@@ -95,7 +91,7 @@ class WineyardDetailViewModel(
                 
                 val updatedWineyard = wineyard.copy(updatedAt = System.currentTimeMillis())
                 
-                updateWineyardUseCase(updatedWineyard)
+                wineyardService.updateWineyard(updatedWineyard)
                     .onSuccess {
                         _uiState.value = _uiState.value.copy(
                             wineyard = updatedWineyard,
@@ -118,7 +114,7 @@ class WineyardDetailViewModel(
             viewModelScope.launch {
                 _uiState.value = _uiState.value.copy(isDeleting = true)
                 
-                deleteWineyardUseCase(wineyard.id)
+                wineyardService.deleteWineyard(wineyard.id)
                     .onSuccess {
                         _uiState.value = _uiState.value.copy(
                             isDeleting = false,

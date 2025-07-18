@@ -2,16 +2,14 @@ package com.ausgetrunken.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ausgetrunken.domain.usecase.CheckUserTypeUseCase
-import com.ausgetrunken.domain.usecase.SignInUseCase
+import com.ausgetrunken.domain.service.AuthService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val signInUseCase: SignInUseCase,
-    private val checkUserTypeUseCase: CheckUserTypeUseCase
+    private val authService: AuthService
 ) : ViewModel() {
     
     // Pre-fill with test credentials for faster testing
@@ -45,9 +43,9 @@ class LoginViewModel(
         viewModelScope.launch {
             _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
             
-            signInUseCase(currentState.email, currentState.password)
+            authService.signIn(currentState.email, currentState.password)
                 .onSuccess { user ->
-                    checkUserTypeUseCase(user.id)
+                    authService.checkUserType(user.id)
                         .onSuccess { userType ->
                             _uiState.value = currentState.copy(
                                 isLoading = false,

@@ -1,15 +1,16 @@
-package com.ausgetrunken.domain.usecase
+package com.ausgetrunken.domain.service
 
 import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.repository.UserRepository
 import io.github.jan.supabase.gotrue.user.UserInfo
+import kotlinx.coroutines.flow.Flow
 
-class SignUpUseCase(
+class AuthService(
     private val authRepository: SupabaseAuthRepository,
     private val userRepository: UserRepository
 ) {
-    suspend operator fun invoke(email: String, password: String, userType: UserType): Result<UserInfo> {
+    suspend fun signUp(email: String, password: String, userType: UserType): Result<UserInfo> {
         return authRepository.signUp(email, password, userType).also { result ->
             if (result.isSuccess) {
                 result.getOrNull()?.let { user ->
@@ -18,13 +19,8 @@ class SignUpUseCase(
             }
         }
     }
-}
 
-class SignInUseCase(
-    private val authRepository: SupabaseAuthRepository,
-    private val userRepository: UserRepository
-) {
-    suspend operator fun invoke(email: String, password: String): Result<UserInfo> {
+    suspend fun signIn(email: String, password: String): Result<UserInfo> {
         return authRepository.signIn(email, password).also { result ->
             if (result.isSuccess) {
                 result.getOrNull()?.let { user ->
@@ -33,34 +29,20 @@ class SignInUseCase(
             }
         }
     }
-}
 
-class SignOutUseCase(
-    private val authRepository: SupabaseAuthRepository
-) {
-    suspend operator fun invoke(): Result<Unit> {
+    suspend fun signOut(): Result<Unit> {
         return authRepository.signOut()
     }
-}
 
-class GetCurrentUserUseCase(
-    private val authRepository: SupabaseAuthRepository
-) {
-    operator fun invoke() = authRepository.getCurrentUserFlow()
-}
+    fun getCurrentUser(): Flow<UserInfo?> {
+        return authRepository.getCurrentUserFlow()
+    }
 
-class CheckUserTypeUseCase(
-    private val authRepository: SupabaseAuthRepository
-) {
-    suspend operator fun invoke(userId: String): Result<UserType> {
+    suspend fun checkUserType(userId: String): Result<UserType> {
         return authRepository.getUserType(userId)
     }
-}
 
-class RestoreSessionUseCase(
-    private val authRepository: SupabaseAuthRepository
-) {
-    suspend operator fun invoke(): Result<UserInfo?> {
+    suspend fun restoreSession(): Result<UserInfo?> {
         return authRepository.restoreSession()
     }
 }

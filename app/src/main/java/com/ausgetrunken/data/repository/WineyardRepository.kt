@@ -21,6 +21,9 @@ class WineyardRepository(
     
     fun getWineyardById(wineyardId: String): Flow<WineyardEntity?> = 
         wineyardDao.getWineyardByIdFlow(wineyardId)
+    
+    suspend fun getAllWineyardsPaginated(limit: Int, offset: Int): List<WineyardEntity> = 
+        wineyardDao.getWineyardsPaginated(limit, offset)
 
     suspend fun createWineyard(wineyard: WineyardEntity): Result<WineyardEntity> {
         return try {

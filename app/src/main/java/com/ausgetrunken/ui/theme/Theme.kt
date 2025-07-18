@@ -9,32 +9,56 @@ import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
     primary = WineRed,
-    secondary = DarkBrownishTan,
-    tertiary = Gold,
-    background = SlateBlack,
-    surface = Surface,
-    surfaceVariant = SurfaceVariant,
-    onPrimary = OnSurface,
-    onSecondary = OnSurface,
-    onTertiary = SlateBlack,
-    onBackground = OnSurface,
-    onSurface = OnSurface,
-    onSurfaceVariant = OnSurfaceVariant
+    onPrimary = Color.White,
+    primaryContainer = WineRedLight,
+    onPrimaryContainer = Color.White,
+    
+    secondary = WineAccent,
+    onSecondary = Color.White,
+    secondaryContainer = WineGold,
+    onSecondaryContainer = Color.Black,
+    
+    tertiary = WineGold,
+    onTertiary = Color.Black,
+    
+    background = DarkBackground,
+    onBackground = DarkOnSurface,
+    
+    surface = DarkSurface,
+    onSurface = DarkOnSurface,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    
+    outline = DarkOutline,
+    error = ErrorRed,
+    onError = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = WineRed,
-    secondary = DarkBrownishTan,
-    tertiary = Gold,
-    background = OnSurface,
-    surface = Color.White,
-    surfaceVariant = Color(0xFFF5F5F5),
     onPrimary = Color.White,
+    primaryContainer = WineRedLight,
+    onPrimaryContainer = Color.White,
+    
+    secondary = WineAccent,
     onSecondary = Color.White,
-    onTertiary = SlateBlack,
-    onBackground = SlateBlack,
-    onSurface = SlateBlack,
-    onSurfaceVariant = Color(0xFF666666)
+    secondaryContainer = WineGold,
+    onSecondaryContainer = Color.Black,
+    
+    tertiary = WineGold,
+    onTertiary = Color.Black,
+    
+    background = LightBackground,
+    onBackground = LightOnSurface,
+    
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    
+    outline = LightOutline,
+    error = ErrorRed,
+    onError = Color.White
 )
 
 @Composable

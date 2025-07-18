@@ -3,7 +3,8 @@ package com.ausgetrunken.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.auth.SupabaseAuthRepository
-import com.ausgetrunken.domain.usecase.GetWineyardsByOwnerUseCase
+import com.ausgetrunken.domain.service.AuthService
+import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +13,8 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val authRepository: SupabaseAuthRepository,
-    private val getWineyardsByOwnerUseCase: GetWineyardsByOwnerUseCase
+    private val wineyardService: WineyardService,
+    private val authService: AuthService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -34,7 +36,7 @@ class ProfileViewModel(
                     val userName = currentUser.userMetadata?.get("full_name")?.toString() ?: "Wineyard Owner"
                     val profilePictureUrl = currentUser.userMetadata?.get("avatar_url")?.toString()
                     
-                    getWineyardsByOwnerUseCase(currentUser.id).collect { wineyards ->
+                    wineyardService.getWineyardsByOwner(currentUser.id).collect { wineyards ->
                         _uiState.value = _uiState.value.copy(
                             wineyards = wineyards,
                             canAddMoreWineyards = wineyards.size < 5,
@@ -81,5 +83,32 @@ class ProfileViewModel(
             showProfilePicturePicker = false
         )
         // TODO: Upload to storage and update user metadata
+    }
+    
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoggingOut = true, errorMessage = null)
+                
+                authService.signOut()
+                    .onSuccess {
+                        _uiState.value = _uiState.value.copy(
+                            isLoggingOut = false,
+                            logoutSuccess = true
+                        )
+                    }
+                    .onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoggingOut = false,
+                            errorMessage = "Failed to logout: ${error.message}"
+                        )
+                    }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoggingOut = false,
+                    errorMessage = "Unexpected error: ${e.message}"
+                )
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -53,6 +54,7 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onNavigateToWineyardDetail: (String) -> Unit,
     onNavigateToCreateWineyard: () -> Unit,
+    onLogoutSuccess: () -> Unit,
     newWineyardId: String? = null,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
@@ -63,6 +65,13 @@ fun ProfileScreen(
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
             viewModel.clearError()
+        }
+    }
+    
+    // Handle logout success
+    LaunchedEffect(uiState.logoutSuccess) {
+        if (uiState.logoutSuccess) {
+            onLogoutSuccess()
         }
     }
     
@@ -90,6 +99,23 @@ fun ProfileScreen(
                             contentDescription = "Refresh",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
+                    }
+                    IconButton(
+                        onClick = { viewModel.logout() },
+                        enabled = !uiState.isLoggingOut
+                    ) {
+                        if (uiState.isLoggingOut) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.ExitToApp,
+                                contentDescription = "Logout",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                 }
             )

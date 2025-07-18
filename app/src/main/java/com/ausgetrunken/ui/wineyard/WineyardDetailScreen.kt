@@ -323,11 +323,12 @@ private fun PhotosSection(
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+        Column {
+            // Header with padding
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -349,8 +350,6 @@ private fun PhotosSection(
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
-            
             if (photos.isEmpty()) {
                 Text(
                     text = if (isEditing) "Tap + to add your first photo" else "No photos yet",
@@ -359,19 +358,22 @@ private fun PhotosSection(
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 20.dp)
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
                 )
             } else {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Display photos in full-width with no left/right margins
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(photos) { photo ->
-                        PhotoItem(
+                    photos.forEach { photo ->
+                        FullWidthPhotoItem(
                             photoUrl = photo,
                             isEditing = isEditing,
                             onRemove = { onRemovePhoto(photo) }
                         )
                     }
+                    // Bottom spacing
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -410,6 +412,53 @@ private fun PhotoItem(
                     Text(
                         text = "×",
                         fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullWidthPhotoItem(
+    photoUrl: String,
+    isEditing: Boolean,
+    onRemove: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            // TODO: Load actual image from URL
+            // For now, showing placeholder
+            Icon(
+                imageVector = Icons.Default.Photo,
+                contentDescription = "Wineyard Photo",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(64.dp)
+            )
+            
+            if (isEditing) {
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = "×",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
