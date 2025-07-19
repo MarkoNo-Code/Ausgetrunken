@@ -22,7 +22,7 @@ val viewModelModule = module {
     viewModel { ProfileViewModel(get(), get(), get()) }
     viewModel { SplashViewModel(get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
-    viewModel { WineyardDetailViewModel(get(), get(), get()) }
+    viewModel { WineyardDetailViewModel(get(), get(), get(), get()) }
     viewModel { ManageWinesViewModel(get(), get(), get()) }
     viewModel { WineDetailViewModel(get()) }
     viewModel { AddWineViewModel(get(), get(), get()) }

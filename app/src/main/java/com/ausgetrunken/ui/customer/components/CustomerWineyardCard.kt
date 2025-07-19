@@ -94,19 +94,9 @@ fun CustomerWineyardCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    FilledIconButton(
+                    IconButton(
                         onClick = { if (!isLoading) onSubscriptionToggle(wineyard.id) },
-                        modifier = Modifier.size(32.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = if (isSubscribed) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                Color.White.copy(alpha = 0.2f),
-                            contentColor = if (isSubscribed) 
-                                MaterialTheme.colorScheme.onPrimary 
-                            else 
-                                Color.White
-                        )
+                        modifier = Modifier.size(32.dp)
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -114,10 +104,7 @@ fun CustomerWineyardCard(
                                     .size(16.dp)
                                     .rotate(rotationAngle),
                                 strokeWidth = 2.dp,
-                                color = if (isSubscribed) 
-                                    MaterialTheme.colorScheme.onPrimary 
-                                else 
-                                    Color.White
+                                color = Color.White
                             )
                         } else {
                             Icon(
@@ -129,7 +116,11 @@ fun CustomerWineyardCard(
                                     "Unsubscribe from notifications" 
                                 else 
                                     "Subscribe to notifications",
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
+                                tint = if (isSubscribed) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    Color.White
                             )
                         }
                     }

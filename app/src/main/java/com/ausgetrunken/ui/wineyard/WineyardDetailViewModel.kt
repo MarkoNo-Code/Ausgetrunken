@@ -8,16 +8,19 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.data.repository.WineyardRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.service.WineyardSubscriptionService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class WineyardDetailViewModel(
     private val wineyardService: WineyardService,
     private val authService: AuthService,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val subscriptionService: WineyardSubscriptionService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(WineyardDetailUiState())
@@ -40,6 +43,11 @@ class WineyardDetailViewModel(
                             canEdit = canEdit,
                             isLoading = false
                         )
+                        
+                        // Load subscription status for customer users
+                        if (user?.userType == UserType.CUSTOMER && wineyard != null) {
+                            loadSubscriptionStatus(currentUser.id, wineyard.id)
+                        }
                     }.collect {}
                 } else {
                     _uiState.value = _uiState.value.copy(
@@ -176,5 +184,46 @@ class WineyardDetailViewModel(
     
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    private fun loadSubscriptionStatus(userId: String, wineyardId: String) {
+        viewModelScope.launch {
+            try {
+                val isSubscribed = subscriptionService.isSubscribed(userId, wineyardId)
+                _uiState.value = _uiState.value.copy(isSubscribed = isSubscribed)
+            } catch (e: Exception) {
+                // Handle subscription loading error silently
+            }
+        }
+    }
+    
+    fun toggleWineyardSubscription() {
+        viewModelScope.launch {
+            try {
+                val currentUser = authService.getCurrentUser().firstOrNull()
+                val userId = currentUser?.id ?: return@launch
+                val wineyardId = _uiState.value.wineyard?.id ?: return@launch
+                
+                // Add loading state
+                _uiState.value = _uiState.value.copy(isSubscriptionLoading = true)
+                
+                val isCurrentlySubscribed = _uiState.value.isSubscribed
+                
+                if (isCurrentlySubscribed) {
+                    subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
+                    _uiState.value = _uiState.value.copy(isSubscribed = false)
+                } else {
+                    subscriptionService.subscribeToWineyard(userId, wineyardId)
+                    _uiState.value = _uiState.value.copy(isSubscribed = true)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update subscription: ${e.message}"
+                )
+            } finally {
+                // Remove loading state
+                _uiState.value = _uiState.value.copy(isSubscriptionLoading = false)
+            }
+        }
     }
 }

@@ -27,6 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.ausgetrunken.ui.customer.components.CustomerWineyardCard
 import com.ausgetrunken.ui.customer.components.CustomerWineCard
 import org.koin.androidx.compose.koinViewModel
@@ -44,6 +47,7 @@ fun CustomerLandingScreen(
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val pullToRefreshState = rememberPullToRefreshState()
+    val lifecycleOwner = LocalLifecycleOwner.current
     
     // Handle pull-to-refresh
     LaunchedEffect(pullToRefreshState.isRefreshing) {
@@ -100,6 +104,13 @@ fun CustomerLandingScreen(
             }
     }
     
+    // Refresh subscriptions when screen resumes (e.g., returning from detail screen)
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshSubscriptions()
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -118,9 +129,9 @@ fun CustomerLandingScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },

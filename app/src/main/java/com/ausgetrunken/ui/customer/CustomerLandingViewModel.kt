@@ -154,13 +154,20 @@ class CustomerLandingViewModel(
     
     fun refreshData() {
         when (_uiState.value.currentTab) {
-            CustomerTab.WINEYARDS -> loadWineyards(0)
+            CustomerTab.WINEYARDS -> {
+                loadWineyards(0)
+                loadSubscriptions() // Also refresh subscriptions
+            }
             CustomerTab.WINES -> loadWines(0)
         }
     }
     
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    fun refreshSubscriptions() {
+        loadSubscriptions()
     }
     
     private fun loadSubscriptions() {
