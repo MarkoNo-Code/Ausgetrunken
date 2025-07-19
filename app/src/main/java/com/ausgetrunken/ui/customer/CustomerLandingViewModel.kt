@@ -199,15 +199,27 @@ class CustomerLandingViewModel(
                 val isCurrentlySubscribed = _uiState.value.subscribedWineyardIds.contains(wineyardId)
                 
                 if (isCurrentlySubscribed) {
-                    subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
-                    _uiState.value = _uiState.value.copy(
-                        subscribedWineyardIds = _uiState.value.subscribedWineyardIds - wineyardId
-                    )
+                    val result = subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
+                    result.onSuccess {
+                        _uiState.value = _uiState.value.copy(
+                            subscribedWineyardIds = _uiState.value.subscribedWineyardIds - wineyardId
+                        )
+                    }.onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Failed to unsubscribe: ${error.message}"
+                        )
+                    }
                 } else {
-                    subscriptionService.subscribeToWineyard(userId, wineyardId)
-                    _uiState.value = _uiState.value.copy(
-                        subscribedWineyardIds = _uiState.value.subscribedWineyardIds + wineyardId
-                    )
+                    val result = subscriptionService.subscribeToWineyard(userId, wineyardId)
+                    result.onSuccess {
+                        _uiState.value = _uiState.value.copy(
+                            subscribedWineyardIds = _uiState.value.subscribedWineyardIds + wineyardId
+                        )
+                    }.onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Failed to subscribe: ${error.message}"
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

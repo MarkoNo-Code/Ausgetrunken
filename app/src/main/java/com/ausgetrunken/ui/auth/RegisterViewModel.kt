@@ -44,6 +44,12 @@ class RegisterViewModel(
             return
         }
         
+        // Email format validation
+        if (!isValidEmail(currentState.email)) {
+            _uiState.value = currentState.copy(errorMessage = "Please enter a valid email address")
+            return
+        }
+        
         if (currentState.password != currentState.confirmPassword) {
             _uiState.value = currentState.copy(errorMessage = "Passwords do not match")
             return
@@ -71,5 +77,9 @@ class RegisterViewModel(
                     )
                 }
         }
+    }
+    
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.util.UUID
+import java.time.Instant
 
 class WineyardSubscriptionRepository(
     private val wineyardSubscriptionDao: WineyardSubscriptionDao,
@@ -49,7 +50,7 @@ class WineyardSubscriptionRepository(
                         .update(
                             buildJsonObject {
                                 put("is_active", true)
-                                put("updated_at", System.currentTimeMillis().toString())
+                                put("updated_at", Instant.now().toString())
                             }
                         ) {
                             filter {
@@ -94,8 +95,8 @@ class WineyardSubscriptionRepository(
                         put("new_release_notifications", true)
                         put("special_offer_notifications", true)
                         put("general_notifications", true)
-                        put("created_at", subscription.createdAt.toString())
-                        put("updated_at", subscription.updatedAt.toString())
+                        put("created_at", Instant.ofEpochMilli(subscription.createdAt).toString())
+                        put("updated_at", Instant.ofEpochMilli(subscription.updatedAt).toString())
                     }
                 )
             
@@ -115,7 +116,7 @@ class WineyardSubscriptionRepository(
                 .update(
                     buildJsonObject {
                         put("is_active", false)
-                        put("updated_at", System.currentTimeMillis().toString())
+                        put("updated_at", Instant.now().toString())
                     }
                 ) {
                     filter {
@@ -161,7 +162,7 @@ class WineyardSubscriptionRepository(
                         put("new_release_notifications", newRelease)
                         put("special_offer_notifications", specialOffer)
                         put("general_notifications", general)
-                        put("updated_at", updatedSubscription.updatedAt.toString())
+                        put("updated_at", Instant.ofEpochMilli(updatedSubscription.updatedAt).toString())
                     }
                 ) {
                     filter {
