@@ -89,7 +89,7 @@ fun ManageWinesScreen(
             )
         },
         floatingActionButton = {
-            if (uiState.wines.size < 20) {
+            if (uiState.wines.size < 20 && uiState.canEdit) {
                 FloatingActionButton(
                     onClick = { onNavigateToAddWine(wineyardId) }
                 ) {
@@ -150,7 +150,8 @@ fun ManageWinesScreen(
                             wine = wine,
                             onWineClick = { onNavigateToWineDetail(wine.id) },
                             onDeleteClick = { viewModel.deleteWine(wine.id) },
-                            isDeleting = uiState.deletingWineIds.contains(wine.id)
+                            isDeleting = uiState.deletingWineIds.contains(wine.id),
+                            canEdit = uiState.canEdit
                         )
                     }
                     }
@@ -263,7 +264,8 @@ private fun WineItem(
     wine: WineEntity,
     onWineClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    isDeleting: Boolean
+    isDeleting: Boolean,
+    canEdit: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -338,19 +340,21 @@ private fun WineItem(
                     }
                 )
                 
-                if (isDeleting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    TextButton(
-                        onClick = onDeleteClick
-                    ) {
-                        Text(
-                            text = "Delete",
-                            color = MaterialTheme.colorScheme.error
+                if (canEdit) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
                         )
+                    } else {
+                        TextButton(
+                            onClick = onDeleteClick
+                        ) {
+                            Text(
+                                text = "Delete",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }

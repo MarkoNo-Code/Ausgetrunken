@@ -5,6 +5,7 @@ import com.ausgetrunken.data.local.TokenStorage
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.data.repository.WineRepository
 import com.ausgetrunken.data.repository.WineyardRepository
+import com.ausgetrunken.data.repository.WineyardSubscriptionRepository
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -14,4 +15,5 @@ val repositoryModule = module {
     single { UserRepository(get(), get()) }
     single { WineRepository(get(), get()) }
     single { WineyardRepository(get(), get()) }
+    single { WineyardSubscriptionRepository(get(), get()) }
 }

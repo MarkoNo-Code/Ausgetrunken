@@ -13,9 +13,12 @@ import com.ausgetrunken.data.local.entities.*
         UserEntity::class,
         WineyardEntity::class,
         WineEntity::class,
-        SubscriptionEntity::class
+        SubscriptionEntity::class,
+        WineyardSubscriptionEntity::class,
+        NotificationEntity::class,
+        NotificationDeliveryEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -24,6 +27,9 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
     abstract fun wineyardDao(): WineyardDao
     abstract fun wineDao(): WineDao
     abstract fun subscriptionDao(): SubscriptionDao
+    abstract fun wineyardSubscriptionDao(): WineyardSubscriptionDao
+    abstract fun notificationDao(): NotificationDao
+    abstract fun notificationDeliveryDao(): NotificationDeliveryDao
 
     companion object {
         const val DATABASE_NAME = "ausgetrunken_database"

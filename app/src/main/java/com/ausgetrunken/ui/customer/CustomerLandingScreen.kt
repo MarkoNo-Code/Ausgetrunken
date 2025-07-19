@@ -181,6 +181,9 @@ fun CustomerLandingScreen(
                             isLoading = uiState.isLoading,
                             hasMore = uiState.hasMoreWineyards,
                             onWineyardClick = onWineyardClick,
+                            subscribedWineyardIds = uiState.subscribedWineyardIds,
+                            subscriptionLoadingIds = uiState.subscriptionLoadingIds,
+                            onSubscriptionToggle = viewModel::toggleWineyardSubscription,
                             listState = listState
                         )
                     }
@@ -205,6 +208,9 @@ private fun WineyardsList(
     isLoading: Boolean,
     @Suppress("UNUSED_PARAMETER") hasMore: Boolean,
     onWineyardClick: (String) -> Unit,
+    subscribedWineyardIds: Set<String>,
+    subscriptionLoadingIds: Set<String>,
+    onSubscriptionToggle: (String) -> Unit,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     LazyColumn(
@@ -215,7 +221,10 @@ private fun WineyardsList(
         items(wineyards) { wineyard ->
             CustomerWineyardCard(
                 wineyard = wineyard,
-                onWineyardClick = onWineyardClick
+                onWineyardClick = onWineyardClick,
+                isSubscribed = subscribedWineyardIds.contains(wineyard.id),
+                isLoading = subscriptionLoadingIds.contains(wineyard.id),
+                onSubscriptionToggle = onSubscriptionToggle
             )
         }
         

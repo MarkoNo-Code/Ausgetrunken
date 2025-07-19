@@ -2,8 +2,11 @@ package com.ausgetrunken.ui.wines
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.local.entities.WineType
+import com.ausgetrunken.data.repository.UserRepository
+import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +16,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EditWineViewModel(
-    private val wineService: WineService
+    private val wineService: WineService,
+    private val authService: AuthService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(EditWineUiState())
@@ -173,6 +178,29 @@ class EditWineViewModel(
         if (!currentState.canSubmit || originalWine == null) return
         
         viewModelScope.launch {
+            // Check user permissions first
+            val currentUser = authService.getCurrentUser().first()
+            if (currentUser == null) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "User not authenticated"
+                    )
+                }
+                return@launch
+            }
+            
+            val user = userRepository.getUserById(currentUser.id).first()
+            if (user?.userType != UserType.WINEYARD_OWNER) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Only wineyard owners can edit wines"
+                    )
+                }
+                return@launch
+            }
+            
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 

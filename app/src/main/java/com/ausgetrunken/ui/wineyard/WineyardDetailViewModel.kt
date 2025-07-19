@@ -2,16 +2,22 @@ package com.ausgetrunken.ui.wineyard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.local.entities.WineyardEntity
+import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.data.repository.WineyardRepository
+import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class WineyardDetailViewModel(
-    private val wineyardService: WineyardService
+    private val wineyardService: WineyardService,
+    private val authService: AuthService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(WineyardDetailUiState())
@@ -21,17 +27,34 @@ class WineyardDetailViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             
-            wineyardService.getWineyardById(wineyardId).collect { wineyard ->
-                _uiState.value = _uiState.value.copy(
-                    wineyard = wineyard,
-                    isLoading = false
-                )
+            // Get current user to check permissions
+            authService.getCurrentUser().collect { currentUser ->
+                if (currentUser != null) {
+                    val userFlow = userRepository.getUserById(currentUser.id)
+                    val wineyardFlow = wineyardService.getWineyardById(wineyardId)
+                    
+                    combine(userFlow, wineyardFlow) { user, wineyard ->
+                        val canEdit = user?.userType == UserType.WINEYARD_OWNER
+                        _uiState.value = _uiState.value.copy(
+                            wineyard = wineyard,
+                            canEdit = canEdit,
+                            isLoading = false
+                        )
+                    }.collect {}
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "User not authenticated"
+                    )
+                }
             }
         }
     }
     
     fun toggleEdit() {
-        _uiState.value = _uiState.value.copy(isEditing = !_uiState.value.isEditing)
+        if (_uiState.value.canEdit) {
+            _uiState.value = _uiState.value.copy(isEditing = !_uiState.value.isEditing)
+        }
     }
     
     fun updateWineyardName(name: String) {
@@ -85,6 +108,8 @@ class WineyardDetailViewModel(
     }
     
     fun saveWineyard() {
+        if (!_uiState.value.canEdit) return
+        
         _uiState.value.wineyard?.let { wineyard ->
             viewModelScope.launch {
                 _uiState.value = _uiState.value.copy(isUpdating = true)
@@ -110,6 +135,8 @@ class WineyardDetailViewModel(
     }
     
     fun deleteWineyard() {
+        if (!_uiState.value.canEdit) return
+        
         _uiState.value.wineyard?.let { wineyard ->
             viewModelScope.launch {
                 _uiState.value = _uiState.value.copy(isDeleting = true)

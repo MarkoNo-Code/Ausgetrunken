@@ -12,7 +12,9 @@ data class CustomerLandingUiState(
     val currentWinePage: Int = 0,
     val hasMoreWineyards: Boolean = true,
     val hasMoreWines: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val subscribedWineyardIds: Set<String> = emptySet(),
+    val subscriptionLoadingIds: Set<String> = emptySet()
 )
 
 enum class CustomerTab {

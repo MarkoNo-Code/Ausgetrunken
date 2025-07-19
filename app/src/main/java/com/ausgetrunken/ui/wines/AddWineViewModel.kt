@@ -2,8 +2,11 @@ package com.ausgetrunken.ui.wines
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.local.entities.WineType
+import com.ausgetrunken.data.repository.UserRepository
+import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +19,9 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 class AddWineViewModel(
-    private val wineService: WineService
+    private val wineService: WineService,
+    private val authService: AuthService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AddWineUiState())
@@ -120,6 +125,29 @@ class AddWineViewModel(
         }
         
         viewModelScope.launch {
+            // Check user permissions first
+            val currentUser = authService.getCurrentUser().first()
+            if (currentUser == null) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "User not authenticated"
+                    )
+                }
+                return@launch
+            }
+            
+            val user = userRepository.getUserById(currentUser.id).first()
+            if (user?.userType != UserType.WINEYARD_OWNER) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Only wineyard owners can create wines"
+                    )
+                }
+                return@launch
+            }
+            
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 

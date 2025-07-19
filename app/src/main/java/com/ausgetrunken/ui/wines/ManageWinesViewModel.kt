@@ -2,17 +2,23 @@ package com.ausgetrunken.ui.wines
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.local.entities.WineEntity
+import com.ausgetrunken.data.repository.UserRepository
+import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ManageWinesViewModel(
-    private val wineService: WineService
+    private val wineService: WineService,
+    private val authService: AuthService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ManageWinesUiState())
@@ -26,27 +32,49 @@ class ManageWinesViewModel(
         // Using test wineyard ID temporarily
         
         viewModelScope.launch {
-            try {
-                val wines = wineService.getWinesByWineyardFromSupabase(testWineyardId)
-                _uiState.update { 
-                    it.copy(
-                        wines = wines,
-                        isLoading = false,
-                        errorMessage = null
-                    )
-                }
-            } catch (exception: Exception) {
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = exception.message ?: "Failed to load wines"
-                    )
+            // Get current user to check permissions
+            authService.getCurrentUser().collect { currentUser ->
+                if (currentUser != null) {
+                    val userFlow = userRepository.getUserById(currentUser.id)
+                    
+                    userFlow.collect { user ->
+                        val canEdit = user?.userType == UserType.WINEYARD_OWNER
+                        
+                        try {
+                            val wines = wineService.getWinesByWineyardFromSupabase(testWineyardId)
+                            _uiState.update { 
+                                it.copy(
+                                    wines = wines,
+                                    canEdit = canEdit,
+                                    isLoading = false,
+                                    errorMessage = null
+                                )
+                            }
+                        } catch (exception: Exception) {
+                            _uiState.update { 
+                                it.copy(
+                                    isLoading = false,
+                                    canEdit = canEdit,
+                                    errorMessage = exception.message ?: "Failed to load wines"
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "User not authenticated"
+                        )
+                    }
                 }
             }
         }
     }
     
     fun deleteWine(wineId: String) {
+        if (!_uiState.value.canEdit) return
+        
         _uiState.update { 
             it.copy(
                 deletingWineIds = it.deletingWineIds + wineId
@@ -109,5 +137,6 @@ data class ManageWinesUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val deletingWineIds: Set<String> = emptySet(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val canEdit: Boolean = false
 )

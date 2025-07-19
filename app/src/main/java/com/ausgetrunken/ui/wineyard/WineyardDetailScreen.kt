@@ -97,39 +97,41 @@ fun WineyardDetailScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    if (uiState.isEditing) {
-                        IconButton(
-                            onClick = { viewModel.saveWineyard() },
-                            enabled = !uiState.isUpdating
-                        ) {
-                            if (uiState.isUpdating) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            } else {
-                                Icon(Icons.Default.Save, contentDescription = "Save")
+                    if (uiState.canEdit) {
+                        if (uiState.isEditing) {
+                            IconButton(
+                                onClick = { viewModel.saveWineyard() },
+                                enabled = !uiState.isUpdating
+                            ) {
+                                if (uiState.isUpdating) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    Icon(Icons.Default.Save, contentDescription = "Save")
+                                }
                             }
-                        }
-                    } else {
-                        IconButton(onClick = { viewModel.toggleEdit() }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit")
-                        }
-                        IconButton(
-                            onClick = { viewModel.deleteWineyard() },
-                            enabled = !uiState.isDeleting
-                        ) {
-                            if (uiState.isDeleting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.Delete, 
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+                        } else {
+                            IconButton(onClick = { viewModel.toggleEdit() }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                            }
+                            IconButton(
+                                onClick = { viewModel.deleteWineyard() },
+                                enabled = !uiState.isDeleting
+                            ) {
+                                if (uiState.isDeleting) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.Delete, 
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }
@@ -137,7 +139,7 @@ fun WineyardDetailScreen(
             )
         },
         floatingActionButton = {
-            if (!uiState.isEditing && uiState.wineyard != null) {
+            if (!uiState.isEditing && uiState.wineyard != null && uiState.canEdit) {
                 ExtendedFloatingActionButton(
                     onClick = { onNavigateToWineManagement(wineyardId) },
                     icon = {
@@ -176,6 +178,7 @@ fun WineyardDetailScreen(
                             WineyardInfoCard(
                                 wineyard = wineyard,
                                 isEditing = uiState.isEditing,
+                                canEdit = uiState.canEdit,
                                 onNameChange = viewModel::updateWineyardName,
                                 onDescriptionChange = viewModel::updateWineyardDescription,
                                 onAddressChange = viewModel::updateWineyardAddress,
@@ -187,6 +190,7 @@ fun WineyardDetailScreen(
                             PhotosSection(
                                 photos = wineyard.photos,
                                 isEditing = uiState.isEditing,
+                                canEdit = uiState.canEdit,
                                 onAddPhoto = { viewModel.showImagePicker() },
                                 onRemovePhoto = viewModel::removePhoto
                             )
@@ -206,6 +210,7 @@ fun WineyardDetailScreen(
 private fun WineyardInfoCard(
     wineyard: com.ausgetrunken.data.local.entities.WineyardEntity,
     isEditing: Boolean,
+    canEdit: Boolean,
     onNameChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
@@ -221,7 +226,7 @@ private fun WineyardInfoCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            if (isEditing) {
+            if (isEditing && canEdit) {
                 OutlinedTextField(
                     value = wineyard.name,
                     onValueChange = onNameChange,
@@ -313,6 +318,7 @@ private fun WineyardInfoCard(
 private fun PhotosSection(
     photos: List<String>,
     isEditing: Boolean,
+    canEdit: Boolean,
     onAddPhoto: () -> Unit,
     onRemovePhoto: (String) -> Unit
 ) {
@@ -339,7 +345,7 @@ private fun PhotosSection(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                if (isEditing) {
+                if (isEditing && canEdit) {
                     IconButton(onClick = onAddPhoto) {
                         Icon(
                             Icons.Default.Add,
@@ -352,7 +358,7 @@ private fun PhotosSection(
             
             if (photos.isEmpty()) {
                 Text(
-                    text = if (isEditing) "Tap + to add your first photo" else "No photos yet",
+                    text = if (isEditing && canEdit) "Tap + to add your first photo" else "No photos yet",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -369,6 +375,7 @@ private fun PhotosSection(
                         FullWidthPhotoItem(
                             photoUrl = photo,
                             isEditing = isEditing,
+                            canEdit = canEdit,
                             onRemove = { onRemovePhoto(photo) }
                         )
                     }
@@ -384,6 +391,7 @@ private fun PhotosSection(
 private fun PhotoItem(
     photoUrl: String,
     isEditing: Boolean,
+    canEdit: Boolean,
     onRemove: () -> Unit
 ) {
     Card(
@@ -404,7 +412,7 @@ private fun PhotoItem(
                 modifier = Modifier.size(48.dp)
             )
             
-            if (isEditing) {
+            if (isEditing && canEdit) {
                 IconButton(
                     onClick = onRemove,
                     modifier = Modifier.align(Alignment.TopEnd)
@@ -424,6 +432,7 @@ private fun PhotoItem(
 private fun FullWidthPhotoItem(
     photoUrl: String,
     isEditing: Boolean,
+    canEdit: Boolean,
     onRemove: () -> Unit
 ) {
     Card(
@@ -448,7 +457,7 @@ private fun FullWidthPhotoItem(
                 modifier = Modifier.size(64.dp)
             )
             
-            if (isEditing) {
+            if (isEditing && canEdit) {
                 IconButton(
                     onClick = onRemove,
                     modifier = Modifier

@@ -4,14 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.domain.service.WineyardService
 import com.ausgetrunken.domain.service.WineService
+import com.ausgetrunken.domain.service.WineyardSubscriptionService
+import com.ausgetrunken.auth.SupabaseAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class CustomerLandingViewModel(
     private val wineyardService: WineyardService,
-    private val wineService: WineService
+    private val wineService: WineService,
+    private val subscriptionService: WineyardSubscriptionService,
+    private val authRepository: SupabaseAuthRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CustomerLandingUiState())
@@ -23,6 +28,7 @@ class CustomerLandingViewModel(
     
     init {
         loadWineyards()
+        loadSubscriptions()
     }
     
     fun switchTab(tab: CustomerTab) {
@@ -155,5 +161,57 @@ class CustomerLandingViewModel(
     
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    private fun loadSubscriptions() {
+        viewModelScope.launch {
+            try {
+                val currentUser = authRepository.currentUser
+                val userId = currentUser?.id ?: return@launch
+                
+                val subscriptions = subscriptionService.getUserSubscriptions(userId).firstOrNull() ?: emptyList()
+                val subscribedIds = subscriptions.map { it.wineyardId }.toSet()
+                _uiState.value = _uiState.value.copy(subscribedWineyardIds = subscribedIds)
+            } catch (e: Exception) {
+                // Handle error silently for subscriptions
+            }
+        }
+    }
+    
+    fun toggleWineyardSubscription(wineyardId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUser = authRepository.currentUser
+                val userId = currentUser?.id ?: return@launch
+                
+                // Add loading state
+                _uiState.value = _uiState.value.copy(
+                    subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds + wineyardId
+                )
+                
+                val isCurrentlySubscribed = _uiState.value.subscribedWineyardIds.contains(wineyardId)
+                
+                if (isCurrentlySubscribed) {
+                    subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
+                    _uiState.value = _uiState.value.copy(
+                        subscribedWineyardIds = _uiState.value.subscribedWineyardIds - wineyardId
+                    )
+                } else {
+                    subscriptionService.subscribeToWineyard(userId, wineyardId)
+                    _uiState.value = _uiState.value.copy(
+                        subscribedWineyardIds = _uiState.value.subscribedWineyardIds + wineyardId
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update subscription: ${e.message}"
+                )
+            } finally {
+                // Remove loading state
+                _uiState.value = _uiState.value.copy(
+                    subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds - wineyardId
+                )
+            }
+        }
     }
 }
