@@ -26,7 +26,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SplashScreen(
-    onNavigateToLogin: () -> Unit,
+    onNavigateToLogin: (String?) -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToWineyardList: () -> Unit,
     viewModel: SplashViewModel = koinViewModel()
@@ -79,10 +79,10 @@ fun SplashScreen(
                 when (uiState.userType) {
                     UserType.CUSTOMER -> onNavigateToWineyardList()
                     UserType.WINEYARD_OWNER -> onNavigateToProfile()
-                    null -> onNavigateToLogin() // If userType is null, go to login
+                    null -> onNavigateToLogin(null) // If userType is null, go to login
                 }
             } else {
-                onNavigateToLogin()
+                onNavigateToLogin(uiState.errorMessage)
             }
         }
     }
@@ -148,19 +148,7 @@ fun SplashScreen(
                 )
             }
             
-            // Error message
-            uiState.errorMessage?.let { error ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = error,
-                    fontSize = 12.sp,
-                    color = Color(0xFFFF6B6B),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .alpha(textAlpha)
-                        .padding(horizontal = 32.dp)
-                )
-            }
+            // No error messages on splash screen - they should only appear on login screen
         }
     }
 }

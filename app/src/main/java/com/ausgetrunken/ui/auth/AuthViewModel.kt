@@ -17,6 +17,117 @@ class AuthViewModel(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
     
+    init {
+        checkAuthState()
+    }
+    
+    private fun checkAuthState() {
+        viewModelScope.launch {
+            println("🚀 AuthViewModel: Starting authentication check")
+            
+            // Ensure splash screen shows for at least 2 seconds for the animation
+            val startTime = System.currentTimeMillis()
+            
+            authService.restoreSession()
+                .onSuccess { user ->
+                    println("🔄 AuthViewModel: RestoreSession result - user = ${user?.email ?: "NULL"}")
+                    if (user != null) {
+                        println("✅ AuthViewModel: User authenticated, getting user type...")
+                        // User is authenticated, get their type
+                        authService.checkUserType(user.id)
+                            .onSuccess { userType ->
+                                println("✅ AuthViewModel: User type = $userType")
+                                
+                                // Ensure minimum display time for animation
+                                val elapsedTime = System.currentTimeMillis() - startTime
+                                val minDisplayTime = 2500L // 2.5 seconds to see the full wine filling animation
+                                val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
+                                
+                                if (remainingTime > 0) {
+                                    println("⏱️ AuthViewModel: Delaying for ${remainingTime}ms to show animation")
+                                    kotlinx.coroutines.delay(remainingTime)
+                                }
+                                
+                                _uiState.value = _uiState.value.copy(
+                                    isCheckingSession = false,
+                                    isAuthenticated = true,
+                                    isLoginSuccessful = true,
+                                    userType = userType
+                                )
+                                println("✅ AuthViewModel: Navigation should happen now")
+                            }
+                            .onFailure { error ->
+                                println("❌ AuthViewModel: Failed to get user type: ${error.message}")
+                                
+                                // Ensure minimum display time for animation
+                                val elapsedTime = System.currentTimeMillis() - startTime
+                                val minDisplayTime = 2500L
+                                val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
+                                
+                                if (remainingTime > 0) {
+                                    kotlinx.coroutines.delay(remainingTime)
+                                }
+                                
+                                // Failed to get user type, show login screen
+                                _uiState.value = _uiState.value.copy(
+                                    isCheckingSession = false,
+                                    isAuthenticated = false,
+                                    errorMessage = "Failed to get user type: ${error.message}"
+                                )
+                            }
+                    } else {
+                        println("❌ AuthViewModel: No valid session found, showing login")
+                        
+                        // Ensure minimum display time for animation
+                        val elapsedTime = System.currentTimeMillis() - startTime
+                        val minDisplayTime = 2500L
+                        val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
+                        
+                        if (remainingTime > 0) {
+                            kotlinx.coroutines.delay(remainingTime)
+                        }
+                        
+                        // No valid session found
+                        _uiState.value = _uiState.value.copy(
+                            isCheckingSession = false,
+                            isAuthenticated = false
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    println("❌ AuthViewModel: Session restoration failed: ${error.message}")
+                    
+                    // Ensure minimum display time for animation
+                    val elapsedTime = System.currentTimeMillis() - startTime
+                    val minDisplayTime = 2500L
+                    val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
+                    
+                    if (remainingTime > 0) {
+                        kotlinx.coroutines.delay(remainingTime)
+                    }
+                    
+                    // Check if this is a flagged account error
+                    val errorMessage = error.message ?: ""
+                    if (errorMessage.startsWith("FLAGGED_ACCOUNT:")) {
+                        // Extract the actual message and show dialog
+                        val flaggedMessage = errorMessage.removePrefix("FLAGGED_ACCOUNT:")
+                        _uiState.value = _uiState.value.copy(
+                            isCheckingSession = false,
+                            isAuthenticated = false,
+                            showFlaggedAccountDialog = true,
+                            flaggedAccountMessage = flaggedMessage
+                        )
+                    } else {
+                        // Regular session restoration failure - just show login
+                        _uiState.value = _uiState.value.copy(
+                            isCheckingSession = false,
+                            isAuthenticated = false
+                        )
+                    }
+                }
+        }
+    }
+    
     fun switchMode(mode: AuthMode) {
         _uiState.value = _uiState.value.copy(
             mode = mode,
@@ -54,6 +165,13 @@ class AuthViewModel(
         if (email.isNotBlank()) {
             _uiState.value = _uiState.value.copy(email = email)
         }
+    }
+    
+    fun dismissFlaggedAccountDialog() {
+        _uiState.value = _uiState.value.copy(
+            showFlaggedAccountDialog = false,
+            flaggedAccountMessage = null
+        )
     }
     
     fun login() {

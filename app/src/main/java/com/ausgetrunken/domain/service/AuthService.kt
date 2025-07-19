@@ -45,4 +45,8 @@ class AuthService(
     suspend fun restoreSession(): Result<UserInfo?> {
         return authRepository.restoreSession()
     }
+
+    suspend fun deleteAccount(): Result<Unit> {
+        return authRepository.deleteAccount()
+    }
 }

@@ -7,5 +7,8 @@ data class CustomerProfileUiState(
     val user: UserInfo? = null,
     val isLoggingOut: Boolean = false,
     val errorMessage: String? = null,
-    val logoutSuccess: Boolean = false
+    val logoutSuccess: Boolean = false,
+    val showDeleteAccountDialog: Boolean = false,
+    val isDeletingAccount: Boolean = false,
+    val deleteAccountSuccess: Boolean = false
 )

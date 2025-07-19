@@ -7,6 +7,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
 
 class UserRepository(
     private val userDao: UserDao,
@@ -20,6 +21,7 @@ class UserRepository(
                 .select {
                     filter {
                         eq("id", userId)
+                        eq("flagged_for_deletion", false)
                     }
                 }
                 .decodeSingle<UserProfile>()
@@ -48,11 +50,12 @@ class UserRepository(
                         put("email", user.email)
                         put("user_type", user.userType.name)
                         put("profile_completed", user.profileCompleted)
-                        put("updated_at", System.currentTimeMillis().toString())
+                        put("updated_at", Instant.now().toString())
                     }
                 ) {
                     filter {
                         eq("id", user.id)
+                        eq("flagged_for_deletion", false)
                     }
                 }
             Result.success(Unit)

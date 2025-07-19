@@ -35,6 +35,11 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +59,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.data.local.entities.UserType
 import org.koin.androidx.compose.koinViewModel
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.Path
 
 @Composable
 fun AuthScreen(
@@ -66,6 +84,7 @@ fun AuthScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     
     LaunchedEffect(uiState.isLoginSuccessful, uiState.userType) {
         if (uiState.isLoginSuccessful && uiState.userType != null) {
@@ -83,6 +102,8 @@ fun AuthScreen(
         }
     }
     
+    // Remove old flaggedAccountMessage LaunchedEffect - now handled in ViewModel
+    
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
@@ -97,6 +118,59 @@ fun AuthScreen(
         }
     }
     
+    // Show splash loading screen while checking session
+    if (uiState.isCheckingSession) {
+        SplashLoadingScreen()
+        return
+    }
+    
+    // Flagged Account Dialog
+    if (uiState.showFlaggedAccountDialog && uiState.flaggedAccountMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissFlaggedAccountDialog() },
+            title = {
+                Text(
+                    text = "Account Flagged",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            },
+            text = {
+                Text(
+                    text = uiState.flaggedAccountMessage ?: "",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // Open email app to contact support
+                        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:ausgetrunken@gmail.com")
+                            putExtra(Intent.EXTRA_SUBJECT, "Account Flagged for Deletion - Support Request")
+                            putExtra(Intent.EXTRA_TEXT, "Hello,\n\nMy account has been flagged for deletion by an administrator. I believe this may be an error and would like to request a review.\n\nPlease help me resolve this issue.\n\nThank you.")
+                        }
+                        try {
+                            context.startActivity(emailIntent)
+                        } catch (e: Exception) {
+                            // If no email app is available, could show a toast or fallback
+                        }
+                        viewModel.dismissFlaggedAccountDialog()
+                    }
+                ) {
+                    Text("Contact Support")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.dismissFlaggedAccountDialog() }
+                ) {
+                    Text("Dismiss")
+                }
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -207,7 +281,13 @@ fun AuthScreen(
                 // Password Field
                 OutlinedTextField(
                     value = uiState.password,
-                    onValueChange = viewModel::updatePassword,
+                    onValueChange = { newValue ->
+                        // Filter out newlines and tabs from password
+                        val cleanPassword = newValue
+                            .replace("\n", "")
+                            .replace("\t", "")
+                        viewModel.updatePassword(cleanPassword)
+                    },
                     label = { Text("Password") },
                     leadingIcon = {
                         Icon(
@@ -233,7 +313,8 @@ fun AuthScreen(
                         keyboardType = KeyboardType.Password
                     ),
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isLoading,
+                    singleLine = true
                 )
                 
                 // Confirm Password Field (only for registration)
@@ -247,7 +328,13 @@ fun AuthScreen(
                         
                         OutlinedTextField(
                             value = uiState.confirmPassword,
-                            onValueChange = viewModel::updateConfirmPassword,
+                            onValueChange = { newValue ->
+                                // Filter out newlines and tabs from confirm password
+                                val cleanPassword = newValue
+                                    .replace("\n", "")
+                                    .replace("\t", "")
+                                viewModel.updateConfirmPassword(cleanPassword)
+                            },
                             label = { Text("Confirm Password") },
                             leadingIcon = {
                                 Icon(
@@ -273,7 +360,8 @@ fun AuthScreen(
                                 keyboardType = KeyboardType.Password
                             ),
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !uiState.isLoading
+                            enabled = !uiState.isLoading,
+                            singleLine = true
                         )
                     }
                 }
@@ -377,5 +465,254 @@ fun AuthScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SplashLoadingScreen() {
+    // Animation states - trigger wine filling animation on load
+    var startAnimation by remember { mutableStateOf(false) }
+    
+    val wineProgress by animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 2500,
+            easing = EaseInOutCubic
+        ),
+        label = "wine_fill"
+    )
+    
+    // Start the wine filling animation when component loads
+    LaunchedEffect(Unit) {
+        startAnimation = true
+    }
+    
+    val glassAlpha by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(
+            durationMillis = 800,
+            delayMillis = 200,
+            easing = EaseOut
+        ),
+        label = "glass_alpha"
+    )
+    
+    val textAlpha by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(
+            durationMillis = 1000,
+            delayMillis = 600,
+            easing = EaseOut
+        ),
+        label = "text_alpha"
+    )
+    
+    val shimmerOffset by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1A1A1A),
+                        Color(0xFF0D0D0D)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Wine Glass Animation (restored!)
+            WineGlassAnimation(
+                progress = wineProgress,
+                glassAlpha = glassAlpha,
+                shimmerOffset = shimmerOffset,
+                modifier = Modifier.size(200.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            // App Title
+            Text(
+                text = "Ausgetrunken",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFD4AF37), // Gold color
+                textAlign = TextAlign.Center,
+                modifier = Modifier.alpha(textAlpha)
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Tagline
+            Text(
+                text = "Sip. Savor. Celebrate.",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Light,
+                color = Color(0xFFB8860B).copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.alpha(textAlpha)
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Loading text
+            Text(
+                text = "Preparing your cellar...",
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.alpha(textAlpha)
+            )
+        }
+    }
+}
+
+@Composable
+private fun WineGlassAnimation(
+    progress: Float,
+    glassAlpha: Float,
+    shimmerOffset: Float,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val glassPath = createWineGlassPath(size)
+        val wineHeight = size.height * 0.6f * progress // Wine fills 60% of glass max
+        
+        // Draw wine fill
+        if (progress > 0f) {
+            drawWineFill(glassPath, wineHeight, shimmerOffset)
+        }
+        
+        // Draw glass outline
+        drawGlassOutline(glassPath, glassAlpha)
+        
+        // Draw glass shine
+        drawGlassShine(glassPath, glassAlpha)
+    }
+}
+
+private fun DrawScope.createWineGlassPath(size: Size): Path {
+    val path = Path()
+    val centerX = size.width / 2f
+    val centerY = size.height / 2f
+    
+    // Wine glass bowl - elegant curve
+    path.moveTo(centerX - size.width * 0.25f, centerY - size.height * 0.15f)
+    path.quadraticBezierTo(
+        centerX - size.width * 0.3f, centerY + size.height * 0.1f,
+        centerX - size.width * 0.2f, centerY + size.height * 0.25f
+    )
+    
+    // Bottom of bowl to stem
+    path.lineTo(centerX - size.width * 0.05f, centerY + size.height * 0.3f)
+    path.lineTo(centerX - size.width * 0.05f, centerY + size.height * 0.4f)
+    
+    // Base
+    path.lineTo(centerX - size.width * 0.15f, centerY + size.height * 0.4f)
+    path.lineTo(centerX + size.width * 0.15f, centerY + size.height * 0.4f)
+    
+    // Right side stem
+    path.lineTo(centerX + size.width * 0.05f, centerY + size.height * 0.4f)
+    path.lineTo(centerX + size.width * 0.05f, centerY + size.height * 0.3f)
+    
+    // Right side of bowl
+    path.lineTo(centerX + size.width * 0.2f, centerY + size.height * 0.25f)
+    path.quadraticBezierTo(
+        centerX + size.width * 0.3f, centerY + size.height * 0.1f,
+        centerX + size.width * 0.25f, centerY - size.height * 0.15f
+    )
+    
+    // Top rim
+    path.quadraticBezierTo(
+        centerX, centerY - size.height * 0.2f,
+        centerX - size.width * 0.25f, centerY - size.height * 0.15f
+    )
+    
+    path.close()
+    return path
+}
+
+private fun DrawScope.drawWineFill(glassPath: Path, wineHeight: Float, shimmerOffset: Float) {
+    clipPath(glassPath) {
+        // Wine gradient
+        val wineGradient = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF8B0000), // Dark red
+                Color(0xFFDC143C), // Crimson
+                Color(0xFF8B0000)  // Dark red
+            ),
+            startY = size.height - wineHeight,
+            endY = size.height
+        )
+        
+        drawRect(
+            brush = wineGradient,
+            topLeft = Offset(0f, size.height - wineHeight),
+            size = Size(size.width, wineHeight)
+        )
+        
+        // Wine surface shimmer
+        val shimmerGradient = Brush.horizontalGradient(
+            colors = listOf(
+                Color.Transparent,
+                Color(0x40FFFFFF),
+                Color.Transparent
+            ),
+            startX = size.width * (shimmerOffset - 0.5f),
+            endX = size.width * (shimmerOffset + 0.5f)
+        )
+        
+        drawRect(
+            brush = shimmerGradient,
+            topLeft = Offset(0f, size.height - wineHeight),
+            size = Size(size.width, 20f)
+        )
+    }
+}
+
+private fun DrawScope.drawGlassOutline(glassPath: Path, alpha: Float) {
+    drawPath(
+        path = glassPath,
+        color = Color(0xFFE6E6E6).copy(alpha = alpha * 0.8f),
+        style = Stroke(
+            width = 3.dp.toPx(),
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    )
+}
+
+private fun DrawScope.drawGlassShine(glassPath: Path, alpha: Float) {
+    // Glass reflection shine
+    val shinePath = Path()
+    val centerX = size.width / 2f
+    val centerY = size.height / 2f
+    
+    shinePath.moveTo(centerX - size.width * 0.15f, centerY - size.height * 0.1f)
+    shinePath.quadraticBezierTo(
+        centerX - size.width * 0.1f, centerY,
+        centerX - size.width * 0.12f, centerY + size.height * 0.15f
+    )
+    
+    clipPath(glassPath) {
+        drawPath(
+            path = shinePath,
+            color = Color.White.copy(alpha = alpha * 0.3f),
+            style = Stroke(
+                width = 8.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        )
     }
 }

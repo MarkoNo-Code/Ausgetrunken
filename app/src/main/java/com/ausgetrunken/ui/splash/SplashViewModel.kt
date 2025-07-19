@@ -59,12 +59,25 @@ class SplashViewModel(
                     }
                     .onFailure { error ->
                         println("❌ SplashViewModel: Session restoration failed: ${error.message}")
-                        // Session restoration failed
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            isAuthenticated = false,
-                            errorMessage = "Session restoration failed: ${error.message}"
-                        )
+                        
+                        // Check if this is a flagged account error
+                        val errorMessage = error.message ?: ""
+                        if (errorMessage.startsWith("FLAGGED_ACCOUNT:")) {
+                            // Extract the actual message and pass it to the auth screen
+                            val flaggedMessage = errorMessage.removePrefix("FLAGGED_ACCOUNT:")
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                isAuthenticated = false,
+                                errorMessage = flaggedMessage // This will be passed to AuthScreen
+                            )
+                        } else {
+                            // Regular session restoration failure
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                isAuthenticated = false,
+                                errorMessage = null // Don't show regular session errors on login screen
+                            )
+                        }
                     }
             } catch (e: Exception) {
                 println("❌ SplashViewModel: Unexpected error: ${e.message}")

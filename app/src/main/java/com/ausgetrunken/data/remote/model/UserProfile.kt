@@ -13,5 +13,8 @@ data class UserProfile(
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("phone") val phone: String? = null,
-    @SerialName("address") val address: String? = null
+    @SerialName("address") val address: String? = null,
+    @SerialName("flagged_for_deletion") val flaggedForDeletion: Boolean = false,
+    @SerialName("deletion_flagged_at") val deletionFlaggedAt: String? = null,
+    @SerialName("deletion_type") val deletionType: String? = null // "USER" or "ADMIN"
 )

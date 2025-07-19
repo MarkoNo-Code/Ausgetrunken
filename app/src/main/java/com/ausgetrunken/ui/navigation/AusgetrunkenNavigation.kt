@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AusgetrunkenNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Splash.route,
+    startDestination: String = Screen.Auth.route, // Start directly with Auth screen
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -41,9 +41,17 @@ fun AusgetrunkenNavigation(
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(
-                onNavigateToLogin = {
+                onNavigateToLogin = { errorMessage ->
+                    println("🔍 Navigation: SplashScreen navigating to login with errorMessage: $errorMessage")
+                    
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                    
+                    // Pass error message to AuthScreen AFTER navigation
+                    errorMessage?.let { 
+                        println("🔍 Navigation: Setting flaggedAccountMessage in savedStateHandle AFTER navigation: $it")
+                        navController.getBackStackEntry(Screen.Auth.route).savedStateHandle["flaggedAccountMessage"] = it
                     }
                 },
                 onNavigateToProfile = {

@@ -7,8 +7,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.ui.common.DeleteAccountDialog
 import com.ausgetrunken.ui.theme.UserPlaceholderIcon
 import org.koin.androidx.compose.koinViewModel
 
@@ -36,6 +38,13 @@ fun CustomerProfileScreen(
     LaunchedEffect(uiState.logoutSuccess) {
         if (uiState.logoutSuccess) {
             onLogoutSuccess()
+        }
+    }
+    
+    // Handle delete account success
+    LaunchedEffect(uiState.deleteAccountSuccess) {
+        if (uiState.deleteAccountSuccess) {
+            onLogoutSuccess() // Navigate back to auth screen after successful deletion
         }
     }
     
@@ -101,6 +110,47 @@ fun CustomerProfileScreen(
                         
                         Spacer(modifier = Modifier.weight(1f))
                         
+                        // Delete Account Button
+                        OutlinedButton(
+                            onClick = { viewModel.showDeleteAccountDialog() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            enabled = !uiState.isDeletingAccount
+                        ) {
+                            if (uiState.isDeletingAccount) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Flagging Account...",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete Account",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Flag Account for Deletion",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
                         // Logout Button
                         Button(
                             onClick = { viewModel.logout() },
@@ -121,7 +171,7 @@ fun CustomerProfileScreen(
                                 )
                             } else {
                                 Icon(
-                                    imageVector = Icons.Default.ExitToApp,
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                     contentDescription = "Logout",
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -137,6 +187,14 @@ fun CustomerProfileScreen(
                 }
             }
         }
+    }
+    
+    // Delete Account Dialog
+    if (uiState.showDeleteAccountDialog) {
+        DeleteAccountDialog(
+            onDismiss = { viewModel.hideDeleteAccountDialog() },
+            onConfirm = { viewModel.deleteAccount() }
+        )
     }
 }
 

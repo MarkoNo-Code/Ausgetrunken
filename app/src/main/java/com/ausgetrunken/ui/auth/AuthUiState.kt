@@ -18,5 +18,11 @@ data class AuthUiState(
     val isRegistrationSuccessful: Boolean = false,
     val userType: UserType? = null,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    // Session restoration state
+    val isCheckingSession: Boolean = true, // Start checking session on init
+    val isAuthenticated: Boolean = false,
+    // Flagged account state
+    val showFlaggedAccountDialog: Boolean = false,
+    val flaggedAccountMessage: String? = null
 )

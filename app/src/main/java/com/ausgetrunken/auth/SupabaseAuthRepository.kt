@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
 
 class SupabaseAuthRepository(
     private val auth: Auth,
@@ -106,8 +107,11 @@ class SupabaseAuthRepository(
             
             val user = auth.currentUserOrNull() ?: throw Exception("Sign in failed")
             
-            // Check if user profile exists, create if not (for users who confirmed email)
+            // Check if user profile exists and if it's flagged for deletion
             try {
+                println("🔍 SupabaseAuthRepository.signIn: Checking user profile for flagged status...")
+                println("🔍 SupabaseAuthRepository.signIn: User ID: ${user.id}")
+                
                 val existingProfile = postgrest.from("user_profiles")
                     .select {
                         filter {
@@ -116,7 +120,35 @@ class SupabaseAuthRepository(
                     }
                     .decodeSingleOrNull<UserProfile>()
                 
-                if (existingProfile == null) {
+                println("🔍 SupabaseAuthRepository.signIn: Profile query result: ${if (existingProfile != null) "FOUND" else "NULL"}")
+                
+                if (existingProfile != null) {
+                    println("🔍 SupabaseAuthRepository.signIn: Profile details:")
+                    println("  - Email: ${existingProfile.email}")
+                    println("  - UserType: ${existingProfile.userType}")
+                    println("  - FlaggedForDeletion: ${existingProfile.flaggedForDeletion}")
+                    println("  - DeletionType: ${existingProfile.deletionType}")
+                    println("  - DeletionFlaggedAt: ${existingProfile.deletionFlaggedAt}")
+                    
+                    // Check if account is flagged for deletion
+                    if (existingProfile.flaggedForDeletion) {
+                        println("❌ SupabaseAuthRepository.signIn: Account IS flagged for deletion - blocking login")
+                        
+                        // Sign out immediately and block login
+                        auth.signOut()
+                        tokenStorage.clearSession()
+                        
+                        val deletionType = when (existingProfile.deletionType) {
+                            "ADMIN" -> "by an administrator"
+                            "USER" -> "at your request"
+                            else -> ""
+                        }
+                        
+                        throw Exception("Login not allowed. Your account has been flagged for deletion $deletionType. Please contact support if you believe this is an error.")
+                    } else {
+                        println("✅ SupabaseAuthRepository.signIn: Account is NOT flagged for deletion - allowing login")
+                    }
+                } else {
                     // Create profile for confirmed user
                     postgrest.from("user_profiles").insert(
                         buildJsonObject {
@@ -124,11 +156,16 @@ class SupabaseAuthRepository(
                             put("email", user.email ?: email)
                             put("user_type", "CUSTOMER") // Default to customer, user can change later
                             put("profile_completed", false)
+                            put("flagged_for_deletion", false)
                         }
                     )
                 }
             } catch (dbError: Exception) {
-                // Log error but don't fail login
+                // If it's a flagged account error, re-throw it
+                if (dbError.message?.contains("flagged for deletion") == true) {
+                    throw dbError
+                }
+                // Log other errors but don't fail login
                 println("Warning: Could not create/check user profile: ${dbError.message}")
             }
             
@@ -186,7 +223,52 @@ class SupabaseAuthRepository(
                     
                     if (currentUser != null) {
                         println("✅ SupabaseAuthRepository: Supabase successfully loaded session from storage!")
-                        Result.success(currentUser)
+                        
+                        // Check if the user is flagged for deletion before allowing session restoration
+                        try {
+                            println("🔍 SupabaseAuthRepository.restoreSession: Querying database for user ID: ${currentUser.id}")
+                            println("🔍 SupabaseAuthRepository.restoreSession: User email: ${currentUser.email}")
+                            
+                            val userProfile = postgrest.from("user_profiles")
+                                .select {
+                                    filter {
+                                        eq("id", currentUser.id)
+                                    }
+                                }
+                                .decodeSingleOrNull<UserProfile>()
+                            
+                            if (userProfile != null && userProfile.flaggedForDeletion) {
+                                println("❌ SupabaseAuthRepository.restoreSession: Account IS flagged for deletion - clearing session")
+                                
+                                tokenStorage.clearSession()
+                                auth.signOut()
+                                
+                                // Only show message for admin-flagged accounts
+                                if (userProfile.deletionType == "ADMIN") {
+                                    println("❌ SupabaseAuthRepository.restoreSession: Admin-flagged account - will show message to user")
+                                    // Return failure with specific error message for admin-flagged accounts
+                                    Result.failure(Exception("FLAGGED_ACCOUNT:Your session has been terminated because your account has been flagged for deletion by an administrator. Please contact support if you believe this is an error."))
+                                } else {
+                                    println("❌ SupabaseAuthRepository.restoreSession: User-flagged account - silent logout without message")
+                                    // For user-flagged accounts, silently redirect to login without message
+                                    Result.success(null)
+                                }
+                            } else {
+                                println("✅ SupabaseAuthRepository.restoreSession: Account is NOT flagged for deletion - allowing session restoration")
+                                if (userProfile != null) {
+                                    println("✅ SupabaseAuthRepository.restoreSession: Profile details:")
+                                    println("  - Email: ${userProfile.email}")
+                                    println("  - UserType: ${userProfile.userType}")
+                                    println("  - FlaggedForDeletion: ${userProfile.flaggedForDeletion}")
+                                    println("  - DeletionType: ${userProfile.deletionType}")
+                                }
+                                Result.success(currentUser)
+                            }
+                        } catch (e: Exception) {
+                            println("❌ SupabaseAuthRepository: Error checking flagged status during session restoration: ${e.message}")
+                            // If we can't check the flagged status, allow the session but log the error
+                            Result.success(currentUser)
+                        }
                     } else {
                         println("🔄 SupabaseAuthRepository: No active session in Supabase, but we have valid tokens")
                         println("🔄 SupabaseAuthRepository: Attempting to import session...")
@@ -222,31 +304,57 @@ class SupabaseAuthRepository(
                                     println("✅ SupabaseAuthRepository: Token validation successful via API call")
                                     println("🔄 SupabaseAuthRepository: User profile: ${userProfile.email}")
                                     
-                                    // Since the token works and we have user data, we can proceed
-                                    // We'll need to work around the UserInfo requirement
+                                    // Check if account is flagged for deletion
+                                    println("🔄 SupabaseAuthRepository.restoreSession: Checking flagged status via API call...")
+                                    println("🔄 SupabaseAuthRepository.restoreSession: Profile details from API:")
+                                    println("  - Email: ${userProfile.email}")
+                                    println("  - UserType: ${userProfile.userType}")
+                                    println("  - FlaggedForDeletion: ${userProfile.flaggedForDeletion}")
+                                    println("  - DeletionType: ${userProfile.deletionType}")
+                                    println("  - DeletionFlaggedAt: ${userProfile.deletionFlaggedAt}")
                                     
-                                    // For now, let's try one more session import attempt with better error handling
-                                    println("🔄 SupabaseAuthRepository: Attempting session import with valid token...")
-                                    val userSession = UserSession(
-                                        accessToken = sessionInfo.accessToken,
-                                        refreshToken = sessionInfo.refreshToken,
-                                        expiresIn = 3600,
-                                        tokenType = "Bearer",
-                                        user = null
-                                    )
-                                    
-                                    auth.importSession(userSession)
-                                    val user = auth.currentUserOrNull()
-                                    
-                                    if (user != null) {
-                                        println("✅ SupabaseAuthRepository: Session import successful on retry")
-                                        Result.success(user)
-                                    } else {
-                                        println("❌ SupabaseAuthRepository: Session import failed on retry, but token is valid")
-                                        // Since the token is valid but session import fails, we have a problem
-                                        // Let's clear and force re-login for now
+                                    if (userProfile.flaggedForDeletion) {
+                                        println("❌ SupabaseAuthRepository.restoreSession: Account IS flagged for deletion - clearing session (alternative path)")
                                         tokenStorage.clearSession()
-                                        Result.success(null)
+                                        
+                                        // Only show message for admin-flagged accounts
+                                        if (userProfile.deletionType == "ADMIN") {
+                                            println("❌ SupabaseAuthRepository.restoreSession: Admin-flagged account - will show message to user (alternative path)")
+                                            // Return failure with specific error message for admin-flagged accounts
+                                            return Result.failure(Exception("FLAGGED_ACCOUNT:Your session has been terminated because your account has been flagged for deletion by an administrator. Please contact support if you believe this is an error."))
+                                        } else {
+                                            println("❌ SupabaseAuthRepository.restoreSession: User-flagged account - silent logout without message (alternative path)")
+                                            // For user-flagged accounts, silently redirect to login without message
+                                            return Result.success(null)
+                                        }
+                                    } else {
+                                        println("✅ SupabaseAuthRepository.restoreSession: Account is NOT flagged for deletion via API call - proceeding with session restoration")
+                                        // Since the token works and we have user data, we can proceed
+                                        // We'll need to work around the UserInfo requirement
+                                        
+                                        // For now, let's try one more session import attempt with better error handling
+                                        println("🔄 SupabaseAuthRepository: Attempting session import with valid token...")
+                                        val userSession = UserSession(
+                                            accessToken = sessionInfo.accessToken,
+                                            refreshToken = sessionInfo.refreshToken,
+                                            expiresIn = 3600,
+                                            tokenType = "Bearer",
+                                            user = null
+                                        )
+                                        
+                                        auth.importSession(userSession)
+                                        val user = auth.currentUserOrNull()
+                                        
+                                        if (user != null) {
+                                            println("✅ SupabaseAuthRepository: Session import successful on retry")
+                                            Result.success(user)
+                                        } else {
+                                            println("❌ SupabaseAuthRepository: Session import failed on retry, but token is valid")
+                                            // Since the token is valid but session import fails, we have a problem
+                                            // Let's clear and force re-login for now
+                                            tokenStorage.clearSession()
+                                            Result.success(null)
+                                        }
                                     }
                                 } else {
                                     println("❌ SupabaseAuthRepository: Token validation failed - user profile not found")
@@ -292,13 +400,18 @@ class SupabaseAuthRepository(
     
     suspend fun getUserType(userId: String): Result<UserType> {
         return try {
+            println("🔍 SupabaseAuthRepository.getUserType: Getting user type for ID: $userId")
             val response = postgrest.from("user_profiles")
                 .select {
                     filter {
                         eq("id", userId)
+                        // Removed flagged_for_deletion filter - we need to get user type even for flagged users
+                        // The flagged check should happen separately in authentication flow
                     }
                 }
                 .decodeSingle<UserProfile>()
+            
+            println("🔍 SupabaseAuthRepository.getUserType: Found user type: ${response.userType}, flagged: ${response.flaggedForDeletion}")
             
             val userType = UserType.valueOf(response.userType)
             Result.success(userType)
@@ -313,16 +426,55 @@ class SupabaseAuthRepository(
                 .update(
                     buildJsonObject {
                         put("profile_completed", completed)
-                        put("updated_at", System.currentTimeMillis().toString())
+                        put("updated_at", Instant.now().toString())
                     }
                 ) {
                     filter {
                         eq("id", userId)
+                        // Removed flagged_for_deletion filter - profile updates should work regardless of flag status
+                        // The flagged check should happen at the authentication level
                     }
                 }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+    
+    suspend fun deleteAccount(): Result<Unit> {
+        return try {
+            val user = auth.currentUserOrNull()
+                ?: return Result.failure(Exception("No authenticated user found"))
+            
+            // Flag the user account for deletion instead of actually deleting data
+            // This allows for recovery and proper admin cleanup later
+            
+            try {
+                postgrest.from("user_profiles")
+                    .update(
+                        buildJsonObject {
+                            put("flagged_for_deletion", true)
+                            put("deletion_flagged_at", Instant.now().toString())
+                            put("deletion_type", "USER")
+                            put("updated_at", Instant.now().toString())
+                        }
+                    ) {
+                        filter {
+                            eq("id", user.id)
+                        }
+                    }
+            } catch (e: Exception) {
+                return Result.failure(Exception("Failed to flag account for deletion: ${e.message}"))
+            }
+            
+            // Sign out the user and clear local data
+            // The account is now flagged and login will be blocked
+            auth.signOut()
+            tokenStorage.clearSession()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to flag account for deletion: ${e.message}"))
         }
     }
 }

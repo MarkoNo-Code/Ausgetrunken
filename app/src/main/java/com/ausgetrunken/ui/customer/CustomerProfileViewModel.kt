@@ -69,4 +69,43 @@ class CustomerProfileViewModel(
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
+    
+    fun showDeleteAccountDialog() {
+        _uiState.value = _uiState.value.copy(showDeleteAccountDialog = true)
+    }
+    
+    fun hideDeleteAccountDialog() {
+        _uiState.value = _uiState.value.copy(showDeleteAccountDialog = false)
+    }
+    
+    fun deleteAccount() {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(
+                    isDeletingAccount = true,
+                    showDeleteAccountDialog = false,
+                    errorMessage = null
+                )
+                
+                authService.deleteAccount()
+                    .onSuccess {
+                        _uiState.value = _uiState.value.copy(
+                            isDeletingAccount = false,
+                            deleteAccountSuccess = true
+                        )
+                    }
+                    .onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isDeletingAccount = false,
+                            errorMessage = "Failed to delete account: ${error.message}"
+                        )
+                    }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isDeletingAccount = false,
+                    errorMessage = "Unexpected error during account deletion: ${e.message}"
+                )
+            }
+        }
+    }
 }

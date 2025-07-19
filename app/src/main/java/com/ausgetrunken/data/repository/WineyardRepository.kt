@@ -97,6 +97,8 @@ class WineyardRepository(
 
     suspend fun syncWineyardsFromFirestore(): Result<Unit> {
         return try {
+            // For now, get all wineyards - filtering will be implemented via database views or RPC later
+            // The main filtering happens at login time to prevent flagged users from accessing the app
             val response = postgrest.from("wineyards")
                 .select()
                 .decodeList<Wineyard>()

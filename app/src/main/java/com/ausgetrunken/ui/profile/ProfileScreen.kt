@@ -17,8 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -57,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.ui.common.DeleteAccountDialog
 import com.ausgetrunken.ui.profile.components.AddWineyardCard
 import com.ausgetrunken.ui.profile.components.ProfileHeader
 import com.ausgetrunken.ui.profile.components.WineyardCard
@@ -120,6 +126,13 @@ fun ProfileScreen(
         }
     }
     
+    // Handle delete account success
+    LaunchedEffect(uiState.deleteAccountSuccess) {
+        if (uiState.deleteAccountSuccess) {
+            onLogoutSuccess() // Navigate back to auth screen after successful deletion
+        }
+    }
+    
     // Clear the newWineyardId after animation completes
     LaunchedEffect(newWineyardId) {
         newWineyardId?.let {
@@ -149,7 +162,7 @@ fun ProfileScreen(
                             )
                         } else {
                             Icon(
-                                Icons.Default.ExitToApp,
+                                Icons.AutoMirrored.Filled.ExitToApp,
                                 contentDescription = "Logout",
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
@@ -225,10 +238,80 @@ fun ProfileScreen(
                             )
                         }
                     }
+                    
+                    // Settings Section
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Settings,
+                                        contentDescription = "Settings",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Settings",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                
+                                // Delete Account Button
+                                OutlinedButton(
+                                    onClick = { viewModel.showDeleteAccountDialog() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    enabled = !uiState.isDeletingAccount
+                                ) {
+                                    if (uiState.isDeletingAccount) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Flagging Account...")
+                                    } else {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Delete Account",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Flag Account for Deletion")
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             }
         }
+    }
+    
+    // Delete Account Dialog
+    if (uiState.showDeleteAccountDialog) {
+        DeleteAccountDialog(
+            onDismiss = { viewModel.hideDeleteAccountDialog() },
+            onConfirm = { viewModel.deleteAccount() }
+        )
     }
 }
 
