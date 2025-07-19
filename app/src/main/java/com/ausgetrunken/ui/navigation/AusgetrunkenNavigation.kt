@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.ausgetrunken.ui.auth.AuthScreen
 import com.ausgetrunken.ui.auth.LoginScreen
 import com.ausgetrunken.ui.auth.RegisterScreen
 import com.ausgetrunken.ui.profile.ProfileScreen
@@ -41,7 +42,7 @@ fun AusgetrunkenNavigation(
         composable(Screen.Splash.route) {
             SplashScreen(
                 onNavigateToLogin = {
-                    navController.navigate(Screen.Login.route) {
+                    navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
@@ -58,7 +59,10 @@ fun AusgetrunkenNavigation(
             )
         }
         
-        composable(Screen.Login.route) {
+        composable(Screen.Login.route) { backStackEntry ->
+            val emailFromRegister = backStackEntry.savedStateHandle.get<String>("emailFromRegister")
+            // Clear the saved state after reading it
+            backStackEntry.savedStateHandle.remove<String>("emailFromRegister")
             LoginScreen(
                 onNavigateToWineyardList = {
                     navController.navigate(Screen.WineyardList.route) {
@@ -70,27 +74,41 @@ fun AusgetrunkenNavigation(
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = {
+                onNavigateToRegister = { email ->
+                    navController.currentBackStackEntry?.savedStateHandle?.set("emailForRegister", email)
                     navController.navigate(Screen.Register.route)
-                }
+                },
+                initialEmail = emailFromRegister
             )
         }
         
-        composable(Screen.Register.route) {
+        composable(Screen.Register.route) { backStackEntry ->
+            val emailFromLogin = navController.previousBackStackEntry?.savedStateHandle?.get<String>("emailForRegister")
             RegisterScreen(
-                onNavigateToLogin = {
+                onNavigateToLogin = { emailFromRegister ->
+                    // Pass the email back to login screen
+                    emailFromRegister?.let { email ->
+                        navController.previousBackStackEntry?.savedStateHandle?.set("emailFromRegister", email)
+                    }
                     navController.popBackStack()
-                }
+                },
+                initialEmail = emailFromLogin
             )
         }
         
         composable(Screen.Auth.route) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Auth Screen - To be implemented")
-            }
+            AuthScreen(
+                onNavigateToWineyardList = {
+                    navController.navigate(Screen.WineyardList.route) {
+                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route) {
+                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                }
+            )
         }
         
         composable(Screen.Home.route) {
@@ -134,7 +152,7 @@ fun AusgetrunkenNavigation(
             CustomerProfileScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onLogoutSuccess = {
-                    navController.navigate(Screen.Login.route) {
+                    navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
@@ -172,7 +190,7 @@ fun AusgetrunkenNavigation(
                     navController.navigate(Screen.AddWineyard.route)
                 },
                 onLogoutSuccess = {
-                    navController.navigate(Screen.Login.route) {
+                    navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 },

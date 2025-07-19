@@ -12,11 +12,11 @@ class LoginViewModel(
     private val authService: AuthService
 ) : ViewModel() {
     
-    // Pre-fill with test credentials for faster testing
+    // Start with empty fields - email will be set from navigation if needed
     private val _uiState = MutableStateFlow(
         LoginUiState(
-            email = "marko.nonninger@gmail.com",
-            password = "123456"
+            email = "",
+            password = ""
         )
     )
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -31,6 +31,10 @@ class LoginViewModel(
     
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    fun getCurrentEmail(): String {
+        return _uiState.value.email
     }
     
     fun login() {

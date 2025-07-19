@@ -53,7 +53,8 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun RegisterScreen(
-    onNavigateToLogin: () -> Unit,
+    onNavigateToLogin: (String?) -> Unit,
+    initialEmail: String? = null,
     viewModel: RegisterViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -63,7 +64,17 @@ fun RegisterScreen(
     
     LaunchedEffect(uiState.isRegistrationSuccessful) {
         if (uiState.isRegistrationSuccessful) {
-            onNavigateToLogin()
+            // Wait a bit to show the success message before navigating
+            kotlinx.coroutines.delay(2000) // 2 seconds
+            onNavigateToLogin(uiState.email) // Pass the email back to login
+        }
+    }
+    
+    LaunchedEffect(initialEmail) {
+        initialEmail?.let { email ->
+            if (email.isNotBlank()) {
+                viewModel.updateEmail(email)
+            }
         }
     }
     
@@ -71,6 +82,13 @@ fun RegisterScreen(
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
             viewModel.clearError()
+        }
+    }
+    
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let { success ->
+            snackbarHostState.showSnackbar(success)
+            viewModel.clearSuccess()
         }
     }
     
@@ -285,7 +303,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 TextButton(
-                    onClick = onNavigateToLogin,
+                    onClick = { onNavigateToLogin(uiState.email.takeIf { it.isNotBlank() }) },
                     enabled = !uiState.isLoading
                 ) {
                     Text(

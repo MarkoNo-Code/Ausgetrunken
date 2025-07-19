@@ -10,12 +10,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class RegisterViewModel(
+class AuthViewModel(
     private val authService: AuthService
 ) : ViewModel() {
     
-    private val _uiState = MutableStateFlow(RegisterUiState())
-    val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AuthUiState())
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+    
+    fun switchMode(mode: AuthMode) {
+        _uiState.value = _uiState.value.copy(
+            mode = mode,
+            errorMessage = null,
+            successMessage = null,
+            confirmPassword = "" // Clear confirm password when switching modes
+        )
+    }
     
     fun updateEmail(email: String) {
         _uiState.value = _uiState.value.copy(email = email)
@@ -39,6 +48,48 @@ class RegisterViewModel(
     
     fun clearSuccess() {
         _uiState.value = _uiState.value.copy(successMessage = null)
+    }
+    
+    fun setInitialEmail(email: String) {
+        if (email.isNotBlank()) {
+            _uiState.value = _uiState.value.copy(email = email)
+        }
+    }
+    
+    fun login() {
+        val currentState = _uiState.value
+        if (currentState.email.isBlank() || currentState.password.isBlank()) {
+            _uiState.value = currentState.copy(errorMessage = "Please fill in all fields")
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.value = currentState.copy(isLoading = true, errorMessage = null, successMessage = null)
+            
+            authService.signIn(currentState.email, currentState.password)
+                .onSuccess { user ->
+                    authService.checkUserType(user.id)
+                        .onSuccess { userType ->
+                            _uiState.value = currentState.copy(
+                                isLoading = false,
+                                isLoginSuccessful = true,
+                                userType = userType
+                            )
+                        }
+                        .onFailure { error ->
+                            _uiState.value = currentState.copy(
+                                isLoading = false,
+                                errorMessage = "Failed to determine user type: ${error.message ?: "Unknown error"}"
+                            )
+                        }
+                }
+                .onFailure { error ->
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        errorMessage = "Login failed: ${error.message ?: "Unknown error"}"
+                    )
+                }
+        }
     }
     
     fun register() {
@@ -73,13 +124,15 @@ class RegisterViewModel(
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         isRegistrationSuccessful = true,
-                        successMessage = "Account created successfully! You can now sign in with your credentials."
+                        successMessage = "Account created successfully! You can now sign in with your credentials.",
+                        mode = AuthMode.LOGIN, // Switch to login mode
+                        confirmPassword = "" // Clear confirm password
                     )
                 }
                 .onFailure { error ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
-                        errorMessage = "Registration failed: ${error.message ?: "Unknown error"}"
+                        errorMessage = "${error.message ?: "Unknown error"}"
                     )
                 }
         }

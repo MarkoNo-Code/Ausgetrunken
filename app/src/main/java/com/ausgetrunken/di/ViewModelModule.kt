@@ -1,5 +1,6 @@
 package com.ausgetrunken.di
 
+import com.ausgetrunken.ui.auth.AuthViewModel
 import com.ausgetrunken.ui.auth.LoginViewModel
 import com.ausgetrunken.ui.auth.RegisterViewModel
 import com.ausgetrunken.ui.profile.ProfileViewModel
@@ -17,6 +18,7 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val viewModelModule = module {
+    viewModel { AuthViewModel(get()) }
     viewModel { LoginViewModel(get()) }
     viewModel { RegisterViewModel(get()) }
     viewModel { ProfileViewModel(get(), get(), get()) }

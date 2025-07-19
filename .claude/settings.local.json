@@ -10,7 +10,12 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(rm:*)",
-      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell pm clear com.ausgetrunken)"
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell pm clear com.ausgetrunken)",
+      "Bash(git commit:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx supabase db:*)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s emulator-5554 shell am start -n com.ausgetrunken/.MainActivity)"
     ],
     "deny": []
   }

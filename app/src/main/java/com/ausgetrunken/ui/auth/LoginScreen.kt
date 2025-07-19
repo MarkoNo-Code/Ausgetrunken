@@ -52,7 +52,8 @@ import org.koin.androidx.compose.koinViewModel
 fun LoginScreen(
     onNavigateToWineyardList: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onNavigateToRegister: () -> Unit,
+    onNavigateToRegister: (String) -> Unit,
+    initialEmail: String? = null,
     viewModel: LoginViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -73,6 +74,14 @@ fun LoginScreen(
         uiState.errorMessage?.let { error ->
             snackbarHostState.showSnackbar(error)
             viewModel.clearError()
+        }
+    }
+    
+    LaunchedEffect(initialEmail) {
+        initialEmail?.let { email ->
+            if (email.isNotBlank()) {
+                viewModel.updateEmail(email)
+            }
         }
     }
     
@@ -142,7 +151,14 @@ fun LoginScreen(
                 
                 OutlinedTextField(
                     value = uiState.email,
-                    onValueChange = viewModel::updateEmail,
+                    onValueChange = { newValue ->
+                        // Filter out newlines, tabs, and trim spaces
+                        val cleanEmail = newValue
+                            .replace("\n", "")
+                            .replace("\t", "")
+                            .replace(" ", "")
+                        viewModel.updateEmail(cleanEmail)
+                    },
                     label = { Text("Email") },
                     leadingIcon = {
                         Icon(
@@ -154,7 +170,8 @@ fun LoginScreen(
                         keyboardType = KeyboardType.Email
                     ),
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isLoading,
+                    singleLine = true
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -216,7 +233,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 TextButton(
-                    onClick = onNavigateToRegister,
+                    onClick = { onNavigateToRegister(uiState.email) },
                     enabled = !uiState.isLoading
                 ) {
                     Text(

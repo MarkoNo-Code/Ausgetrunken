@@ -33,9 +33,12 @@ class SupabaseAuthRepository(
     
     suspend fun signUp(email: String, password: String, userType: UserType): Result<UserInfo> {
         return try {
+            // Trim email to remove any whitespace that might cause issues
+            val cleanEmail = email.trim().lowercase()
+            
             // First, try to sign up with Supabase Auth
             auth.signUpWith(Email) {
-                this.email = email
+                this.email = cleanEmail
                 this.password = password
             }
             
@@ -49,18 +52,31 @@ class SupabaseAuthRepository(
             
             // Only create user profile if user is confirmed or email confirmation is disabled
             if (user.emailConfirmedAt != null || user.aud == "authenticated") {
-                // Create user profile in database
+                // Check if user profile already exists before creating
                 try {
-                    postgrest.from("user_profiles").insert(
-                        buildJsonObject {
-                            put("id", user.id)
-                            put("email", email)
-                            put("user_type", userType.name)
-                            put("profile_completed", false)
+                    val existingProfile = postgrest.from("user_profiles")
+                        .select {
+                            filter {
+                                eq("id", user.id)
+                            }
                         }
-                    )
+                        .decodeSingleOrNull<UserProfile>()
+                    
+                    if (existingProfile == null) {
+                        // Create user profile in database only if it doesn't exist
+                        postgrest.from("user_profiles").insert(
+                            buildJsonObject {
+                                put("id", user.id)
+                                put("email", cleanEmail)
+                                put("user_type", userType.name)
+                                put("profile_completed", false)
+                            }
+                        )
+                    }
+                    // If profile already exists, that's fine - user was already registered
                 } catch (dbError: Exception) {
-                    throw Exception("Database error: ${dbError.message}. Please check if database tables exist.")
+                    // Log error but don't fail registration if profile creation/check fails
+                    println("Warning: Could not create/check user profile during registration: ${dbError.message}")
                 }
             } else {
                 // User needs email confirmation, profile will be created on first login
@@ -69,7 +85,15 @@ class SupabaseAuthRepository(
             
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(Exception("Registration failed: ${e.message}"))
+            // Handle specific error cases with better user messages
+            val errorMessage = when {
+                e.message?.contains("User already registered") == true -> 
+                    "Account already exists. Please try signing in instead."
+                e.message?.contains("email confirmation") == true -> 
+                    e.message // Pass through email confirmation messages as-is
+                else -> "Registration failed: ${e.message}"
+            }
+            Result.failure(Exception(errorMessage))
         }
     }
     
