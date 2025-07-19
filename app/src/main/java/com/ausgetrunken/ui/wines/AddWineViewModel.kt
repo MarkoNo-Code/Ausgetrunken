@@ -186,14 +186,15 @@ class AddWineViewModel(
                 )
                 
                 wineService.createWine(wine)
-                    .onSuccess {
+                    .onSuccess { createdWine ->
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
                                 isSuccess = true
                             )
                         }
-                        _navigationEvents.trySend(NavigationEvent.NavigateBack)
+                        // Navigate to the newly created wine's detail page
+                        _navigationEvents.trySend(NavigationEvent.NavigateToWineDetail(createdWine.id))
                     }
                     .onFailure { exception ->
                         _uiState.update { 
@@ -247,4 +248,5 @@ data class AddWineUiState(
 
 sealed class NavigationEvent {
     object NavigateBack : NavigationEvent()
+    data class NavigateToWineDetail(val wineId: String) : NavigationEvent()
 }

@@ -25,6 +25,7 @@ class WineRepository(
 
     suspend fun createWine(wine: WineEntity): Result<WineEntity> {
         return try {
+            // Insert to Supabase first
             postgrest.from("wines")
                 .insert(
                     buildJsonObject {
@@ -40,6 +41,9 @@ class WineRepository(
                         // discounted_price, low_stock_threshold, photos are not in the current schema
                     }
                 )
+            
+            // Also save to local Room database for immediate availability
+            wineDao.insertWine(wine)
             
             Result.success(wine)
         } catch (e: Exception) {

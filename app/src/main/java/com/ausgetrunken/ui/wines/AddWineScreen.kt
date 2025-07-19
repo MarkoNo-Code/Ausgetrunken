@@ -36,6 +36,7 @@ fun AddWineScreen(
     wineyardId: String,
     onNavigateBack: () -> Unit,
     onNavigateBackWithSuccess: () -> Unit,
+    onNavigateToWineDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AddWineViewModel = koinViewModel()
 ) {
@@ -56,6 +57,10 @@ fun AddWineScreen(
                     is NavigationEvent.NavigateBack -> {
                         println("🔥 AddWineScreen: Channel navigation event received, calling onNavigateBackWithSuccess")
                         onNavigateBackWithSuccess()
+                    }
+                    is NavigationEvent.NavigateToWineDetail -> {
+                        println("🔥 AddWineScreen: Navigating to wine detail for wine ID: ${event.wineId}")
+                        onNavigateToWineDetail(event.wineId)
                     }
                 }
             }

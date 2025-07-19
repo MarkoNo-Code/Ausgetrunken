@@ -253,6 +253,10 @@ fun AusgetrunkenNavigation(
                     println("🔥 AddWine SUCCESS CALLBACK TRIGGERED!")
                     navController.popBackStack()
                     println("🔥 AddWine popBackStack() called")
+                },
+                onNavigateToWineDetail = { wineId ->
+                    println("🔥 AddWine navigating to wine detail: $wineId")
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
                 }
             )
         }
