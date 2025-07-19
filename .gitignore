@@ -104,3 +104,14 @@ Desktop.ini
 .idea/
 *.swp
 *.swo
+
+# SQL Scripts and Database Files
+sql-scripts/
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# Node.js dependencies (if any MCP or web tools are used)
+node_modules/
+package-lock.json
