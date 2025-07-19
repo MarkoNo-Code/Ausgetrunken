@@ -3,6 +3,7 @@ package com.ausgetrunken.domain.service
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.repository.WineyardRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class WineyardService(
     private val wineyardRepository: WineyardRepository
@@ -41,5 +42,14 @@ class WineyardService(
 
     suspend fun getAllWineyardsPaginated(limit: Int, offset: Int): List<WineyardEntity> {
         return wineyardRepository.getAllWineyardsPaginated(limit, offset)
+    }
+
+    suspend fun validateWineyardOwnership(userId: String, wineyardId: String): Boolean {
+        return try {
+            val wineyard = getWineyardById(wineyardId).first()
+            wineyard?.ownerId == userId
+        } catch (e: Exception) {
+            false
+        }
     }
 }

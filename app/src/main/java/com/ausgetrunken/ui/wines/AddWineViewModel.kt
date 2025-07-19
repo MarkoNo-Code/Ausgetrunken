@@ -8,6 +8,7 @@ import com.ausgetrunken.data.local.entities.WineType
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
+import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,8 @@ import java.util.UUID
 class AddWineViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val wineyardService: WineyardService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AddWineUiState())
@@ -31,10 +33,7 @@ class AddWineViewModel(
     val navigationEvents = _navigationEvents.receiveAsFlow()
     
     fun setWineyardId(wineyardId: String) {
-        // TEMPORARY FIX: Use the most recent valid wineyard ID from the database
-        val validWineyardId = "00000000-0000-0000-0000-000000000001" // Test wineyard created specifically for testing
-        // Using test wineyard ID temporarily
-        _uiState.update { it.copy(wineyardId = validWineyardId, isSuccess = false) }
+        _uiState.update { it.copy(wineyardId = wineyardId, isSuccess = false) }
     }
     
     fun resetState() {
@@ -143,6 +142,18 @@ class AddWineViewModel(
                     it.copy(
                         isLoading = false,
                         errorMessage = "Only wineyard owners can create wines"
+                    )
+                }
+                return@launch
+            }
+            
+            // Validate wineyard ownership for security
+            val isOwner = wineyardService.validateWineyardOwnership(currentUser.id, currentState.wineyardId)
+            if (!isOwner) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Access denied: You can only add wines to your own wineyards"
                     )
                 }
                 return@launch

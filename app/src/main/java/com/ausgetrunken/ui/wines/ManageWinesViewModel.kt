@@ -7,6 +7,7 @@ import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
+import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,34 +19,56 @@ import kotlinx.coroutines.launch
 class ManageWinesViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val wineyardService: WineyardService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ManageWinesUiState())
     val uiState: StateFlow<ManageWinesUiState> = _uiState.asStateFlow()
     
     fun loadWines(wineyardId: String) {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-        
-        // TEMPORARY FIX: Use the same test wineyard ID that wines are created with
-        val testWineyardId = "00000000-0000-0000-0000-000000000001"
-        // Using test wineyard ID temporarily
+        _uiState.update { it.copy(wineyardId = wineyardId, isLoading = true, errorMessage = null) }
         
         viewModelScope.launch {
             // Get current user to check permissions
-            authService.getCurrentUser().collect { currentUser ->
+            authService.getCurrentUser().collect currentUserCollect@{ currentUser ->
                 if (currentUser != null) {
                     val userFlow = userRepository.getUserById(currentUser.id)
                     
-                    userFlow.collect { user ->
-                        val canEdit = user?.userType == UserType.WINEYARD_OWNER
+                    userFlow.collect userCollect@{ user ->
+                        val isWineyardOwner = user?.userType == UserType.WINEYARD_OWNER
+                        
+                        if (!isWineyardOwner) {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    canEdit = false,
+                                    errorMessage = "Access denied: Only wineyard owners can manage wines"
+                                )
+                            }
+                            return@userCollect
+                        }
+                        
+                        // Validate wineyard ownership for security
+                        val isOwner = wineyardService.validateWineyardOwnership(currentUser.id, wineyardId)
+                        
+                        if (!isOwner) {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    canEdit = false,
+                                    errorMessage = "Access denied: You can only manage wines for your own wineyards"
+                                )
+                            }
+                            return@userCollect
+                        }
                         
                         try {
-                            val wines = wineService.getWinesByWineyardFromSupabase(testWineyardId)
+                            val wines = wineService.getWinesByWineyardFromSupabase(wineyardId)
                             _uiState.update { 
                                 it.copy(
                                     wines = wines,
-                                    canEdit = canEdit,
+                                    canEdit = true,
                                     isLoading = false,
                                     errorMessage = null
                                 )
@@ -54,7 +77,7 @@ class ManageWinesViewModel(
                             _uiState.update { 
                                 it.copy(
                                     isLoading = false,
-                                    canEdit = canEdit,
+                                    canEdit = false,
                                     errorMessage = exception.message ?: "Failed to load wines"
                                 )
                             }
@@ -103,7 +126,12 @@ class ManageWinesViewModel(
     }
     
     fun refreshWines() {
-        val currentWineyardId = "00000000-0000-0000-0000-000000000001" // Same test ID
+        val currentWineyardId = _uiState.value.wineyardId
+        if (currentWineyardId.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "No wineyard selected") }
+            return
+        }
+        
         _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
         
         viewModelScope.launch {
@@ -133,6 +161,7 @@ class ManageWinesViewModel(
 }
 
 data class ManageWinesUiState(
+    val wineyardId: String = "",
     val wines: List<WineEntity> = emptyList(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,

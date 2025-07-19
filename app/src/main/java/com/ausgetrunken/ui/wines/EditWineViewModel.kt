@@ -8,6 +8,7 @@ import com.ausgetrunken.data.local.entities.WineType
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
+import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 class EditWineViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val wineyardService: WineyardService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(EditWineUiState())
@@ -196,6 +198,18 @@ class EditWineViewModel(
                     it.copy(
                         isLoading = false,
                         errorMessage = "Only wineyard owners can edit wines"
+                    )
+                }
+                return@launch
+            }
+            
+            // Validate wineyard ownership for security
+            val isOwner = wineyardService.validateWineyardOwnership(currentUser.id, originalWine.wineyardId)
+            if (!isOwner) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Access denied: You can only edit wines from your own wineyards"
                     )
                 }
                 return@launch
