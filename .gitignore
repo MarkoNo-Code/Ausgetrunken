@@ -112,6 +112,30 @@ sql-scripts/
 *.sqlite
 *.sqlite3
 
+# Project Documentation and Development Files
+project-docs/
+*.md
+!README.md
+*.txt
+*.hprof
+
 # Node.js dependencies (if any MCP or web tools are used)
 node_modules/
 package-lock.json
+package.json
+
+# Setup and Development Scripts
+setup-env.*
+*.sh
+*.bat
+run_cleanup_script.js
+
+# Screenshots and Design Files
+Screenshots/
+Design-Inspiration/
+Icons/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.svg
