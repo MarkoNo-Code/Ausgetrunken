@@ -97,13 +97,19 @@ class WineyardRepository(
 
     suspend fun syncWineyardsFromFirestore(): Result<Unit> {
         return try {
+            println("🔄 WineyardRepository: Starting sync from Supabase...")
+            
             // For now, get all wineyards - filtering will be implemented via database views or RPC later
             // The main filtering happens at login time to prevent flagged users from accessing the app
             val response = postgrest.from("wineyards")
                 .select()
                 .decodeList<Wineyard>()
                 
+            println("📊 WineyardRepository: Fetched ${response.size} wineyards from Supabase")
+            
             response.forEach { wineyardData ->
+                println("🏭 WineyardRepository: Processing wineyard: ${wineyardData.name} (ID: ${wineyardData.id}, Owner: ${wineyardData.ownerId})")
+                
                 val entity = WineyardEntity(
                     id = wineyardData.id,
                     name = wineyardData.name,
@@ -116,9 +122,14 @@ class WineyardRepository(
                     updatedAt = (wineyardData.updatedAt?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000 // Convert seconds to milliseconds for local storage
                 )
                 wineyardDao.insertWineyard(entity)
+                println("💾 WineyardRepository: Saved wineyard to local database: ${entity.name}")
             }
+            
+            println("✅ WineyardRepository: Sync completed successfully")
             Result.success(Unit)
         } catch (e: Exception) {
+            println("❌ WineyardRepository: Sync failed: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

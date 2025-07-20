@@ -33,6 +33,9 @@ class WineyardSubscriptionRepository(
     suspend fun getSubscriberCount(wineyardId: String): Int =
         wineyardSubscriptionDao.getSubscriberCount(wineyardId)
     
+    suspend fun getActiveSubscriptionsForWineyard(wineyardId: String): List<WineyardSubscriptionEntity> =
+        wineyardSubscriptionDao.getWineyardSubscriptions(wineyardId)
+    
     suspend fun subscribeToWineyard(userId: String, wineyardId: String): Result<WineyardSubscriptionEntity> {
         return try {
             // Check if subscription already exists

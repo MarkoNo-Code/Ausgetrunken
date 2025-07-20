@@ -31,12 +31,29 @@ class ProfileViewModel(
             val currentUser = authRepository.currentUser
             if (currentUser != null) {
                 try {
+                    println("🔍 ProfileViewModel: Loading profile for user ID: ${currentUser.id}")
+                    println("🔍 ProfileViewModel: User email: ${currentUser.email}")
+                    
                     // Load user info
                     val userEmail = currentUser.email ?: ""
                     val userName = currentUser.userMetadata?.get("full_name")?.toString() ?: "Wineyard Owner"
                     val profilePictureUrl = currentUser.userMetadata?.get("avatar_url")?.toString()
                     
+                    // First, sync wineyards from Supabase to ensure we have the latest data
+                    println("🔄 ProfileViewModel: Syncing wineyards from Supabase...")
+                    val syncResult = wineyardService.syncWineyards()
+                    if (syncResult.isFailure) {
+                        println("⚠️ ProfileViewModel: Sync failed: ${syncResult.exceptionOrNull()?.message}")
+                    } else {
+                        println("✅ ProfileViewModel: Sync completed successfully")
+                    }
+                    
                     wineyardService.getWineyardsByOwner(currentUser.id).collect { wineyards ->
+                        println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner ${currentUser.id}")
+                        wineyards.forEach { wineyard ->
+                            println("  - Wineyard: ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
+                        }
+                        
                         _uiState.value = _uiState.value.copy(
                             wineyards = wineyards,
                             canAddMoreWineyards = wineyards.size < 5,
@@ -47,12 +64,15 @@ class ProfileViewModel(
                         )
                     }
                 } catch (e: Exception) {
+                    println("❌ ProfileViewModel: Error loading profile: ${e.message}")
+                    e.printStackTrace()
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = "Failed to load profile: ${e.message}"
                     )
                 }
             } else {
+                println("❌ ProfileViewModel: User not authenticated")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = "User not authenticated"
@@ -67,6 +87,36 @@ class ProfileViewModel(
     
     fun refreshProfile() {
         loadUserProfile()
+    }
+    
+    fun debugWineyardData() {
+        viewModelScope.launch {
+            val currentUser = authRepository.currentUser
+            if (currentUser != null) {
+                println("🐛 DEBUG: Current user ID: ${currentUser.id}")
+                println("🐛 DEBUG: Current user email: ${currentUser.email}")
+                
+                // Force sync wineyards
+                println("🐛 DEBUG: Force syncing wineyards...")
+                val syncResult = wineyardService.syncWineyards()
+                println("🐛 DEBUG: Sync result: ${if (syncResult.isSuccess) "SUCCESS" else "FAILED - ${syncResult.exceptionOrNull()?.message}"}")
+                
+                // Check what wineyards are in local database
+                val allWineyards = wineyardService.getAllWineyards()
+                allWineyards.collect { wineyards ->
+                    println("🐛 DEBUG: Total wineyards in local DB: ${wineyards.size}")
+                    wineyards.forEach { wineyard ->
+                        println("🐛 DEBUG:   - ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
+                        println("🐛 DEBUG:     Owner matches current user: ${wineyard.ownerId == currentUser.id}")
+                    }
+                    
+                    // Check specifically for current user's wineyards
+                    val userWineyards = wineyards.filter { it.ownerId == currentUser.id }
+                    println("🐛 DEBUG: Wineyards for current user: ${userWineyards.size}")
+                    return@collect // Exit after first emission
+                }
+            }
+        }
     }
     
     fun showProfilePicturePicker() {

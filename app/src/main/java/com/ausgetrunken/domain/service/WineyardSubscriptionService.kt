@@ -41,4 +41,7 @@ class WineyardSubscriptionService(
         val subscription = subscriptionRepository.getSubscription(userId, wineyardId)
         return subscription?.isActive == true
     }
+    
+    suspend fun getActiveSubscriptionsForWineyard(wineyardId: String): List<WineyardSubscriptionEntity> =
+        subscriptionRepository.getActiveSubscriptionsForWineyard(wineyardId)
 }

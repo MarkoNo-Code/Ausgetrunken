@@ -10,13 +10,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.ausgetrunken.notifications.FCMTokenManager
 import com.ausgetrunken.ui.navigation.AusgetrunkenNavigation
 import com.ausgetrunken.ui.theme.AusgetrunkenTheme
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
+    private val fcmTokenManager: FCMTokenManager by inject()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Request notification permission and initialize FCM
+        fcmTokenManager.requestNotificationPermission(this)
+        
         setContent {
             AusgetrunkenTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -26,6 +34,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        fcmTokenManager.handlePermissionResult(requestCode, grantResults)
     }
 }
 

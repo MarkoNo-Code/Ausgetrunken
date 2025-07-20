@@ -9,6 +9,7 @@ data class UserEntity(
     val email: String,
     val userType: UserType,
     val profileCompleted: Boolean = false,
+    val fcmToken: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 

@@ -198,6 +198,7 @@ class AddWineyardViewModel(
                                 price = wineForm.price.toDouble(),
                                 discountedPrice = wineForm.discountedPrice.toDoubleOrNull(),
                                 stockQuantity = wineForm.stockQuantity.toInt(),
+                                fullStockQuantity = wineForm.stockQuantity.toInt(),
                                 lowStockThreshold = wineForm.lowStockThreshold.toIntOrNull() ?: 20,
                                 photos = wineForm.photos
                             )

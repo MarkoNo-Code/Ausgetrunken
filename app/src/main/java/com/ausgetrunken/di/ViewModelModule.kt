@@ -14,6 +14,7 @@ import com.ausgetrunken.ui.wines.EditWineViewModel
 import com.ausgetrunken.ui.customer.CustomerLandingViewModel
 import com.ausgetrunken.ui.customer.CustomerProfileViewModel
 import com.ausgetrunken.ui.customer.SubscriptionsViewModel
+import com.ausgetrunken.ui.notifications.NotificationManagementViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -32,4 +33,5 @@ val viewModelModule = module {
     viewModel { CustomerLandingViewModel(get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get()) }
     viewModel { SubscriptionsViewModel(get(), get(), get()) }
+    viewModel { NotificationManagementViewModel(get(), get(), get()) }
 }

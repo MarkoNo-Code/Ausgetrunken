@@ -2,10 +2,18 @@ package com.ausgetrunken.di
 
 import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.TokenStorage
+import com.ausgetrunken.data.repository.NotificationRepositoryImpl
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.data.repository.WineRepository
 import com.ausgetrunken.data.repository.WineyardRepository
 import com.ausgetrunken.data.repository.WineyardSubscriptionRepository
+import com.ausgetrunken.domain.repository.NotificationRepository
+import com.ausgetrunken.domain.service.NotificationService
+import com.ausgetrunken.domain.service.WineService
+import com.ausgetrunken.domain.service.WineyardSubscriptionService
+import com.ausgetrunken.domain.usecase.GetLowStockWinesUseCase
+import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
+import com.ausgetrunken.domain.usecase.SendNotificationUseCase
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -16,4 +24,10 @@ val repositoryModule = module {
     single { WineRepository(get(), get()) }
     single { WineyardRepository(get(), get()) }
     single { WineyardSubscriptionRepository(get(), get()) }
+    single<NotificationRepository> { NotificationRepositoryImpl(get()) }
+    
+    // Use Cases
+    factory { GetLowStockWinesUseCase(get<WineService>()) }
+    factory { GetWineyardSubscribersUseCase(get<WineyardSubscriptionService>()) }
+    factory { SendNotificationUseCase(get<NotificationService>()) }
 }

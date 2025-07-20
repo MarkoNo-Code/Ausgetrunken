@@ -16,7 +16,24 @@
       "Bash(npm:*)",
       "Bash(npx supabase db:*)",
       "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s emulator-5554 shell am start -n com.ausgetrunken/.MainActivity)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(adb:*)",
+      "Bash(where java)",
+      "Bash(gradlew.bat assembleDebug:*)",
+      "Bash(.gradlew build:*)",
+      "Bash(gradle build)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew build)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew compileDebugKotlin --stacktrace)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew compileDebugKotlin)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew compileDebugKotlin --continue)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew :app:compileDebugKotlin)",
+      "Bash(JAVA_HOME=\"/c/Program Files/Android/Android Studio/jbr\" ./gradlew assembleDebug)",
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/java.exe\" -version)",
+      "Bash(chmod:*)",
+      "Bash(./gradle-dev.sh setJavaHome:*)",
+      "Bash(./gradle-dev.sh:*)",
+      "Bash(source:*)"
     ],
     "deny": []
   }

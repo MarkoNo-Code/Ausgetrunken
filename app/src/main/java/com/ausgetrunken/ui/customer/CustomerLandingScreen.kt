@@ -10,8 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+// import androidx.compose.material3.pulltorefresh.PullToRefreshState
+// import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clipToBounds
 import kotlin.math.min
@@ -46,39 +46,39 @@ fun CustomerLandingScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val pullToRefreshState = rememberPullToRefreshState()
+    // val pullToRefreshState = rememberPullToRefreshState()
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    // Handle pull-to-refresh
-    LaunchedEffect(pullToRefreshState.isRefreshing) {
-        if (pullToRefreshState.isRefreshing) {
-            viewModel.refreshData()
-        }
-    }
+    // Handle pull-to-refresh - DISABLED
+    // LaunchedEffect(pullToRefreshState.isRefreshing) {
+    //     if (pullToRefreshState.isRefreshing) {
+    //         viewModel.refreshData()
+    //     }
+    // }
     
     // Handle loading completion with finished state and smooth dismissal
     var showFinished by remember { mutableStateOf(false) }
     var isDismissing by remember { mutableStateOf(false) }
     
     LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading && pullToRefreshState.isRefreshing && !showFinished) {
+        if (!uiState.isLoading && false && !showFinished) { // DISABLED pullToRefreshState.isRefreshing
             showFinished = true
             delay(1050) // Show "Finished" for 1.05 seconds
             isDismissing = true // Start smooth dismissal
             delay(400) // Wait for dismissal animation
             showFinished = false
             isDismissing = false
-            pullToRefreshState.endRefresh()
+            // pullToRefreshState.endRefresh() // DISABLED
         }
     }
     
-    // Reset states when starting new refresh
-    LaunchedEffect(pullToRefreshState.isRefreshing) {
-        if (pullToRefreshState.isRefreshing) {
-            showFinished = false
-            isDismissing = false
-        }
-    }
+    // Reset states when starting new refresh - DISABLED
+    // LaunchedEffect(pullToRefreshState.isRefreshing) {
+    //     if (pullToRefreshState.isRefreshing) {
+    //         showFinished = false
+    //         isDismissing = false
+    //     }
+    // }
     
     // Handle error messages
     LaunchedEffect(uiState.errorMessage) {
@@ -170,20 +170,20 @@ fun CustomerLandingScreen(
                 )
             }
             
-            // Pull-to-refresh accordion that follows finger movement
-            PullToRefreshAccordion(
-                pullToRefreshState = pullToRefreshState,
-                isLoading = uiState.isLoading,
-                showFinished = showFinished,
-                isDismissing = isDismissing
-            )
+            // Pull-to-refresh accordion - DISABLED
+            // PullToRefreshAccordion(
+            //     pullToRefreshState = pullToRefreshState,
+            //     isLoading = uiState.isLoading,
+            //     showFinished = showFinished,
+            //     isDismissing = isDismissing
+            // )
             
             // Content with pull-to-refresh (but hiding default indicator)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
-                    .nestedScroll(pullToRefreshState.nestedScrollConnection)
+                    // .nestedScroll(pullToRefreshState.nestedScrollConnection) // DISABLED
             ) {
                 when (uiState.currentTab) {
                     CustomerTab.WINEYARDS -> {
@@ -326,18 +326,18 @@ private fun WinesList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PullToRefreshAccordion(
-    pullToRefreshState: PullToRefreshState,
+    // pullToRefreshState: PullToRefreshState, // DISABLED
     isLoading: Boolean,
     showFinished: Boolean,
     isDismissing: Boolean
 ) {
     // Calculate the accordion height based on pull progress (slimmer)
     val maxHeight = 56.dp
-    val pullProgress = pullToRefreshState.progress
+    val pullProgress = 0f // pullToRefreshState.progress // DISABLED
     
     val targetHeight = when {
         isDismissing -> 0.dp // Smooth dismissal to 0
-        isLoading || pullToRefreshState.isRefreshing || showFinished -> maxHeight
+        isLoading || false || showFinished -> maxHeight // DISABLED pullToRefreshState.isRefreshing
         else -> (maxHeight * min(pullProgress, 1f))
     }
     
@@ -381,7 +381,7 @@ private fun PullToRefreshAccordion(
                             color = Color.White
                         )
                     }
-                    isLoading || pullToRefreshState.isRefreshing -> {
+                    isLoading || false -> { // DISABLED pullToRefreshState.isRefreshing
                         // Show loading indicator
                         Row(
                             horizontalArrangement = Arrangement.Center,

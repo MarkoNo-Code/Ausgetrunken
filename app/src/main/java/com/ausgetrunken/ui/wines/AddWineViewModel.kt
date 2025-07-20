@@ -182,7 +182,8 @@ class AddWineViewModel(
                     wineType = currentState.wineType!!,
                     vintage = currentState.vintage.toInt(),
                     price = currentState.price.toDouble(),
-                    stockQuantity = currentState.stockQuantity.toInt()
+                    stockQuantity = currentState.stockQuantity.toInt(),
+                    fullStockQuantity = currentState.stockQuantity.toInt()
                 )
                 
                 wineService.createWine(wine)

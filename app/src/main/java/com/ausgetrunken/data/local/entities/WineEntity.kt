@@ -3,6 +3,7 @@ package com.ausgetrunken.data.local.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
+import androidx.room.Index
 
 @Entity(
     tableName = "wines",
@@ -13,6 +14,9 @@ import androidx.room.ForeignKey
             childColumns = ["wineyardId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index(value = ["wineyardId"])
     ]
 )
 data class WineEntity(
@@ -25,6 +29,7 @@ data class WineEntity(
     val price: Double,
     val discountedPrice: Double? = null,
     val stockQuantity: Int,
+    val fullStockQuantity: Int,
     val lowStockThreshold: Int = 20,
     val photos: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),

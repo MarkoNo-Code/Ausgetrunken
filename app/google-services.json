@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "886146513910",
+    "project_id": "ausgetrunken-80479",
+    "storage_bucket": "ausgetrunken-80479.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:886146513910:android:3bcd05263ac981c2c2a5d7",
+        "android_client_info": {
+          "package_name": "com.ausgetrunken"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANT9zkbTyzVP0H9tcJY2zcklrIf2ae3OM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

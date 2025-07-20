@@ -3,6 +3,7 @@ package com.ausgetrunken.data.local.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
+import androidx.room.Index
 
 @Entity(
     tableName = "subscriptions",
@@ -19,6 +20,10 @@ import androidx.room.ForeignKey
             childColumns = ["wineId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        Index(value = ["userId"]),
+        Index(value = ["wineId"])
     ]
 )
 data class SubscriptionEntity(

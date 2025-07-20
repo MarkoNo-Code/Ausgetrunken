@@ -6,6 +6,7 @@ import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.functions.Functions
 import org.koin.dsl.module
 
 val supabaseModule = module {
@@ -14,4 +15,5 @@ val supabaseModule = module {
     single<Postgrest> { get<SupabaseClient>().pluginManager.getPluginOrNull(Postgrest) ?: error("Postgrest plugin not installed") }
     single<Storage> { get<SupabaseClient>().pluginManager.getPluginOrNull(Storage) ?: error("Storage plugin not installed") }
     single<Realtime> { get<SupabaseClient>().pluginManager.getPluginOrNull(Realtime) ?: error("Realtime plugin not installed") }
+    single<Functions> { get<SupabaseClient>().pluginManager.getPluginOrNull(Functions) ?: error("Functions plugin not installed") }
 }

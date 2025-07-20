@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AusgetrunkenNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Auth.route, // Start directly with Auth screen
+    startDestination: String = Screen.Splash.route, // Start with Splash screen for proper loading
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()

@@ -119,6 +119,7 @@ class WineRepository(
                     price = wineData.price,
                     discountedPrice = null, // Not in current database schema
                     stockQuantity = wineData.stockQuantity,
+                    fullStockQuantity = wineData.stockQuantity, // Use current stock as full stock
                     lowStockThreshold = 20, // Default value since not in database schema
                     photos = emptyList(), // Not in current database schema
                     createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
@@ -147,6 +148,7 @@ class WineRepository(
                     price = wineData.price,
                     discountedPrice = null, // Not in current database schema
                     stockQuantity = wineData.stockQuantity,
+                    fullStockQuantity = wineData.stockQuantity, // Use current stock as full stock
                     lowStockThreshold = 20, // Default value since not in database schema
                     photos = emptyList(), // Not in current database schema
                     createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),

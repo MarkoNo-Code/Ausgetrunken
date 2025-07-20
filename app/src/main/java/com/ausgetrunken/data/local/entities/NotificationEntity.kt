@@ -17,6 +17,8 @@ data class NotificationEntity(
 
 enum class NotificationType {
     LOW_STOCK,
+    CRITICAL_STOCK,
+    NEW_WINE,
     NEW_RELEASE,
     SPECIAL_OFFER,
     GENERAL

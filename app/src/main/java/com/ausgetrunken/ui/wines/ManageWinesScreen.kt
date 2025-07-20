@@ -13,8 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+// import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+// import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +43,7 @@ fun ManageWinesScreen(
     viewModel: ManageWinesViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val pullToRefreshState = rememberPullToRefreshState()
+    // val pullToRefreshState = rememberPullToRefreshState() // DISABLED
     val lifecycleOwner = LocalLifecycleOwner.current
     
     LaunchedEffect(wineyardId) {
@@ -63,19 +63,19 @@ fun ManageWinesScreen(
         }
     }
     
-    LaunchedEffect(uiState.isRefreshing) {
-        if (uiState.isRefreshing) {
-            pullToRefreshState.startRefresh()
-        } else {
-            pullToRefreshState.endRefresh()
-        }
-    }
+    // LaunchedEffect(uiState.isRefreshing) {
+    //     if (uiState.isRefreshing) {
+    //         pullToRefreshState.startRefresh()
+    //     } else {
+    //         pullToRefreshState.endRefresh()
+    //     }
+    // } // DISABLED
     
-    LaunchedEffect(pullToRefreshState.isRefreshing) {
-        if (pullToRefreshState.isRefreshing) {
-            viewModel.refreshWines()
-        }
-    }
+    // LaunchedEffect(pullToRefreshState.isRefreshing) {
+    //     if (pullToRefreshState.isRefreshing) {
+    //         viewModel.refreshWines()
+    //     }
+    // } // DISABLED
     
     Scaffold(
         topBar = {
@@ -103,7 +103,7 @@ fun ManageWinesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .nestedScroll(pullToRefreshState.nestedScrollConnection)
+                // .nestedScroll(pullToRefreshState.nestedScrollConnection) // DISABLED
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
@@ -159,10 +159,10 @@ fun ManageWinesScreen(
             }
             }
             
-            PullToRefreshContainer(
-                state = pullToRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
+            // PullToRefreshContainer(
+            //     state = pullToRefreshState,
+            //     modifier = Modifier.align(Alignment.TopCenter)
+            // ) // DISABLED
         }
     }
     
