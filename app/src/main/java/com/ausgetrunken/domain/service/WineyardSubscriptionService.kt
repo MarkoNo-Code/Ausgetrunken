@@ -38,10 +38,37 @@ class WineyardSubscriptionService(
         subscriptionRepository.syncSubscriptionsFromSupabase(userId)
     
     suspend fun isSubscribed(userId: String, wineyardId: String): Boolean {
-        val subscription = subscriptionRepository.getSubscription(userId, wineyardId)
-        return subscription?.isActive == true
+        return try {
+            println("🔍 WineyardSubscriptionService: Checking subscription status for user $userId, wineyard $wineyardId")
+            
+            // First try to get real-time data from Supabase
+            val supabaseResult = subscriptionRepository.getUserSubscriptionsFromSupabase(userId)
+            supabaseResult.onSuccess { subscriptions ->
+                val isSubscribed = subscriptions.any { it.wineyardId == wineyardId && it.isActive }
+                println("✅ WineyardSubscriptionService: Supabase check - isSubscribed: $isSubscribed")
+                return isSubscribed
+            }.onFailure { error ->
+                println("⚠️ WineyardSubscriptionService: Supabase check failed, falling back to local: ${error.message}")
+            }
+            
+            // Fallback to local database
+            val subscription = subscriptionRepository.getSubscription(userId, wineyardId)
+            val isSubscribed = subscription?.isActive == true
+            println("💾 WineyardSubscriptionService: Local check - isSubscribed: $isSubscribed")
+            isSubscribed
+        } catch (e: Exception) {
+            println("❌ WineyardSubscriptionService: Error checking subscription: ${e.message}")
+            false
+        }
     }
     
     suspend fun getActiveSubscriptionsForWineyard(wineyardId: String): List<WineyardSubscriptionEntity> =
         subscriptionRepository.getActiveSubscriptionsForWineyard(wineyardId)
+    
+    /**
+     * Fetches user subscriptions directly from Supabase (real-time, no local cache)
+     * Use this for subscription screens to ensure cross-device synchronization
+     */
+    suspend fun getUserSubscriptionsFromSupabase(userId: String): Result<List<WineyardSubscriptionEntity>> =
+        subscriptionRepository.getUserSubscriptionsFromSupabase(userId)
 }

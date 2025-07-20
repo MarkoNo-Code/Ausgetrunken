@@ -173,14 +173,33 @@ class CustomerLandingViewModel(
     private fun loadSubscriptions() {
         viewModelScope.launch {
             try {
+                println("🔄 CustomerLandingViewModel: Loading subscriptions...")
                 val currentUser = authRepository.currentUser
-                val userId = currentUser?.id ?: return@launch
+                val userId = currentUser?.id ?: return@launch.also {
+                    println("❌ CustomerLandingViewModel: No user found for subscription loading")
+                }
                 
-                val subscriptions = subscriptionService.getUserSubscriptions(userId).firstOrNull() ?: emptyList()
-                val subscribedIds = subscriptions.map { it.wineyardId }.toSet()
-                _uiState.value = _uiState.value.copy(subscribedWineyardIds = subscribedIds)
+                println("👤 CustomerLandingViewModel: Loading subscriptions for user: $userId")
+                
+                // First try to get real-time data from Supabase for cross-device sync
+                val supabaseResult = subscriptionService.getUserSubscriptionsFromSupabase(userId)
+                supabaseResult.onSuccess { supabaseSubscriptions ->
+                    println("✅ CustomerLandingViewModel: Loaded ${supabaseSubscriptions.size} subscriptions from Supabase")
+                    val subscribedIds = supabaseSubscriptions.map { it.wineyardId }.toSet()
+                    _uiState.value = _uiState.value.copy(subscribedWineyardIds = subscribedIds)
+                }.onFailure { supabaseError ->
+                    println("⚠️ CustomerLandingViewModel: Supabase sync failed, falling back to local: ${supabaseError.message}")
+                    
+                    // Fallback to local data if Supabase fails
+                    val localSubscriptions = subscriptionService.getUserSubscriptions(userId).firstOrNull() ?: emptyList()
+                    println("💾 CustomerLandingViewModel: Loaded ${localSubscriptions.size} subscriptions from local database")
+                    val subscribedIds = localSubscriptions.map { it.wineyardId }.toSet()
+                    _uiState.value = _uiState.value.copy(subscribedWineyardIds = subscribedIds)
+                }
             } catch (e: Exception) {
-                // Handle error silently for subscriptions
+                println("❌ CustomerLandingViewModel: Error loading subscriptions: ${e.message}")
+                e.printStackTrace()
+                // Handle error silently for subscriptions - don't crash the app
             }
         }
     }
@@ -188,8 +207,12 @@ class CustomerLandingViewModel(
     fun toggleWineyardSubscription(wineyardId: String) {
         viewModelScope.launch {
             try {
+                println("🔄 CustomerLandingViewModel: toggleWineyardSubscription called")
                 val currentUser = authRepository.currentUser
-                val userId = currentUser?.id ?: return@launch
+                val userId = currentUser?.id ?: return@launch.also {
+                    println("❌ CustomerLandingViewModel: No authenticated user found")
+                }
+                println("👤 CustomerLandingViewModel: User ID: $userId")
                 
                 // Add loading state
                 _uiState.value = _uiState.value.copy(
@@ -201,21 +224,26 @@ class CustomerLandingViewModel(
                 if (isCurrentlySubscribed) {
                     val result = subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
                     result.onSuccess {
-                        _uiState.value = _uiState.value.copy(
-                            subscribedWineyardIds = _uiState.value.subscribedWineyardIds - wineyardId
-                        )
+                        println("✅ CustomerLandingViewModel: Unsubscribe successful, refreshing subscription list")
+                        // Refresh subscriptions from Supabase to ensure consistency
+                        loadSubscriptions()
                     }.onFailure { error ->
+                        println("❌ CustomerLandingViewModel: Unsubscribe failed: ${error.message}")
+                        error.printStackTrace()
                         _uiState.value = _uiState.value.copy(
                             errorMessage = "Failed to unsubscribe: ${error.message}"
                         )
                     }
                 } else {
+                    println("🔄 CustomerLandingViewModel: Attempting to subscribe to wineyard $wineyardId")
                     val result = subscriptionService.subscribeToWineyard(userId, wineyardId)
                     result.onSuccess {
-                        _uiState.value = _uiState.value.copy(
-                            subscribedWineyardIds = _uiState.value.subscribedWineyardIds + wineyardId
-                        )
+                        println("✅ CustomerLandingViewModel: Subscription successful, refreshing subscription list")
+                        // Refresh subscriptions from Supabase to ensure consistency
+                        loadSubscriptions()
                     }.onFailure { error ->
+                        println("❌ CustomerLandingViewModel: Subscription failed: ${error.message}")
+                        error.printStackTrace()
                         _uiState.value = _uiState.value.copy(
                             errorMessage = "Failed to subscribe: ${error.message}"
                         )
