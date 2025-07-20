@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.ausgetrunken.notifications.FCMTokenManager
+import com.ausgetrunken.notifications.FCMTestUtils
 import com.ausgetrunken.ui.navigation.AusgetrunkenNavigation
 import com.ausgetrunken.ui.theme.AusgetrunkenTheme
 import org.koin.android.ext.android.inject
@@ -24,6 +25,9 @@ class MainActivity : ComponentActivity() {
         
         // Request notification permission and initialize FCM
         fcmTokenManager.requestNotificationPermission(this)
+        
+        // Debug FCM setup
+        FCMTestUtils.logCompleteDebugInfo(this)
         
         setContent {
             AusgetrunkenTheme {

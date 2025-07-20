@@ -24,6 +24,7 @@ import com.ausgetrunken.ui.wines.AddWineScreen
 import com.ausgetrunken.ui.wines.EditWineScreen
 import com.ausgetrunken.ui.customer.CustomerLandingScreen
 import com.ausgetrunken.ui.customer.CustomerProfileScreen
+import com.ausgetrunken.ui.notifications.NotificationManagementScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -197,6 +198,9 @@ fun AusgetrunkenNavigation(
                 onNavigateToCreateWineyard = {
                     navController.navigate(Screen.AddWineyard.route)
                 },
+                onNavigateToNotificationManagement = { wineyardId ->
+                    navController.navigate(Screen.NotificationManagement.createRoute(wineyardId))
+                },
                 onLogoutSuccess = {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(0) { inclusive = true }
@@ -270,6 +274,14 @@ fun AusgetrunkenNavigation(
                     // Navigate back to the wine detail screen
                     navController.popBackStack()
                 }
+            )
+        }
+        
+        composable(Screen.NotificationManagement.route) { backStackEntry ->
+            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            NotificationManagementScreen(
+                wineyardId = wineyardId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         

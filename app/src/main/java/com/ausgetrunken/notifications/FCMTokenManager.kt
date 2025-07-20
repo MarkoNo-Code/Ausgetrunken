@@ -93,20 +93,27 @@ class FCMTokenManager(
     fun updateTokenForUser(userId: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                println("🔧 FCMTokenManager: Starting token update for user: $userId")
                 val sharedPrefs = context.getSharedPreferences("ausgetrunken_prefs", Context.MODE_PRIVATE)
                 
                 // Check if there's a pending token to update
                 val pendingToken = sharedPrefs.getString("pending_fcm_token", null)
+                println("🔧 FCMTokenManager: Pending token found: ${pendingToken?.take(20)}...")
                 
                 val token = if (pendingToken != null) {
                     // Use pending token and clear it
                     sharedPrefs.edit().remove("pending_fcm_token").apply()
+                    println("🔧 FCMTokenManager: Using pending token")
                     pendingToken
                 } else {
                     // Get fresh token
-                    FirebaseMessaging.getInstance().token.await()
+                    println("🔧 FCMTokenManager: Getting fresh FCM token...")
+                    val freshToken = FirebaseMessaging.getInstance().token.await()
+                    println("🔧 FCMTokenManager: Fresh token retrieved: ${freshToken.take(20)}...")
+                    freshToken
                 }
                 
+                println("🔧 FCMTokenManager: Updating token in Supabase for user: $userId")
                 notificationService.updateUserFcmToken(userId, token)
                 
                 // Store current user ID for future token updates
@@ -114,9 +121,12 @@ class FCMTokenManager(
                     .putString("current_user_id", userId)
                     .apply()
                 
-                Log.d(TAG, "FCM token updated for user: $userId")
+                println("✅ FCMTokenManager: FCM token updated successfully for user: $userId")
+                Log.d(TAG, "FCM token updated for user: $userId, token: ${token.take(20)}...")
             } catch (e: Exception) {
+                println("❌ FCMTokenManager: Failed to update FCM token for user: $userId - Error: ${e.message}")
                 Log.e(TAG, "Failed to update FCM token for user: $userId", e)
+                e.printStackTrace()
             }
         }
     }

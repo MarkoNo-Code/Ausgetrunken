@@ -5,13 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.domain.service.AuthService
+import com.ausgetrunken.notifications.FCMTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val fcmTokenManager: FCMTokenManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -37,6 +39,9 @@ class AuthViewModel(
                         authService.checkUserType(user.id)
                             .onSuccess { userType ->
                                 println("✅ AuthViewModel: User type = $userType")
+                                
+                                // Update FCM token for the restored session user
+                                fcmTokenManager.updateTokenForUser(user.id)
                                 
                                 // Ensure minimum display time for animation
                                 val elapsedTime = System.currentTimeMillis() - startTime
@@ -188,6 +193,9 @@ class AuthViewModel(
                 .onSuccess { user ->
                     authService.checkUserType(user.id)
                         .onSuccess { userType ->
+                            // Update FCM token for the logged-in user
+                            fcmTokenManager.updateTokenForUser(user.id)
+                            
                             _uiState.value = currentState.copy(
                                 isLoading = false,
                                 isLoginSuccessful = true,

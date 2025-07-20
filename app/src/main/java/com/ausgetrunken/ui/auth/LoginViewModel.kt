@@ -3,13 +3,15 @@ package com.ausgetrunken.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.domain.service.AuthService
+import com.ausgetrunken.notifications.FCMTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val fcmTokenManager: FCMTokenManager
 ) : ViewModel() {
     
     // Start with empty fields - email will be set from navigation if needed
@@ -49,8 +51,17 @@ class LoginViewModel(
             
             authService.signIn(currentState.email, currentState.password)
                 .onSuccess { user ->
+                    println("✅ LoginViewModel: Login successful for user: ${user.id}")
+                    println("✅ LoginViewModel: User email: ${user.email}")
+                    
                     authService.checkUserType(user.id)
                         .onSuccess { userType ->
+                            println("✅ LoginViewModel: User type determined: $userType")
+                            
+                            // Update FCM token for the logged-in user
+                            println("🔧 LoginViewModel: Triggering FCM token update for user: ${user.id}")
+                            fcmTokenManager.updateTokenForUser(user.id)
+                            
                             _uiState.value = currentState.copy(
                                 isLoading = false,
                                 isLoginSuccessful = true,

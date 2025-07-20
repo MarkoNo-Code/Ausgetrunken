@@ -29,7 +29,9 @@ serve(async (req) => {
     )
 
     const payload: NotificationPayload = await req.json()
+    console.log('🚀 === NEW NOTIFICATION REQUEST ===')
     console.log('Notification payload received:', payload)
+    console.log('🚀 ===================================')
 
     // Get Firebase service account from environment
     const firebaseServiceAccountB64 = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_B64')
@@ -49,8 +51,11 @@ serve(async (req) => {
 
     if (payload.targetSpecificUsers && payload.targetSpecificUsers.length > 0) {
       targetUserIds = payload.targetSpecificUsers
+      console.log(`🔍 Using targetSpecificUsers: ${targetUserIds.length} users`)
     } else {
       const subscriptionColumn = getSubscriptionColumn(payload.notificationType)
+      console.log(`🔍 Notification type: ${payload.notificationType} -> Column: ${subscriptionColumn}`)
+      console.log(`🔍 Querying subscribers for wineyard: ${payload.wineyardId}`)
       
       const { data: subscribers, error: subscribersError } = await supabaseClient
         .from('wineyard_subscriptions')
@@ -58,6 +63,10 @@ serve(async (req) => {
         .eq('wineyard_id', payload.wineyardId)
         .eq('is_active', true)
         .eq(subscriptionColumn, true)
+
+      console.log(`🔍 Subscription query result: ${subscribers?.length || 0} subscribers found`)
+      console.log(`🔍 Subscription query error:`, subscribersError)
+      console.log(`🔍 Subscribers data:`, subscribers)
 
       if (subscribersError) {
         throw new Error(`Failed to fetch subscribers: ${subscribersError.message}`)
@@ -81,17 +90,26 @@ serve(async (req) => {
     }
 
     // Get FCM tokens for target users
+    console.log(`🔍 Getting FCM tokens for ${targetUserIds.length} target users:`, targetUserIds)
+    
     const { data: users, error: usersError } = await supabaseClient
       .from('user_profiles')
       .select('id, fcm_token')
       .in('id', targetUserIds)
-      .not('fcm_token', 'is', null)
+
+    console.log(`🔍 FCM token query result: ${users?.length || 0} users with tokens`)
+    console.log(`🔍 FCM token query error:`, usersError)
+    console.log(`🔍 Users with FCM tokens:`, users)
 
     if (usersError) {
       throw new Error(`Failed to fetch user FCM tokens: ${usersError.message}`)
     }
 
-    const fcmTokens = users?.map(user => user.fcm_token).filter(token => token) || []
+    console.log(`🔍 Raw users data:`, users?.map(u => ({ id: u.id, hasToken: !!u.fcm_token, tokenLength: u.fcm_token?.length })))
+    
+    const fcmTokens = users?.map(user => user.fcm_token).filter(token => token && token.trim() !== '') || []
+    console.log(`🔍 Final FCM tokens count: ${fcmTokens.length}`)
+    console.log(`🔍 Valid FCM tokens:`, fcmTokens.map(token => `${token.substring(0, 20)}...`))
 
     if (fcmTokens.length === 0) {
       return new Response(
@@ -107,12 +125,23 @@ serve(async (req) => {
       )
     }
 
+    // Get wineyard owner to use as sender_id
+    const { data: wineyard, error: wineyardError } = await supabaseClient
+      .from('wineyards')
+      .select('owner_id')
+      .eq('id', payload.wineyardId)
+      .single()
+
+    if (wineyardError) {
+      console.error('Failed to get wineyard owner:', wineyardError)
+    }
+
     // Create notification record in database
     const { data: notificationRecord, error: notificationError } = await supabaseClient
       .from('notifications')
       .insert({
         wineyard_id: payload.wineyardId,
-        sender_id: payload.wineyardId,
+        sender_id: wineyard?.owner_id || payload.wineyardId, // Use owner_id if available, fallback to wineyardId
         notification_type: payload.notificationType,
         title: payload.title,
         message: payload.message,
@@ -189,7 +218,10 @@ serve(async (req) => {
       if (deliveryRecords.length > 0) {
         const { error: deliveryError } = await supabaseClient
           .from('notification_deliveries')
-          .insert(deliveryRecords)
+          .upsert(deliveryRecords, { 
+            onConflict: 'notification_id,user_id',
+            ignoreDuplicates: true 
+          })
 
         if (deliveryError) {
           console.error('Failed to create delivery records:', deliveryError)
@@ -237,10 +269,17 @@ async function getFirebaseAccessToken(serviceAccount: any): Promise<string> {
     exp: exp,
   }
 
-  // Import private key
+  // Import private key - convert PEM to binary
+  const privateKeyPem = serviceAccount.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s/g, '')
+  
+  const privateKeyBinary = Uint8Array.from(atob(privateKeyPem), c => c.charCodeAt(0))
+  
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
-    new TextEncoder().encode(serviceAccount.private_key),
+    privateKeyBinary,
     {
       name: 'RSASSA-PKCS1-v1_5',
       hash: 'SHA-256',

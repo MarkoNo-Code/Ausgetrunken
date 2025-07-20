@@ -130,17 +130,26 @@ class NotificationManagementViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
+                println("🔍 NotificationViewModel: Sending notification for wine: ${wine.name}")
+                println("🔍 NotificationViewModel: Wine ID: ${wine.id}")
+                println("🔍 NotificationViewModel: Wine Wineyard ID: ${wine.wineyardId}")
+                println("🔍 NotificationViewModel: Current Wineyard ID: $currentWineyardId")
+                
                 val result = sendNotificationUseCase.sendLowStockNotification(
-                    wineyardId = currentWineyardId,
+                    wineyardId = wine.wineyardId,
                     wine = wine
                 )
 
+                println("🔍 NotificationViewModel: Notification result - Success: ${result.success}, Sent: ${result.sentCount}")
+                
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     message = "Sent notification for ${wine.name} to ${result.sentCount} subscribers"
                 )
 
             } catch (e: Exception) {
+                println("❌ NotificationViewModel: Exception sending notification: ${e.message}")
+                e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     message = "Failed to send notification: ${e.message}"
@@ -155,7 +164,7 @@ class NotificationManagementViewModel(
 
             try {
                 val result = sendNotificationUseCase.sendCriticalStockNotification(
-                    wineyardId = currentWineyardId,
+                    wineyardId = wine.wineyardId,
                     wine = wine
                 )
 

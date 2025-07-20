@@ -19,10 +19,10 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val viewModelModule = module {
-    viewModel { AuthViewModel(get()) }
-    viewModel { LoginViewModel(get()) }
+    viewModel { AuthViewModel(get(), get()) }
+    viewModel { LoginViewModel(get(), get()) }
     viewModel { RegisterViewModel(get()) }
-    viewModel { ProfileViewModel(get(), get(), get()) }
+    viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { SplashViewModel(get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
     viewModel { WineyardDetailViewModel(get(), get(), get(), get()) }

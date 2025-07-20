@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -42,7 +43,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 // import androidx.compose.material3.pulltorefresh.PullToRefreshState
 // import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -73,12 +76,14 @@ import org.koin.androidx.compose.koinViewModel
 fun ProfileScreen(
     onNavigateToWineyardDetail: (String) -> Unit,
     onNavigateToCreateWineyard: () -> Unit,
+    onNavigateToNotificationManagement: (String) -> Unit,
     onLogoutSuccess: () -> Unit,
     newWineyardId: String? = null,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     // val pullToRefreshState = rememberPullToRefreshState() // DISABLED
     
     // Handle pull-to-refresh - DISABLED
@@ -151,6 +156,27 @@ fun ProfileScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    // Notification Center Button (only show if user has wineyards)
+                    if (uiState.wineyards.isNotEmpty()) {
+                        IconButton(
+                            onClick = { 
+                                // Find the wineyard with the most subscribers for notifications
+                                coroutineScope.launch {
+                                    val preferredWineyardId = viewModel.findWineyardWithMostSubscribers()
+                                    if (preferredWineyardId != null) {
+                                        onNavigateToNotificationManagement(preferredWineyardId)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = "Notification Center",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    
                     IconButton(
                         onClick = { viewModel.logout() },
                         enabled = !uiState.isLoggingOut
@@ -279,6 +305,19 @@ fun ProfileScreen(
                                     )
                                 ) {
                                     Text("🐛 Debug Wineyards")
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // FCM Debug Button (Development only)
+                                OutlinedButton(
+                                    onClick = { viewModel.debugFCMToken() },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.tertiary
+                                    )
+                                ) {
+                                    Text("🔧 Debug FCM Token")
                                 }
                                 
                                 Spacer(modifier = Modifier.height(8.dp))

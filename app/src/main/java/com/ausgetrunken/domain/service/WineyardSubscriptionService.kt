@@ -66,6 +66,13 @@ class WineyardSubscriptionService(
         subscriptionRepository.getActiveSubscriptionsForWineyard(wineyardId)
     
     /**
+     * Fetches all active subscriptions for a wineyard directly from Supabase
+     * Use this for notification center to get real-time subscriber count
+     */
+    suspend fun getActiveSubscriptionsForWineyardFromSupabase(wineyardId: String): Result<List<WineyardSubscriptionEntity>> =
+        subscriptionRepository.getActiveSubscriptionsForWineyardFromSupabase(wineyardId)
+    
+    /**
      * Fetches user subscriptions directly from Supabase (real-time, no local cache)
      * Use this for subscription screens to ensure cross-device synchronization
      */

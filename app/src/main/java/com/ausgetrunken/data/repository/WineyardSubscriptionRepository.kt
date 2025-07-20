@@ -394,4 +394,45 @@ class WineyardSubscriptionRepository(
             Result.failure(e)
         }
     }
+    
+    /**
+     * Fetches all active subscriptions for a wineyard directly from Supabase
+     * Use this for notification center to get real-time subscriber count
+     */
+    suspend fun getActiveSubscriptionsForWineyardFromSupabase(wineyardId: String): Result<List<WineyardSubscriptionEntity>> {
+        return try {
+            println("🔄 WineyardSubscriptionRepository: Fetching real-time subscribers for wineyard: $wineyardId")
+            
+            val response = postgrest.from("wineyard_subscriptions")
+                .select {
+                    filter {
+                        eq("wineyard_id", wineyardId)
+                        eq("is_active", true) // Only fetch active subscriptions
+                    }
+                }
+                .decodeList<WineyardSubscription>()
+            
+            val subscriptions = response.map { remote ->
+                WineyardSubscriptionEntity(
+                    id = remote.id,
+                    userId = remote.userId,
+                    wineyardId = remote.wineyardId,
+                    isActive = remote.isActive,
+                    lowStockNotifications = remote.lowStockNotifications,
+                    newReleaseNotifications = remote.newReleaseNotifications,
+                    specialOfferNotifications = remote.specialOfferNotifications,
+                    generalNotifications = remote.generalNotifications,
+                    createdAt = remote.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                    updatedAt = remote.updatedAt.toLongOrNull() ?: System.currentTimeMillis()
+                )
+            }
+            
+            println("✅ WineyardSubscriptionRepository: Found ${subscriptions.size} active subscribers for wineyard $wineyardId")
+            Result.success(subscriptions)
+        } catch (e: Exception) {
+            println("❌ WineyardSubscriptionRepository: Failed to fetch wineyard subscribers: ${e.message}")
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 }

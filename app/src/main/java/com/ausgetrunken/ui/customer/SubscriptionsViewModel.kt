@@ -40,33 +40,45 @@ class SubscriptionsViewModel(
                     return@launch
                 }
                 
-                // Sync subscriptions from Supabase first
-                subscriptionService.syncSubscriptions(currentUser.id)
+                println("🔄 SubscriptionsViewModel: Loading real-time subscriptions for user: ${currentUser.id}")
                 
-                // Load subscriptions with wineyard details
-                subscriptionService.getUserSubscriptions(currentUser.id).collect { subscriptions ->
-                    val subscriptionsWithWineyards = subscriptions.map { subscription ->
-                        val wineyard = wineyardRepository.getWineyardById(subscription.wineyardId).first()
-                        SubscriptionWithWineyard(
-                            id = subscription.id,
-                            wineyardId = subscription.wineyardId,
-                            wineyardName = wineyard?.name ?: "Unknown Wineyard",
-                            wineyardAddress = wineyard?.address ?: "",
-                            lowStockNotifications = subscription.lowStockNotifications,
-                            newReleaseNotifications = subscription.newReleaseNotifications,
-                            specialOfferNotifications = subscription.specialOfferNotifications,
-                            generalNotifications = subscription.generalNotifications,
-                            createdAt = subscription.createdAt,
-                            formattedDate = formatDate(subscription.createdAt)
+                // Fetch subscriptions directly from Supabase (real-time, no local cache)
+                subscriptionService.getUserSubscriptionsFromSupabase(currentUser.id)
+                    .onSuccess { subscriptions ->
+                        println("📊 SubscriptionsViewModel: Found ${subscriptions.size} real-time subscriptions")
+                        
+                        val subscriptionsWithWineyards = subscriptions.map { subscription ->
+                            val wineyard = wineyardRepository.getWineyardById(subscription.wineyardId).first()
+                            println("🔗 SubscriptionsViewModel: Processing subscription to wineyard: ${subscription.wineyardId} -> ${wineyard?.name ?: "Unknown"}")
+                            SubscriptionWithWineyard(
+                                id = subscription.id,
+                                wineyardId = subscription.wineyardId,
+                                wineyardName = wineyard?.name ?: "Unknown Wineyard",
+                                wineyardAddress = wineyard?.address ?: "",
+                                lowStockNotifications = subscription.lowStockNotifications,
+                                newReleaseNotifications = subscription.newReleaseNotifications,
+                                specialOfferNotifications = subscription.specialOfferNotifications,
+                                generalNotifications = subscription.generalNotifications,
+                                createdAt = subscription.createdAt,
+                                formattedDate = formatDate(subscription.createdAt)
+                            )
+                        }
+                        
+                        println("✅ SubscriptionsViewModel: Real-time subscriptions loaded successfully")
+                        _uiState.value = _uiState.value.copy(
+                            subscriptions = subscriptionsWithWineyards,
+                            isLoading = false
                         )
                     }
-                    
-                    _uiState.value = _uiState.value.copy(
-                        subscriptions = subscriptionsWithWineyards,
-                        isLoading = false
-                    )
-                }
+                    .onFailure { error ->
+                        println("❌ SubscriptionsViewModel: Failed to load real-time subscriptions: ${error.message}")
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to load subscriptions: ${error.message}"
+                        )
+                    }
             } catch (e: Exception) {
+                println("❌ SubscriptionsViewModel: Exception during real-time subscription loading: ${e.message}")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = "Failed to load subscriptions: ${e.message}"
@@ -86,13 +98,22 @@ class SubscriptionsViewModel(
                     return@launch
                 }
                 
+                println("🔄 SubscriptionsViewModel: Unsubscribing from wineyard: $wineyardId")
+                
                 subscriptionService.unsubscribeFromWineyard(currentUser.id, wineyardId)
+                    .onSuccess {
+                        println("✅ SubscriptionsViewModel: Successfully unsubscribed from wineyard: $wineyardId")
+                        // Reload subscriptions immediately to reflect changes across devices
+                        loadSubscriptions()
+                    }
                     .onFailure { error ->
+                        println("❌ SubscriptionsViewModel: Failed to unsubscribe: ${error.message}")
                         _uiState.value = _uiState.value.copy(
                             errorMessage = "Failed to unsubscribe: ${error.message}"
                         )
                     }
             } catch (e: Exception) {
+                println("❌ SubscriptionsViewModel: Exception during unsubscribe: ${e.message}")
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "Failed to unsubscribe: ${e.message}"
                 )
@@ -117,6 +138,8 @@ class SubscriptionsViewModel(
                     return@launch
                 }
                 
+                println("🔄 SubscriptionsViewModel: Updating notification preferences for wineyard: $wineyardId")
+                
                 subscriptionService.updateNotificationPreferences(
                     currentUser.id,
                     wineyardId,
@@ -124,12 +147,18 @@ class SubscriptionsViewModel(
                     newRelease,
                     specialOffer,
                     general
-                ).onFailure { error ->
+                ).onSuccess {
+                    println("✅ SubscriptionsViewModel: Successfully updated notification preferences for wineyard: $wineyardId")
+                    // Reload subscriptions to reflect changes across devices
+                    loadSubscriptions()
+                }.onFailure { error ->
+                    println("❌ SubscriptionsViewModel: Failed to update notification preferences: ${error.message}")
                     _uiState.value = _uiState.value.copy(
                         errorMessage = "Failed to update preferences: ${error.message}"
                     )
                 }
             } catch (e: Exception) {
+                println("❌ SubscriptionsViewModel: Exception during notification preferences update: ${e.message}")
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "Failed to update preferences: ${e.message}"
                 )

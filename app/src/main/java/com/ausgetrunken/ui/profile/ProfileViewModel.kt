@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.domain.service.AuthService
+import com.ausgetrunken.domain.service.NotificationService
 import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
+import com.ausgetrunken.notifications.FCMTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +17,10 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val authRepository: SupabaseAuthRepository,
     private val wineyardService: WineyardService,
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val notificationService: NotificationService,
+    private val fcmTokenManager: FCMTokenManager,
+    private val getWineyardSubscribersUseCase: GetWineyardSubscribersUseCase
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -87,6 +93,38 @@ class ProfileViewModel(
     
     fun refreshProfile() {
         loadUserProfile()
+    }
+    
+    /**
+     * Finds the wineyard with the most active subscribers for notification management.
+     * Returns the first wineyard if none have subscribers or if there's an error.
+     */
+    suspend fun findWineyardWithMostSubscribers(): String? {
+        val wineyards = _uiState.value.wineyards
+        if (wineyards.isEmpty()) return null
+        
+        println("🔍 ProfileViewModel: Finding wineyard with most subscribers from ${wineyards.size} wineyards")
+        
+        var bestWineyard: String? = null
+        var maxSubscribers = 0
+        
+        for (wineyard in wineyards) {
+            try {
+                val subscriberInfo = getWineyardSubscribersUseCase(wineyard.id)
+                println("📊 ProfileViewModel: Wineyard ${wineyard.name} (${wineyard.id}) has ${subscriberInfo.totalSubscribers} subscribers")
+                
+                if (subscriberInfo.totalSubscribers > maxSubscribers) {
+                    maxSubscribers = subscriberInfo.totalSubscribers
+                    bestWineyard = wineyard.id
+                }
+            } catch (e: Exception) {
+                println("⚠️ ProfileViewModel: Error checking subscribers for wineyard ${wineyard.id}: ${e.message}")
+            }
+        }
+        
+        val result = bestWineyard ?: wineyards.first().id
+        println("✅ ProfileViewModel: Selected wineyard for notifications: $result (subscribers: $maxSubscribers)")
+        return result
     }
     
     fun debugWineyardData() {
@@ -197,6 +235,66 @@ class ProfileViewModel(
                     isDeletingAccount = false,
                     errorMessage = "Unexpected error during account deletion: ${e.message}"
                 )
+            }
+        }
+    }
+    
+    fun debugFCMToken() {
+        viewModelScope.launch {
+            val currentUser = authRepository.currentUser
+            if (currentUser != null) {
+                println("🔍 DEBUG FCM: Starting FCM token debug for user: ${currentUser.id}")
+                println("🔍 DEBUG FCM: User email: ${currentUser.email}")
+                
+                try {
+                    // 1. Check what token is stored in Supabase
+                    val storedToken = notificationService.getUserFcmToken(currentUser.id)
+                    println("🔍 DEBUG FCM: Stored token in Supabase: ${storedToken?.take(20) ?: "NULL"}...")
+                    
+                    if (storedToken != null) {
+                        println("🔍 DEBUG FCM: Full token length: ${storedToken.length}")
+                        println("🔍 DEBUG FCM: Token format check: ${if (storedToken.contains(":")) "Valid format (contains :)" else "Invalid format (no :)"}")
+                        
+                        // Check if token starts with valid FCM token pattern
+                        val isValidFormat = storedToken.matches(Regex("^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$"))
+                        println("🔍 DEBUG FCM: Token validation: ${if (isValidFormat) "VALID" else "INVALID"}")
+                        
+                        // Additional FCM token checks
+                        println("🔍 DEBUG FCM: Token starts with: ${storedToken.take(10)}")
+                        println("🔍 DEBUG FCM: Token contains APA91b: ${storedToken.contains("APA91b")}")
+                        println("🔍 DEBUG FCM: Full token: $storedToken")
+                    }
+                    
+                    // 2. Force update the FCM token
+                    println("🔍 DEBUG FCM: Force updating FCM token...")
+                    fcmTokenManager.updateTokenForUser(currentUser.id)
+                    
+                    // 3. Check again after update
+                    kotlinx.coroutines.delay(3000) // Wait for update to complete
+                    val updatedToken = notificationService.getUserFcmToken(currentUser.id)
+                    println("🔍 DEBUG FCM: Updated token in Supabase: ${updatedToken?.take(20) ?: "NULL"}...")
+                    
+                    // 4. Compare tokens
+                    if (storedToken != updatedToken) {
+                        println("✅ DEBUG FCM: Token was updated successfully!")
+                    } else {
+                        println("⚠️ DEBUG FCM: Token unchanged - might be the same or update failed")
+                    }
+                    
+                    // 5. Log token details for edge function debugging
+                    if (updatedToken != null) {
+                        println("🔍 DEBUG FCM: For Edge Function debugging:")
+                        println("   - User ID: ${currentUser.id}")
+                        println("   - Token prefix: ${updatedToken.take(30)}...")
+                        println("   - Token suffix: ...${updatedToken.takeLast(10)}")
+                    }
+                    
+                } catch (e: Exception) {
+                    println("❌ DEBUG FCM: Error during debug: ${e.message}")
+                    e.printStackTrace()
+                }
+            } else {
+                println("❌ DEBUG FCM: No user logged in")
             }
         }
     }

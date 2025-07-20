@@ -33,7 +33,9 @@
       "Bash(chmod:*)",
       "Bash(./gradle-dev.sh setJavaHome:*)",
       "Bash(./gradle-dev.sh:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(call project-docssetup-env.bat)",
+      "Bash(export:*)"
     ],
     "deny": []
   }

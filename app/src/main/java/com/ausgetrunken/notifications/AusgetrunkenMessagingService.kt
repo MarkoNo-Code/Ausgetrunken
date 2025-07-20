@@ -36,18 +36,36 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        println("🔔 FCM: Message received from: ${remoteMessage.from}")
         Log.d(TAG, "From: ${remoteMessage.from}")
+        
+        println("🔔 FCM: Full message details:")
+        println("   - Message ID: ${remoteMessage.messageId}")
+        println("   - Data payload: ${remoteMessage.data}")
+        println("   - Notification: ${remoteMessage.notification}")
 
         // Handle data payload
         if (remoteMessage.data.isNotEmpty()) {
+            println("🔔 FCM: Processing data payload: ${remoteMessage.data}")
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
             handleDataMessage(remoteMessage.data)
         }
 
         // Handle notification payload
         remoteMessage.notification?.let {
+            println("🔔 FCM: Processing notification payload:")
+            println("   - Title: ${it.title}")
+            println("   - Body: ${it.body}")
             Log.d(TAG, "Message Notification Body: ${it.body}")
             showNotification(it.title, it.body, remoteMessage.data)
+        }
+        
+        // If no notification payload, create one from data
+        if (remoteMessage.notification == null && remoteMessage.data.isNotEmpty()) {
+            println("🔔 FCM: No notification payload, creating from data")
+            val title = remoteMessage.data["title"] ?: "Ausgetrunken"
+            val body = remoteMessage.data["message"] ?: "You have a new notification"
+            showNotification(title, body, remoteMessage.data)
         }
     }
 
@@ -102,32 +120,53 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
     }
 
     private fun showNotification(title: String?, body: String?, data: Map<String, String>) {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        println("🔔 FCM: showNotification called")
+        println("   - Title: $title")
+        println("   - Body: $body")
+        println("   - Data: $data")
+        
+        try {
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                
+                // Add data to intent if needed
+                data["wineyardId"]?.let { putExtra("wineyardId", it) }
+                data["wineId"]?.let { putExtra("wineId", it) }
+                data["notificationType"]?.let { putExtra("notificationType", it) }
+            }
+
+            val pendingIntent: PendingIntent = PendingIntent.getActivity(
+                this, 
+                0, 
+                intent, 
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            println("🔔 FCM: Creating notification with channel: $CHANNEL_ID")
+            val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(title ?: "Ausgetrunken")
+                .setContentText(body ?: "You have a new notification")
+                .setSmallIcon(android.R.drawable.ic_dialog_info) // Use system icon as fallback
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH) // Higher priority
+                .setDefaults(NotificationCompat.DEFAULT_ALL) // Sound, vibration, lights
+
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             
-            // Add data to intent if needed
-            data["wineyardId"]?.let { putExtra("wineyardId", it) }
-            data["wineId"]?.let { putExtra("wineId", it) }
-            data["notificationType"]?.let { putExtra("notificationType", it) }
+            // Check if notifications are enabled
+            if (notificationManager.areNotificationsEnabled()) {
+                println("🔔 FCM: Notifications are enabled, showing notification")
+                notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+                println("✅ FCM: Notification displayed successfully")
+            } else {
+                println("❌ FCM: Notifications are disabled for this app")
+            }
+            
+        } catch (e: Exception) {
+            println("❌ FCM: Error showing notification: ${e.message}")
+            Log.e(TAG, "Failed to show notification", e)
         }
-
-        val pendingIntent: PendingIntent = PendingIntent.getActivity(
-            this, 
-            0, 
-            intent, 
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(title ?: "Ausgetrunken")
-            .setContentText(body ?: "You have a new notification")
-            .setSmallIcon(R.drawable.ic_wine_glass)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
     }
 
     private fun createNotificationChannel() {
