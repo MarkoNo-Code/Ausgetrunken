@@ -1,5 +1,6 @@
 package com.ausgetrunken.data.repository
 
+import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.dao.WineyardDao
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.remote.model.Wineyard
@@ -12,8 +13,9 @@ import java.time.format.DateTimeFormatter
 
 class WineyardRepository(
     private val wineyardDao: WineyardDao,
-    private val postgrest: Postgrest
-) {
+    private val postgrest: Postgrest,
+    authRepository: SupabaseAuthRepository
+) : BaseRepository(authRepository) {
     fun getAllWineyards(): Flow<List<WineyardEntity>> = wineyardDao.getAllWineyards()
     
     fun getWineyardsByOwner(ownerId: String): Flow<List<WineyardEntity>> = 
@@ -26,67 +28,73 @@ class WineyardRepository(
         wineyardDao.getWineyardsPaginated(limit, offset)
 
     suspend fun createWineyard(wineyard: WineyardEntity): Result<WineyardEntity> {
-        return try {
-            wineyardDao.insertWineyard(wineyard)
-            
-            postgrest.from("wineyards")
-                .insert(
-                    buildJsonObject {
-                        put("id", wineyard.id)
-                        put("name", wineyard.name)
-                        put("description", wineyard.description)
-                        put("owner_id", wineyard.ownerId)
-                        put("address", wineyard.address)
-                        put("latitude", wineyard.latitude)
-                        put("longitude", wineyard.longitude)
-                        put("created_at", Instant.now().toString()) // Use current time in ISO format
-                        put("updated_at", Instant.now().toString()) // Use current time in ISO format
-                    }
-                )
-            Result.success(wineyard)
-        } catch (e: Exception) {
-            Result.failure(e)
+        return withSessionValidation {
+            try {
+                wineyardDao.insertWineyard(wineyard)
+                
+                postgrest.from("wineyards")
+                    .insert(
+                        buildJsonObject {
+                            put("id", wineyard.id)
+                            put("name", wineyard.name)
+                            put("description", wineyard.description)
+                            put("owner_id", wineyard.ownerId)
+                            put("address", wineyard.address)
+                            put("latitude", wineyard.latitude)
+                            put("longitude", wineyard.longitude)
+                            put("created_at", Instant.now().toString()) // Use current time in ISO format
+                            put("updated_at", Instant.now().toString()) // Use current time in ISO format
+                        }
+                    )
+                Result.success(wineyard)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 
     suspend fun updateWineyard(wineyard: WineyardEntity): Result<Unit> {
-        return try {
-            wineyardDao.updateWineyard(wineyard)
-            
-            postgrest.from("wineyards")
-                .update(
-                    buildJsonObject {
-                        put("name", wineyard.name)
-                        put("description", wineyard.description)
-                        put("address", wineyard.address)
-                        put("latitude", wineyard.latitude)
-                        put("longitude", wineyard.longitude)
-                        put("updated_at", Instant.now().toString()) // Use current time in ISO format
+        return withSessionValidation {
+            try {
+                wineyardDao.updateWineyard(wineyard)
+                
+                postgrest.from("wineyards")
+                    .update(
+                        buildJsonObject {
+                            put("name", wineyard.name)
+                            put("description", wineyard.description)
+                            put("address", wineyard.address)
+                            put("latitude", wineyard.latitude)
+                            put("longitude", wineyard.longitude)
+                            put("updated_at", Instant.now().toString()) // Use current time in ISO format
+                        }
+                    ) {
+                        filter {
+                            eq("id", wineyard.id)
+                        }
                     }
-                ) {
-                    filter {
-                        eq("id", wineyard.id)
-                    }
-                }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 
     suspend fun deleteWineyard(wineyardId: String): Result<Unit> {
-        return try {
-            wineyardDao.deleteWineyard(wineyardId)
-            
-            postgrest.from("wineyards")
-                .delete {
-                    filter {
-                        eq("id", wineyardId)
+        return withSessionValidation {
+            try {
+                wineyardDao.deleteWineyard(wineyardId)
+                
+                postgrest.from("wineyards")
+                    .delete {
+                        filter {
+                            eq("id", wineyardId)
+                        }
                     }
-                }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 
@@ -96,41 +104,43 @@ class WineyardRepository(
     }
 
     suspend fun syncWineyardsFromFirestore(): Result<Unit> {
-        return try {
-            println("🔄 WineyardRepository: Starting sync from Supabase...")
-            
-            // For now, get all wineyards - filtering will be implemented via database views or RPC later
-            // The main filtering happens at login time to prevent flagged users from accessing the app
-            val response = postgrest.from("wineyards")
-                .select()
-                .decodeList<Wineyard>()
+        return withSessionValidation {
+            try {
+                println("🔄 WineyardRepository: Starting sync from Supabase...")
                 
-            println("📊 WineyardRepository: Fetched ${response.size} wineyards from Supabase")
-            
-            response.forEach { wineyardData ->
-                println("🏭 WineyardRepository: Processing wineyard: ${wineyardData.name} (ID: ${wineyardData.id}, Owner: ${wineyardData.ownerId})")
+                // For now, get all wineyards - filtering will be implemented via database views or RPC later
+                // The main filtering happens at login time to prevent flagged users from accessing the app
+                val response = postgrest.from("wineyards")
+                    .select()
+                    .decodeList<Wineyard>()
+                    
+                println("📊 WineyardRepository: Fetched ${response.size} wineyards from Supabase")
                 
-                val entity = WineyardEntity(
-                    id = wineyardData.id,
-                    name = wineyardData.name,
-                    description = wineyardData.description ?: "",
-                    ownerId = wineyardData.ownerId,
-                    address = wineyardData.address,
-                    latitude = wineyardData.latitude,
-                    longitude = wineyardData.longitude,
-                    createdAt = (wineyardData.createdAt.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000, // Convert seconds to milliseconds for local storage
-                    updatedAt = (wineyardData.updatedAt?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000 // Convert seconds to milliseconds for local storage
-                )
-                wineyardDao.insertWineyard(entity)
-                println("💾 WineyardRepository: Saved wineyard to local database: ${entity.name}")
+                response.forEach { wineyardData ->
+                    println("🏭 WineyardRepository: Processing wineyard: ${wineyardData.name} (ID: ${wineyardData.id}, Owner: ${wineyardData.ownerId})")
+                    
+                    val entity = WineyardEntity(
+                        id = wineyardData.id,
+                        name = wineyardData.name,
+                        description = wineyardData.description ?: "",
+                        ownerId = wineyardData.ownerId,
+                        address = wineyardData.address,
+                        latitude = wineyardData.latitude,
+                        longitude = wineyardData.longitude,
+                        createdAt = (wineyardData.createdAt.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000, // Convert seconds to milliseconds for local storage
+                        updatedAt = (wineyardData.updatedAt?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000 // Convert seconds to milliseconds for local storage
+                    )
+                    wineyardDao.insertWineyard(entity)
+                    println("💾 WineyardRepository: Saved wineyard to local database: ${entity.name}")
+                }
+                
+                println("✅ WineyardRepository: Sync completed successfully")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                println("❌ WineyardRepository: Sync failed: ${e.message}")
+                e.printStackTrace()
+                Result.failure(e)
             }
-            
-            println("✅ WineyardRepository: Sync completed successfully")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            println("❌ WineyardRepository: Sync failed: ${e.message}")
-            e.printStackTrace()
-            Result.failure(e)
         }
     }
 }

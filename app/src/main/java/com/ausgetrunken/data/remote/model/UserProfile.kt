@@ -16,5 +16,8 @@ data class UserProfile(
     @SerialName("address") val address: String? = null,
     @SerialName("flagged_for_deletion") val flaggedForDeletion: Boolean = false,
     @SerialName("deletion_flagged_at") val deletionFlaggedAt: String? = null,
-    @SerialName("deletion_type") val deletionType: String? = null // "USER" or "ADMIN"
+    @SerialName("deletion_type") val deletionType: String? = null, // "USER" or "ADMIN"
+    @SerialName("current_session_id") val currentSessionId: String? = null,
+    @SerialName("session_created_at") val sessionCreatedAt: String? = null,
+    @SerialName("last_session_activity") val lastSessionActivity: String? = null
 )

@@ -16,6 +16,8 @@ interface NotificationRepository {
     
     suspend fun updateUserFcmToken(userId: String, fcmToken: String)
     
+    suspend fun clearUserFcmToken(userId: String)
+    
     suspend fun getUserFcmToken(userId: String): String?
 }
 

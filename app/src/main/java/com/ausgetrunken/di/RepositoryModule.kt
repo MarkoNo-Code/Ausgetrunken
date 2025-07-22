@@ -21,10 +21,10 @@ val repositoryModule = module {
     single { TokenStorage(androidContext()) }
     single { SupabaseAuthRepository(get(), get(), get()) }
     single { UserRepository(get(), get()) }
-    single { WineRepository(get(), get()) }
-    single { WineyardRepository(get(), get()) }
-    single { WineyardSubscriptionRepository(get(), get()) }
-    single<NotificationRepository> { NotificationRepositoryImpl(get()) }
+    single { WineRepository(get(), get(), get()) }
+    single { WineyardRepository(get(), get(), get()) }
+    single { WineyardSubscriptionRepository(get(), get(), get()) }
+    single<NotificationRepository> { NotificationRepositoryImpl(get(), get()) }
     
     // Use Cases
     factory { GetLowStockWinesUseCase(get<WineService>()) }

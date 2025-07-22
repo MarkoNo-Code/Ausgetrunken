@@ -65,6 +65,10 @@ class NotificationService(
         notificationRepository.updateUserFcmToken(userId, fcmToken)
     }
     
+    suspend fun clearUserFcmToken(userId: String) {
+        notificationRepository.clearUserFcmToken(userId)
+    }
+    
     suspend fun getUserFcmToken(userId: String): String? {
         return notificationRepository.getUserFcmToken(userId)
     }

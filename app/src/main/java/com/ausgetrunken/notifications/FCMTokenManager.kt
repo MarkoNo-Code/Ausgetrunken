@@ -132,11 +132,32 @@ class FCMTokenManager(
     }
 
     fun clearUserToken() {
-        val sharedPrefs = context.getSharedPreferences("ausgetrunken_prefs", Context.MODE_PRIVATE)
-        sharedPrefs.edit()
-            .remove("current_user_id")
-            .apply()
-        Log.d(TAG, "User FCM token cleared")
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                println("🗑️ FCMTokenManager: Clearing FCM token from database on user logout")
+                
+                val sharedPrefs = context.getSharedPreferences("ausgetrunken_prefs", Context.MODE_PRIVATE)
+                val currentUserId = sharedPrefs.getString("current_user_id", null)
+                
+                if (currentUserId != null) {
+                    // Clear the FCM token from the user's profile to prevent cross-user notifications
+                    notificationService.clearUserFcmToken(currentUserId)
+                    println("✅ FCMTokenManager: FCM token cleared from database for user: $currentUserId")
+                } else {
+                    println("⚠️ FCMTokenManager: No current user ID found during token cleanup")
+                }
+                
+                sharedPrefs.edit()
+                    .remove("current_user_id")
+                    .remove("pending_fcm_token")
+                    .apply()
+                
+                Log.d(TAG, "User FCM token cleared from both database and local storage")
+            } catch (e: Exception) {
+                println("❌ FCMTokenManager: Error clearing FCM token: ${e.message}")
+                Log.e(TAG, "Failed to clear FCM token", e)
+            }
+        }
     }
 
     fun isNotificationPermissionGranted(): Boolean {

@@ -17,12 +17,13 @@ class TokenStorage(context: Context) {
     private val _isLoggedIn = MutableStateFlow(isTokenValid())
     val isLoggedIn: Flow<Boolean> = _isLoggedIn.asStateFlow()
     
-    fun saveLoginSession(accessToken: String, refreshToken: String, userId: String) {
+    fun saveLoginSession(accessToken: String, refreshToken: String, userId: String, sessionId: String? = null) {
         val expirationTime = System.currentTimeMillis() + TOKEN_EXPIRATION_DURATION
         
         println("💾 TokenStorage: Saving login session for user: $userId")
         println("💾 TokenStorage: Access token length: ${accessToken.length}")
         println("💾 TokenStorage: Refresh token length: ${refreshToken.length}")
+        println("💾 TokenStorage: Session ID: $sessionId")
         println("💾 TokenStorage: Expiration time: $expirationTime")
         
         preferences.edit().apply {
@@ -31,6 +32,9 @@ class TokenStorage(context: Context) {
             putString(KEY_USER_ID, userId)
             putLong(KEY_EXPIRATION_TIME, expirationTime)
             putLong(KEY_LOGIN_TIME, System.currentTimeMillis())
+            if (sessionId != null) {
+                putString(KEY_SESSION_ID, sessionId)
+            }
             apply()
         }
         
@@ -102,6 +106,7 @@ class TokenStorage(context: Context) {
             remove(KEY_USER_ID)
             remove(KEY_EXPIRATION_TIME)
             remove(KEY_LOGIN_TIME)
+            remove(KEY_SESSION_ID)
             apply()
         }
         
@@ -128,7 +133,8 @@ class TokenStorage(context: Context) {
                     refreshToken = refreshToken,
                     userId = userId,
                     expirationTime = preferences.getLong(KEY_EXPIRATION_TIME, 0),
-                    loginTime = preferences.getLong(KEY_LOGIN_TIME, 0)
+                    loginTime = preferences.getLong(KEY_LOGIN_TIME, 0),
+                    sessionId = preferences.getString(KEY_SESSION_ID, null)
                 )
             } else {
                 println("❌ TokenStorage: Missing required tokens")
@@ -147,6 +153,7 @@ class TokenStorage(context: Context) {
         private const val KEY_USER_ID = "user_id"
         private const val KEY_EXPIRATION_TIME = "expiration_time"
         private const val KEY_LOGIN_TIME = "login_time"
+        private const val KEY_SESSION_ID = "session_id"
         
         // 30 days in milliseconds
         private val TOKEN_EXPIRATION_DURATION = TimeUnit.DAYS.toMillis(30)
@@ -158,5 +165,6 @@ data class SessionInfo(
     val refreshToken: String,
     val userId: String,
     val expirationTime: Long,
-    val loginTime: Long
+    val loginTime: Long,
+    val sessionId: String? = null
 )

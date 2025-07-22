@@ -1,5 +1,6 @@
 package com.ausgetrunken.data.repository
 
+import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.entities.NotificationType
 import com.ausgetrunken.domain.repository.NotificationRepository
 import com.ausgetrunken.domain.repository.NotificationSendResult
@@ -14,8 +15,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class NotificationRepositoryImpl(
-    private val supabaseClient: SupabaseClient
-) : NotificationRepository {
+    private val supabaseClient: SupabaseClient,
+    authRepository: SupabaseAuthRepository
+) : BaseRepository(authRepository), NotificationRepository {
 
     override suspend fun sendNotification(
         wineyardId: String,
@@ -24,52 +26,61 @@ class NotificationRepositoryImpl(
         message: String,
         wineId: String?
     ): NotificationSendResult {
-        return try {
-            println("🔍 NotificationRepository: Sending notification")
-            println("🔍 NotificationRepository: Wineyard ID: $wineyardId")
-            println("🔍 NotificationRepository: Notification Type: ${notificationType.name}")
-            println("🔍 NotificationRepository: Wine ID: $wineId")
-            println("🔍 NotificationRepository: Title: $title")
-            println("🔍 NotificationRepository: Message: $message")
-            
-            val payload = NotificationPayload(
-                wineyardId = wineyardId,
-                notificationType = notificationType.name,
-                title = title,
-                message = message,
-                wineId = wineId
-            )
-            
-            println("🔍 NotificationRepository: Payload created: $payload")
+        return withSessionValidation {
+            Result.success(try {
+                println("🔍 NotificationRepository: Sending notification")
+                println("🔍 NotificationRepository: Wineyard ID: $wineyardId")
+                println("🔍 NotificationRepository: Notification Type: ${notificationType.name}")
+                println("🔍 NotificationRepository: Wine ID: $wineId")
+                println("🔍 NotificationRepository: Title: $title")
+                println("🔍 NotificationRepository: Message: $message")
+                
+                val payload = NotificationPayload(
+                    wineyardId = wineyardId,
+                    notificationType = notificationType.name,
+                    title = title,
+                    message = message,
+                    wineId = wineId
+                )
+                
+                println("🔍 NotificationRepository: Payload created: $payload")
 
-            val response = supabaseClient.functions.invoke(
-                function = "send-fcm-notification",
-                body = payload
-            )
+                val response = supabaseClient.functions.invoke(
+                    function = "send-fcm-notification",
+                    body = payload
+                )
 
-            // Parse the response from the Edge Function
-            println("🔍 Response received from Edge Function: $response")
-            
-            // Since notifications are working, assume success for now
-            // TODO: Fix response parsing in future iteration
-            val result = NotificationResponse(
-                success = true,
-                message = "Notification sent successfully",
-                sentCount = 1, // Assume at least 1 notification sent
-                failedCount = 0
-            )
-            
-            NotificationSendResult(
-                success = result.success,
-                sentCount = result.sentCount,
-                message = result.message,
-                failedCount = result.failedCount ?: 0
-            )
-        } catch (e: Exception) {
+                // Parse the response from the Edge Function
+                println("🔍 Response received from Edge Function: $response")
+                
+                // Since notifications are working, assume success for now
+                // TODO: Fix response parsing in future iteration
+                val result = NotificationResponse(
+                    success = true,
+                    message = "Notification sent successfully",
+                    sentCount = 1, // Assume at least 1 notification sent
+                    failedCount = 0
+                )
+                
+                NotificationSendResult(
+                    success = result.success,
+                    sentCount = result.sentCount,
+                    message = result.message,
+                    failedCount = result.failedCount ?: 0
+                )
+            } catch (e: Exception) {
+                NotificationSendResult(
+                    success = false,
+                    sentCount = 0,
+                    message = "Failed to send notification: ${e.message}",
+                    failedCount = 0
+                )
+            })
+        }.getOrElse { error ->
             NotificationSendResult(
                 success = false,
                 sentCount = 0,
-                message = "Failed to send notification: ${e.message}",
+                message = "Session validation failed: ${error.message}",
                 failedCount = 0
             )
         }
@@ -97,81 +108,117 @@ class NotificationRepositoryImpl(
         }
     }
 
+    override suspend fun clearUserFcmToken(userId: String) {
+        withSessionValidation {
+            try {
+                println("🗑️ NotificationRepositoryImpl: Clearing FCM token for user: $userId")
+            
+            val updateData = buildJsonObject {
+                put("fcm_token", null as String?) // Set to null to clear the token
+                put("updated_at", java.time.Instant.now().toString())
+            }
+            
+            println("🗑️ NotificationRepositoryImpl: Sending clear request to Supabase...")
+            supabaseClient.postgrest.from("user_profiles")
+                .update(updateData) {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+            
+            println("✅ NotificationRepositoryImpl: FCM token cleared successfully for user: $userId")
+                Result.success(Unit)
+            } catch (e: Exception) {
+                println("❌ NotificationRepositoryImpl: Failed to clear FCM token for user: $userId - Error: ${e.message}")
+                e.printStackTrace()
+                Result.failure(e)
+            }
+        }
+    }
+
     override suspend fun updateUserFcmToken(userId: String, fcmToken: String) {
-        try {
-            println("🔧 NotificationRepository: Updating FCM token for user: $userId")
-            println("🔧 NotificationRepository: Token: ${fcmToken.take(20)}...")
-            println("🔧 NotificationRepository: Full token length: ${fcmToken.length}")
-            
-            // First check if user exists
-            val userCheck = supabaseClient.postgrest.from("user_profiles")
-                .select {
-                    filter {
-                        eq("id", userId)
-                    }
-                }
-            
-            println("🔧 NotificationRepository: User check query executed")
-            val userResult = userCheck.decodeList<kotlinx.serialization.json.JsonObject>()
-            println("🔧 NotificationRepository: Found ${userResult.size} users with ID: $userId")
-            
-            if (userResult.isEmpty()) {
-                println("❌ NotificationRepository: User not found in user_profiles table!")
-                throw Exception("User not found in user_profiles table")
-            }
-            
-            // Log current FCM token if any
-            val currentUser = userResult.first()
-            val currentToken = currentUser["fcm_token"]?.toString()?.removeSurrounding("\"")
-            println("🔧 NotificationRepository: Current FCM token: ${currentToken?.take(20) ?: "NULL"}...")
-            
-            // Perform the update
-            val updateResult = supabaseClient.postgrest.from("user_profiles")
-                .update(
-                    buildJsonObject {
-                        put("fcm_token", fcmToken)
-                        put("updated_at", java.time.Instant.now().toString())
-                    }
-                ) {
-                    filter {
-                        eq("id", userId)
-                    }
-                }
-            
-            println("✅ NotificationRepository: FCM token update completed for user: $userId")
-            
-            // Verify the update worked
-            val verifyResult = supabaseClient.postgrest.from("user_profiles")
-                .select {
-                    filter {
-                        eq("id", userId)
-                    }
-                }
-                .decodeList<kotlinx.serialization.json.JsonObject>()
-            
-            if (verifyResult.isNotEmpty()) {
-                val updatedToken = verifyResult.first()["fcm_token"]?.toString()?.removeSurrounding("\"")
-                println("🔧 NotificationRepository: Verification - Updated token: ${updatedToken?.take(20) ?: "NULL"}...")
+        withSessionValidation {
+            Result.success(try {
+                println("🔧 NotificationRepository: Updating FCM token for user: $userId")
+                println("🔧 NotificationRepository: Token: ${fcmToken.take(20)}...")
+                println("🔧 NotificationRepository: Full token length: ${fcmToken.length}")
                 
-                if (updatedToken == fcmToken) {
-                    println("✅ NotificationRepository: Token update verification successful!")
-                } else {
-                    println("⚠️ NotificationRepository: Token update verification failed - tokens don't match")
+                // First check if user exists
+                val userCheck = supabaseClient.postgrest.from("user_profiles")
+                    .select {
+                        filter {
+                            eq("id", userId)
+                        }
+                    }
+                
+                println("🔧 NotificationRepository: User check query executed")
+                val userResult = userCheck.decodeList<kotlinx.serialization.json.JsonObject>()
+                println("🔧 NotificationRepository: Found ${userResult.size} users with ID: $userId")
+                
+                if (userResult.isEmpty()) {
+                    println("❌ NotificationRepository: User not found in user_profiles table!")
+                    throw Exception("User not found in user_profiles table")
                 }
-            }
-            
-        } catch (e: Exception) {
-            println("❌ NotificationRepository: Failed to update FCM token for user: $userId")
-            println("❌ NotificationRepository: Error type: ${e::class.simpleName}")
-            println("❌ NotificationRepository: Error message: ${e.message}")
-            e.printStackTrace()
-            throw Exception("Failed to update FCM token: ${e.message}")
+                
+                // Log current FCM token if any
+                val currentUser = userResult.first()
+                val currentToken = currentUser["fcm_token"]?.toString()?.removeSurrounding("\"")
+                println("🔧 NotificationRepository: Current FCM token: ${currentToken?.take(20) ?: "NULL"}...")
+                
+                // Perform the update
+                val updateResult = supabaseClient.postgrest.from("user_profiles")
+                    .update(
+                        buildJsonObject {
+                            put("fcm_token", fcmToken)
+                            put("updated_at", java.time.Instant.now().toString())
+                        }
+                    ) {
+                        filter {
+                            eq("id", userId)
+                        }
+                    }
+                
+                println("✅ NotificationRepository: FCM token update completed for user: $userId")
+                
+                // Verify the update worked
+                val verifyResult = supabaseClient.postgrest.from("user_profiles")
+                    .select {
+                        filter {
+                            eq("id", userId)
+                        }
+                    }
+                    .decodeList<kotlinx.serialization.json.JsonObject>()
+                
+                if (verifyResult.isNotEmpty()) {
+                    val updatedToken = verifyResult.first()["fcm_token"]?.toString()?.removeSurrounding("\"")
+                    println("🔧 NotificationRepository: Verification - Updated token: ${updatedToken?.take(20) ?: "NULL"}...")
+                    
+                    if (updatedToken == fcmToken) {
+                        println("✅ NotificationRepository: Token update verification successful!")
+                    } else {
+                        println("⚠️ NotificationRepository: Token update verification failed - tokens don't match")
+                    }
+                }
+                
+                Unit // Return Unit to satisfy the Result.success requirement
+                
+            } catch (e: Exception) {
+                println("❌ NotificationRepository: Failed to update FCM token for user: $userId")
+                println("❌ NotificationRepository: Error type: ${e::class.simpleName}")
+                println("❌ NotificationRepository: Error message: ${e.message}")
+                e.printStackTrace()
+                throw e
+            })
+        }.getOrElse { error ->
+            println("❌ NotificationRepository: Session validation failed for FCM token update: ${error.message}")
+            throw Exception("Session validation failed: ${error.message}")
         }
     }
 
     override suspend fun getUserFcmToken(userId: String): String? {
-        return try {
-            val userProfile = supabaseClient.postgrest.from("user_profiles")
+        return withSessionValidation {
+            Result.success(try {
+                val userProfile = supabaseClient.postgrest.from("user_profiles")
                 .select(columns = Columns.list("fcm_token")) {
                     filter {
                         eq("id", userId)
@@ -180,10 +227,11 @@ class NotificationRepositoryImpl(
                 }
                 .decodeSingleOrNull<UserProfileFcmToken>()
 
-            userProfile?.fcm_token
-        } catch (e: Exception) {
-            null
-        }
+                userProfile?.fcm_token
+            } catch (e: Exception) {
+                null
+            })
+        }.getOrNull()
     }
 
     @Serializable

@@ -111,23 +111,59 @@ class AuthViewModel(
                         kotlinx.coroutines.delay(remainingTime)
                     }
                     
-                    // Check if this is a flagged account error
+                    // Check for different types of session errors
                     val errorMessage = error.message ?: ""
-                    if (errorMessage.startsWith("FLAGGED_ACCOUNT:")) {
-                        // Extract the actual message and show dialog
-                        val flaggedMessage = errorMessage.removePrefix("FLAGGED_ACCOUNT:")
-                        _uiState.value = _uiState.value.copy(
-                            isCheckingSession = false,
-                            isAuthenticated = false,
-                            showFlaggedAccountDialog = true,
-                            flaggedAccountMessage = flaggedMessage
-                        )
-                    } else {
-                        // Regular session restoration failure - just show login
-                        _uiState.value = _uiState.value.copy(
-                            isCheckingSession = false,
-                            isAuthenticated = false
-                        )
+                    when {
+                        // Flagged account - show dialog
+                        errorMessage.startsWith("FLAGGED_ACCOUNT:") -> {
+                            val flaggedMessage = errorMessage.removePrefix("FLAGGED_ACCOUNT:")
+                            _uiState.value = _uiState.value.copy(
+                                isCheckingSession = false,
+                                isAuthenticated = false,
+                                showFlaggedAccountDialog = true,
+                                flaggedAccountMessage = flaggedMessage
+                            )
+                        }
+                        // Session invalidation messages - show as snackbar
+                        errorMessage.startsWith("SESSION_INVALIDATED:") -> {
+                            val sessionMessage = errorMessage.removePrefix("SESSION_INVALIDATED:")
+                            _uiState.value = _uiState.value.copy(
+                                isCheckingSession = false,
+                                isAuthenticated = false,
+                                errorMessage = sessionMessage
+                            )
+                        }
+                        errorMessage.startsWith("SESSION_EXPIRED:") -> {
+                            val sessionMessage = errorMessage.removePrefix("SESSION_EXPIRED:")
+                            _uiState.value = _uiState.value.copy(
+                                isCheckingSession = false,
+                                isAuthenticated = false,
+                                errorMessage = sessionMessage
+                            )
+                        }
+                        errorMessage.startsWith("SESSION_INVALID:") -> {
+                            val sessionMessage = errorMessage.removePrefix("SESSION_INVALID:")
+                            _uiState.value = _uiState.value.copy(
+                                isCheckingSession = false,
+                                isAuthenticated = false,
+                                errorMessage = sessionMessage
+                            )
+                        }
+                        errorMessage.startsWith("SESSION_TERMINATED:") -> {
+                            val sessionMessage = errorMessage.removePrefix("SESSION_TERMINATED:")
+                            _uiState.value = _uiState.value.copy(
+                                isCheckingSession = false,
+                                isAuthenticated = false,
+                                errorMessage = sessionMessage
+                            )
+                        }
+                        // Regular session restoration failure - just show login without error
+                        else -> {
+                            _uiState.value = _uiState.value.copy(
+                                isCheckingSession = false,
+                                isAuthenticated = false
+                            )
+                        }
                     }
                 }
         }

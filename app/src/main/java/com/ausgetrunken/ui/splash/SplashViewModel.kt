@@ -60,24 +60,38 @@ class SplashViewModel(
                     .onFailure { error ->
                         println("❌ SplashViewModel: Session restoration failed: ${error.message}")
                         
-                        // Check if this is a flagged account error
+                        // Check for different types of session errors
                         val errorMessage = error.message ?: ""
-                        if (errorMessage.startsWith("FLAGGED_ACCOUNT:")) {
-                            // Extract the actual message and pass it to the auth screen
-                            val flaggedMessage = errorMessage.removePrefix("FLAGGED_ACCOUNT:")
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                isAuthenticated = false,
-                                errorMessage = flaggedMessage // This will be passed to AuthScreen
-                            )
-                        } else {
-                            // Regular session restoration failure
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                isAuthenticated = false,
-                                errorMessage = null // Don't show regular session errors on login screen
-                            )
+                        val displayMessage = when {
+                            // Flagged account - show message to user
+                            errorMessage.startsWith("FLAGGED_ACCOUNT:") -> {
+                                errorMessage.removePrefix("FLAGGED_ACCOUNT:")
+                            }
+                            // Session invalidated by another device
+                            errorMessage.startsWith("SESSION_INVALIDATED:") -> {
+                                errorMessage.removePrefix("SESSION_INVALIDATED:")
+                            }
+                            // Session expired
+                            errorMessage.startsWith("SESSION_EXPIRED:") -> {
+                                errorMessage.removePrefix("SESSION_EXPIRED:")
+                            }
+                            // Session invalid
+                            errorMessage.startsWith("SESSION_INVALID:") -> {
+                                errorMessage.removePrefix("SESSION_INVALID:")
+                            }
+                            // Session terminated
+                            errorMessage.startsWith("SESSION_TERMINATED:") -> {
+                                errorMessage.removePrefix("SESSION_TERMINATED:")
+                            }
+                            // Don't show generic errors
+                            else -> null
                         }
+                        
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isAuthenticated = false,
+                            errorMessage = displayMessage // Will be passed to AuthScreen if not null
+                        )
                     }
             } catch (e: Exception) {
                 println("❌ SplashViewModel: Unexpected error: ${e.message}")

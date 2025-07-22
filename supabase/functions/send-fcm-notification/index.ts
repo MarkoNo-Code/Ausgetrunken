@@ -46,6 +46,20 @@ serve(async (req) => {
     const serviceAccount = JSON.parse(serviceAccountJson)
     const projectId = serviceAccount.project_id
 
+    // Get the wineyard owner first (needed for both subscription filtering and notification record)
+    const { data: wineyard, error: wineyardError } = await supabaseClient
+      .from('wineyards')
+      .select('owner_id')
+      .eq('id', payload.wineyardId)
+      .single()
+
+    if (wineyardError) {
+      console.log('⚠️ Could not fetch wineyard owner:', wineyardError)
+    }
+
+    const ownerId = wineyard?.owner_id
+    console.log(`🔍 Wineyard owner ID: ${ownerId}`)
+
     // Determine target users
     let targetUserIds: string[] = []
 
@@ -57,16 +71,35 @@ serve(async (req) => {
       console.log(`🔍 Notification type: ${payload.notificationType} -> Column: ${subscriptionColumn}`)
       console.log(`🔍 Querying subscribers for wineyard: ${payload.wineyardId}`)
       
-      const { data: subscribers, error: subscribersError } = await supabaseClient
+      // First get all subscriptions without owner filtering for debugging
+      const { data: allSubscribers, error: allSubscribersError } = await supabaseClient
         .from('wineyard_subscriptions')
         .select('user_id')
         .eq('wineyard_id', payload.wineyardId)
         .eq('is_active', true)
         .eq(subscriptionColumn, true)
+      
+      console.log(`🔍 ALL subscriptions (before owner filtering): ${allSubscribers?.length || 0}`)
+      console.log(`🔍 All subscribers data:`, allSubscribers)
+      
+      let subscriptionQuery = supabaseClient
+        .from('wineyard_subscriptions')
+        .select('user_id')
+        .eq('wineyard_id', payload.wineyardId)
+        .eq('is_active', true)
+        .eq(subscriptionColumn, true)
+      
+      // Exclude the wineyard owner from getting their own notifications
+      if (ownerId) {
+        subscriptionQuery = subscriptionQuery.neq('user_id', ownerId)
+        console.log(`🔍 Filtering out owner: ${ownerId}`)
+      }
 
-      console.log(`🔍 Subscription query result: ${subscribers?.length || 0} subscribers found`)
+      const { data: subscribers, error: subscribersError } = await subscriptionQuery
+
+      console.log(`🔍 Subscription query result (after owner filtering): ${subscribers?.length || 0} subscribers found`)
       console.log(`🔍 Subscription query error:`, subscribersError)
-      console.log(`🔍 Subscribers data:`, subscribers)
+      console.log(`🔍 Filtered subscribers data:`, subscribers)
 
       if (subscribersError) {
         throw new Error(`Failed to fetch subscribers: ${subscribersError.message}`)
@@ -89,13 +122,14 @@ serve(async (req) => {
       )
     }
 
-    // Get FCM tokens for target users
+    // Get FCM tokens for target users and apply additional owner filtering
     console.log(`🔍 Getting FCM tokens for ${targetUserIds.length} target users:`, targetUserIds)
     
     const { data: users, error: usersError } = await supabaseClient
       .from('user_profiles')
-      .select('id, fcm_token')
+      .select('id, fcm_token, user_type')
       .in('id', targetUserIds)
+      .neq('user_type', 'WINEYARD_OWNER')
 
     console.log(`🔍 FCM token query result: ${users?.length || 0} users with tokens`)
     console.log(`🔍 FCM token query error:`, usersError)
@@ -105,9 +139,15 @@ serve(async (req) => {
       throw new Error(`Failed to fetch user FCM tokens: ${usersError.message}`)
     }
 
-    console.log(`🔍 Raw users data:`, users?.map(u => ({ id: u.id, hasToken: !!u.fcm_token, tokenLength: u.fcm_token?.length })))
+    console.log(`🔍 Raw users data:`, users?.map(u => ({ id: u.id, userType: u.user_type, hasToken: !!u.fcm_token, tokenLength: u.fcm_token?.length })))
     
-    const fcmTokens = users?.map(user => user.fcm_token).filter(token => token && token.trim() !== '') || []
+    // Double-check: Filter out any owners that might have slipped through and get valid FCM tokens
+    const customerUsers = users?.filter(user => user.user_type === 'CUSTOMER') || []
+    console.log(`🔍 Customers after user_type filtering: ${customerUsers.length}`)
+    
+    const fcmTokens = customerUsers
+      .map(user => user.fcm_token)
+      .filter(token => token && token.trim() !== '') || []
     console.log(`🔍 Final FCM tokens count: ${fcmTokens.length}`)
     console.log(`🔍 Valid FCM tokens:`, fcmTokens.map(token => `${token.substring(0, 20)}...`))
 
@@ -125,18 +165,7 @@ serve(async (req) => {
       )
     }
 
-    // Get wineyard owner to use as sender_id
-    const { data: wineyard, error: wineyardError } = await supabaseClient
-      .from('wineyards')
-      .select('owner_id')
-      .eq('id', payload.wineyardId)
-      .single()
-
-    if (wineyardError) {
-      console.error('Failed to get wineyard owner:', wineyardError)
-    }
-
-    // Create notification record in database
+    // Create notification record in database (using wineyard data fetched earlier)
     const { data: notificationRecord, error: notificationError } = await supabaseClient
       .from('notifications')
       .insert({

@@ -1,5 +1,6 @@
 package com.ausgetrunken.data.repository
 
+import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.dao.WineyardSubscriptionDao
 import com.ausgetrunken.data.local.entities.WineyardSubscriptionEntity
 import com.ausgetrunken.data.remote.model.WineyardSubscription
@@ -12,8 +13,9 @@ import java.time.Instant
 
 class WineyardSubscriptionRepository(
     private val wineyardSubscriptionDao: WineyardSubscriptionDao,
-    private val postgrest: Postgrest
-) {
+    private val postgrest: Postgrest,
+    authRepository: SupabaseAuthRepository
+) : BaseRepository(authRepository) {
     
     fun getUserSubscriptionsFlow(userId: String): Flow<List<WineyardSubscriptionEntity>> =
         wineyardSubscriptionDao.getUserSubscriptionsFlow(userId)
@@ -37,98 +39,41 @@ class WineyardSubscriptionRepository(
         wineyardSubscriptionDao.getWineyardSubscriptions(wineyardId)
     
     suspend fun subscribeToWineyard(userId: String, wineyardId: String): Result<WineyardSubscriptionEntity> {
-        return try {
-            println("🔄 WineyardSubscriptionRepository: Starting subscription process")
-            println("👤 User ID: $userId")
-            println("🍷 Wineyard ID: $wineyardId")
+        return withSessionValidation {
+            // Check if subscription already exists
+            val existingSubscription = wineyardSubscriptionDao.getSubscription(userId, wineyardId)
             
-            // Check if subscription already exists - check both Supabase and local
-            println("🔍 Checking for existing subscription in Supabase...")
-            val supabaseSubscriptions = try {
+            if (existingSubscription != null && existingSubscription.isActive) {
+                return@withSessionValidation Result.failure(Exception("Already subscribed to this wineyard"))
+            }
+            
+            if (existingSubscription != null) {
+                // Reactivate existing subscription
+                wineyardSubscriptionDao.activateSubscription(userId, wineyardId)
+                
+                // Update in Supabase
                 postgrest.from("wineyard_subscriptions")
-                    .select {
+                    .update(
+                        buildJsonObject {
+                            put("is_active", true)
+                            put("updated_at", Instant.now().toString())
+                        }
+                    ) {
                         filter {
                             eq("user_id", userId)
                             eq("wineyard_id", wineyardId)
                         }
                     }
-                    .decodeList<WineyardSubscription>()
-            } catch (e: Exception) {
-                println("⚠️ Failed to check Supabase, will check local only: ${e.message}")
-                emptyList()
-            }
-            
-            var existingSubscription = wineyardSubscriptionDao.getSubscription(userId, wineyardId)
-            
-            // If we have Supabase data but no local data, sync it
-            if (supabaseSubscriptions.isNotEmpty() && existingSubscription == null) {
-                val supabaseSubscription = supabaseSubscriptions.first()
-                println("🔄 Found subscription in Supabase but not locally, syncing...")
-                val localSub = WineyardSubscriptionEntity(
-                    id = supabaseSubscription.id,
-                    userId = supabaseSubscription.userId,
-                    wineyardId = supabaseSubscription.wineyardId,
-                    isActive = supabaseSubscription.isActive,
-                    lowStockNotifications = supabaseSubscription.lowStockNotifications,
-                    newReleaseNotifications = supabaseSubscription.newReleaseNotifications,
-                    specialOfferNotifications = supabaseSubscription.specialOfferNotifications,
-                    generalNotifications = supabaseSubscription.generalNotifications,
-                    createdAt = supabaseSubscription.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                    updatedAt = supabaseSubscription.updatedAt.toLongOrNull() ?: System.currentTimeMillis()
+                
+                val updatedSubscription = existingSubscription.copy(
+                    isActive = true,
+                    updatedAt = System.currentTimeMillis()
                 )
-                wineyardSubscriptionDao.insertSubscription(localSub)
-                existingSubscription = localSub
-                println("✅ Synced subscription from Supabase to local database")
-            }
-            
-            println("🔍 Final subscription check: ${if (existingSubscription != null) "Found (active: ${existingSubscription.isActive})" else "Not found"}")
-            
-            if (existingSubscription != null) {
-                if (existingSubscription.isActive) {
-                    println("⚠️ Already subscribed to this wineyard")
-                    return Result.failure(Exception("Already subscribed to this wineyard"))
-                } else {
-                    println("🔄 Reactivating existing subscription")
-                    // Reactivate existing subscription
-                    wineyardSubscriptionDao.activateSubscription(userId, wineyardId)
-                    
-                    try {
-                        println("🌐 Updating subscription in Supabase...")
-                        // Update in Supabase
-                        postgrest.from("wineyard_subscriptions")
-                            .update(
-                                buildJsonObject {
-                                    put("is_active", true)
-                                    put("updated_at", Instant.now().toString())
-                                }
-                            ) {
-                                filter {
-                                    eq("user_id", userId)
-                                    eq("wineyard_id", wineyardId)
-                                }
-                            }
-                        println("✅ Supabase update successful")
-                    } catch (supabaseError: Exception) {
-                        println("❌ Supabase update failed: ${supabaseError.message}")
-                        supabaseError.printStackTrace()
-                        // Rollback local change
-                        wineyardSubscriptionDao.deactivateSubscription(userId, wineyardId)
-                        return Result.failure(supabaseError)
-                    }
-                    
-                    val updatedSubscription = existingSubscription.copy(
-                        isActive = true,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                    println("✅ Subscription reactivated successfully")
-                    return Result.success(updatedSubscription)
-                }
+                return@withSessionValidation Result.success(updatedSubscription)
             }
             
             // Create new subscription
             val subscriptionId = UUID.randomUUID().toString()
-            println("🆕 Creating new subscription with ID: $subscriptionId")
-            
             val subscription = WineyardSubscriptionEntity(
                 id = subscriptionId,
                 userId = userId,
@@ -140,13 +85,11 @@ class WineyardSubscriptionRepository(
                 generalNotifications = true
             )
             
-            // Insert locally
-            println("💾 Inserting subscription into local database...")
+            // Insert locally first
             wineyardSubscriptionDao.insertSubscription(subscription)
-            println("✅ Local database insert successful")
             
             try {
-                println("🌐 Inserting subscription into Supabase...")
+                // Insert in Supabase
                 val supabaseData = buildJsonObject {
                     put("id", subscriptionId)
                     put("user_id", userId)
@@ -160,36 +103,13 @@ class WineyardSubscriptionRepository(
                     put("updated_at", Instant.ofEpochMilli(subscription.updatedAt).toString())
                 }
                 
-                println("📤 Supabase data payload: $supabaseData")
-                
-                // Insert in Supabase
-                val supabaseResult = postgrest.from("wineyard_subscriptions")
-                    .insert(supabaseData)
-                
-                println("✅ Supabase insert successful")
-                println("🎉 Subscription created successfully!")
+                postgrest.from("wineyard_subscriptions").insert(supabaseData)
+                Result.success(subscription)
             } catch (supabaseError: Exception) {
-                println("❌ CRITICAL: Supabase insert failed: ${supabaseError.message}")
-                println("🔄 Rolling back local database insertion...")
-                supabaseError.printStackTrace()
-                
                 // Rollback local insertion
-                try {
-                    wineyardSubscriptionDao.deleteSubscription(userId, wineyardId)
-                    println("✅ Local rollback successful")
-                } catch (rollbackError: Exception) {
-                    println("❌ CRITICAL: Local rollback failed: ${rollbackError.message}")
-                    rollbackError.printStackTrace()
-                }
-                
-                return Result.failure(Exception("Failed to save subscription to Supabase: ${supabaseError.message}", supabaseError))
+                wineyardSubscriptionDao.deleteSubscription(userId, wineyardId)
+                Result.failure(Exception("Failed to save subscription to Supabase: ${supabaseError.message}", supabaseError))
             }
-            
-            Result.success(subscription)
-        } catch (e: Exception) {
-            println("❌ UNEXPECTED ERROR in subscribeToWineyard: ${e.message}")
-            e.printStackTrace()
-            Result.failure(e)
         }
     }
     
@@ -258,7 +178,7 @@ class WineyardSubscriptionRepository(
                 // Rollback local change
                 println("🔄 Rolling back local deactivation...")
                 wineyardSubscriptionDao.activateSubscription(userId, wineyardId)
-                return Result.failure(supabaseError)
+                throw supabaseError
             }
             
             Result.success(Unit)
@@ -279,7 +199,7 @@ class WineyardSubscriptionRepository(
     ): Result<Unit> {
         return try {
             val existingSubscription = wineyardSubscriptionDao.getSubscription(userId, wineyardId)
-                ?: return Result.failure(Exception("Subscription not found"))
+                ?: throw Exception("Subscription not found")
             
             val updatedSubscription = existingSubscription.copy(
                 lowStockNotifications = lowStock,
@@ -398,11 +318,13 @@ class WineyardSubscriptionRepository(
     /**
      * Fetches all active subscriptions for a wineyard directly from Supabase
      * Use this for notification center to get real-time subscriber count
+     * Excludes wineyard owners from the count to prevent self-subscriptions
      */
     suspend fun getActiveSubscriptionsForWineyardFromSupabase(wineyardId: String): Result<List<WineyardSubscriptionEntity>> {
         return try {
             println("🔄 WineyardSubscriptionRepository: Fetching real-time subscribers for wineyard: $wineyardId")
             
+            // Get subscriptions and filter out wineyard owner if needed
             val response = postgrest.from("wineyard_subscriptions")
                 .select {
                     filter {
@@ -412,7 +334,31 @@ class WineyardSubscriptionRepository(
                 }
                 .decodeList<WineyardSubscription>()
             
-            val subscriptions = response.map { remote ->
+            // Get the wineyard owner ID to filter out owner subscriptions
+            val wineyardOwner = try {
+                postgrest.from("wineyards")
+                    .select {
+                        filter {
+                            eq("id", wineyardId)
+                        }
+                    }
+                    .decodeSingle<Map<String, String>>()
+            } catch (e: Exception) {
+                println("⚠️ WineyardSubscriptionRepository: Could not fetch wineyard owner: ${e.message}")
+                null
+            }
+            
+            val ownerId = wineyardOwner?.get("owner_id")
+            println("🔍 WineyardSubscriptionRepository: Wineyard owner ID: $ownerId")
+            
+            // Filter out owner subscriptions in code since the query syntax is complex
+            val filteredResponse = if (ownerId != null) {
+                response.filter { it.userId != ownerId }
+            } else {
+                response
+            }
+            
+            val subscriptions = filteredResponse.map { remote ->
                 WineyardSubscriptionEntity(
                     id = remote.id,
                     userId = remote.userId,
@@ -427,7 +373,7 @@ class WineyardSubscriptionRepository(
                 )
             }
             
-            println("✅ WineyardSubscriptionRepository: Found ${subscriptions.size} active subscribers for wineyard $wineyardId")
+            println("✅ WineyardSubscriptionRepository: Found ${subscriptions.size} active subscribers for wineyard $wineyardId (excluding owner)")
             Result.success(subscriptions)
         } catch (e: Exception) {
             println("❌ WineyardSubscriptionRepository: Failed to fetch wineyard subscribers: ${e.message}")

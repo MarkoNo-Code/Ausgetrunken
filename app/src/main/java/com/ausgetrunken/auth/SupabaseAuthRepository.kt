@@ -107,6 +107,10 @@ class SupabaseAuthRepository(
             
             val user = auth.currentUserOrNull() ?: throw Exception("Sign in failed")
             
+            // Generate new session ID for single session enforcement
+            val newSessionId = java.util.UUID.randomUUID().toString()
+            println("🔐 SupabaseAuthRepository: New session ID generated: $newSessionId")
+            
             // Check if user profile exists and if it's flagged for deletion
             try {
                 println("🔍 SupabaseAuthRepository.signIn: Checking user profile for flagged status...")
@@ -147,9 +151,34 @@ class SupabaseAuthRepository(
                         throw Exception("Login not allowed. Your account has been flagged for deletion $deletionType. Please contact support if you believe this is an error.")
                     } else {
                         println("✅ SupabaseAuthRepository.signIn: Account is NOT flagged for deletion - allowing login")
+                        
+                        // FORCE SINGLE SESSION: Update session info and clear FCM token from any previous sessions
+                        println("🔐 SupabaseAuthRepository: Enforcing single session - invalidating previous sessions")
+                        
+                        try {
+                            postgrest.from("user_profiles")
+                                .update(
+                                    buildJsonObject {
+                                        put("current_session_id", newSessionId)
+                                        put("session_created_at", Instant.now().toString())
+                                        put("last_session_activity", Instant.now().toString())
+                                        put("fcm_token", null as String?) // Clear old FCM token
+                                        put("updated_at", Instant.now().toString())
+                                    }
+                                ) {
+                                    filter {
+                                        eq("id", user.id)
+                                    }
+                                }
+                            
+                            println("✅ SupabaseAuthRepository: Session updated - previous sessions invalidated")
+                        } catch (sessionError: Exception) {
+                            println("❌ SupabaseAuthRepository: Failed to update session info: ${sessionError.message}")
+                            // Don't fail login if session update fails, but log it
+                        }
                     }
                 } else {
-                    // Create profile for confirmed user
+                    // Create profile for confirmed user with session tracking
                     postgrest.from("user_profiles").insert(
                         buildJsonObject {
                             put("id", user.id)
@@ -157,8 +186,12 @@ class SupabaseAuthRepository(
                             put("user_type", "CUSTOMER") // Default to customer, user can change later
                             put("profile_completed", false)
                             put("flagged_for_deletion", false)
+                            put("current_session_id", newSessionId)
+                            put("session_created_at", Instant.now().toString())
+                            put("last_session_activity", Instant.now().toString())
                         }
                     )
+                    println("✅ SupabaseAuthRepository: New user profile created with session tracking")
                 }
             } catch (dbError: Exception) {
                 // If it's a flagged account error, re-throw it
@@ -169,17 +202,19 @@ class SupabaseAuthRepository(
                 println("Warning: Could not create/check user profile: ${dbError.message}")
             }
             
-            // Save session tokens for persistent login
+            // Save session tokens for persistent login with session ID
             val session = auth.currentSessionOrNull()
             session?.let {
                 println("💾 SupabaseAuthRepository: Saving session - AccessToken length: ${it.accessToken.length}")
                 println("💾 SupabaseAuthRepository: Saving session - RefreshToken: ${it.refreshToken ?: "NULL"}")
                 println("💾 SupabaseAuthRepository: Saving session - RefreshToken length: ${it.refreshToken?.length ?: 0}")
+                println("💾 SupabaseAuthRepository: Saving session ID: $newSessionId")
                 
                 tokenStorage.saveLoginSession(
                     accessToken = it.accessToken,
                     refreshToken = it.refreshToken ?: "",
-                    userId = user.id
+                    userId = user.id,
+                    sessionId = newSessionId
                 )
             }
             
@@ -191,6 +226,30 @@ class SupabaseAuthRepository(
     
     suspend fun signOut(): Result<Unit> {
         return try {
+            // Important: Clear FCM token from database before signing out
+            // This prevents the old token from being associated with a different user
+            val currentUser = auth.currentUserOrNull()
+            if (currentUser != null) {
+                try {
+                    println("🗑️ SupabaseAuthRepository: Clearing FCM token on logout for user: ${currentUser.id}")
+                    postgrest.from("user_profiles")
+                        .update(
+                            buildJsonObject {
+                                put("fcm_token", null as String?)
+                                put("updated_at", Instant.now().toString())
+                            }
+                        ) {
+                            filter {
+                                eq("id", currentUser.id)
+                            }
+                        }
+                    println("✅ SupabaseAuthRepository: FCM token cleared from database")
+                } catch (tokenError: Exception) {
+                    println("⚠️ SupabaseAuthRepository: Failed to clear FCM token on logout: ${tokenError.message}")
+                    // Don't fail logout if token cleanup fails
+                }
+            }
+            
             auth.signOut()
             tokenStorage.clearSession()
             Result.success(Unit)
@@ -254,15 +313,61 @@ class SupabaseAuthRepository(
                                     Result.success(null)
                                 }
                             } else {
-                                println("✅ SupabaseAuthRepository.restoreSession: Account is NOT flagged for deletion - allowing session restoration")
-                                if (userProfile != null) {
-                                    println("✅ SupabaseAuthRepository.restoreSession: Profile details:")
-                                    println("  - Email: ${userProfile.email}")
-                                    println("  - UserType: ${userProfile.userType}")
-                                    println("  - FlaggedForDeletion: ${userProfile.flaggedForDeletion}")
-                                    println("  - DeletionType: ${userProfile.deletionType}")
+                                println("✅ SupabaseAuthRepository.restoreSession: Account is NOT flagged for deletion - checking session validity")
+                                
+                                // Check if this session is still valid (single session enforcement)
+                                val storedSessionId = sessionInfo.sessionId
+                                val dbSessionId = userProfile?.currentSessionId
+                                
+                                println("🔐 SupabaseAuthRepository: Stored session ID: $storedSessionId")
+                                println("🔐 SupabaseAuthRepository: Database session ID: $dbSessionId")
+                                
+                                when {
+                                    // Case 1: Both session IDs exist and match - perfect!
+                                    storedSessionId != null && dbSessionId != null && storedSessionId == dbSessionId -> {
+                                        println("✅ SupabaseAuthRepository: Session IDs match - session is valid")
+                                        Result.success(currentUser)
+                                    }
+                                    
+                                    // Case 2: Session ID mismatch - user logged in elsewhere - FORCE LOGOUT
+                                    storedSessionId != null && dbSessionId != null && storedSessionId != dbSessionId -> {
+                                        println("❌ SupabaseAuthRepository: Session ID mismatch - session was invalidated by another login")
+                                        println("❌ SupabaseAuthRepository: Stored: $storedSessionId, DB: $dbSessionId")
+                                        println("❌ SupabaseAuthRepository: This session is no longer valid - clearing local session")
+                                        tokenStorage.clearSession()
+                                        Result.failure(Exception("SESSION_INVALIDATED:Your session has been terminated because you logged in from another device."))
+                                    }
+                                    
+                                    // Case 3: Database has session but local doesn't - FORCE LOGOUT (user logged in elsewhere)
+                                    storedSessionId == null && dbSessionId != null -> {
+                                        println("❌ SupabaseAuthRepository: Database has active session but local doesn't - user logged in elsewhere")
+                                        println("❌ SupabaseAuthRepository: DB session: $dbSessionId")
+                                        tokenStorage.clearSession()
+                                        Result.failure(Exception("SESSION_INVALIDATED:Your session has been terminated because you logged in from another device."))
+                                    }
+                                    
+                                    // Case 4: Local has session but database doesn't - CAUTIOUS LOGOUT 
+                                    storedSessionId != null && dbSessionId == null -> {
+                                        println("❌ SupabaseAuthRepository: Local has session but database doesn't - session likely expired")
+                                        tokenStorage.clearSession()
+                                        Result.failure(Exception("SESSION_EXPIRED:Your session has expired. Please log in again."))
+                                    }
+                                    
+                                    // Case 5: Both missing - be more strict, only allow if this is truly a legacy session
+                                    storedSessionId == null && dbSessionId == null -> {
+                                        println("❌ SupabaseAuthRepository: Both session IDs missing - forcing logout for security")
+                                        println("❌ SupabaseAuthRepository: This prevents session hijacking from legacy tokens")
+                                        tokenStorage.clearSession()
+                                        Result.failure(Exception("SESSION_EXPIRED:Your session has expired. Please log in again."))
+                                    }
+                                    
+                                    // Default case - something is wrong, be safe
+                                    else -> {
+                                        println("❌ SupabaseAuthRepository: Session validation failed - stored: $storedSessionId, db: $dbSessionId")
+                                        tokenStorage.clearSession()
+                                        Result.failure(Exception("SESSION_INVALID:Session validation failed. Please log in again."))
+                                    }
                                 }
-                                Result.success(currentUser)
                             }
                         } catch (e: Exception) {
                             println("❌ SupabaseAuthRepository: Error checking flagged status during session restoration: ${e.message}")
@@ -328,30 +433,60 @@ class SupabaseAuthRepository(
                                             return Result.success(null)
                                         }
                                     } else {
-                                        println("✅ SupabaseAuthRepository.restoreSession: Account is NOT flagged for deletion via API call - proceeding with session restoration")
-                                        // Since the token works and we have user data, we can proceed
-                                        // We'll need to work around the UserInfo requirement
+                                        println("✅ SupabaseAuthRepository.restoreSession: Account is NOT flagged for deletion via API call - checking session validity")
                                         
-                                        // For now, let's try one more session import attempt with better error handling
-                                        println("🔄 SupabaseAuthRepository: Attempting session import with valid token...")
-                                        val userSession = UserSession(
-                                            accessToken = sessionInfo.accessToken,
-                                            refreshToken = sessionInfo.refreshToken,
-                                            expiresIn = 3600,
-                                            tokenType = "Bearer",
-                                            user = null
-                                        )
+                                        // Apply same session validation logic as above
+                                        val storedSessionId = sessionInfo.sessionId
+                                        val dbSessionId = userProfile.currentSessionId
                                         
-                                        auth.importSession(userSession)
-                                        val user = auth.currentUserOrNull()
+                                        println("🔐 SupabaseAuthRepository: Alternative path - Stored session ID: $storedSessionId")
+                                        println("🔐 SupabaseAuthRepository: Alternative path - Database session ID: $dbSessionId")
                                         
-                                        if (user != null) {
-                                            println("✅ SupabaseAuthRepository: Session import successful on retry")
-                                            Result.success(user)
+                                        val shouldAllowSession = when {
+                                            // Both exist and match - perfect
+                                            storedSessionId != null && dbSessionId != null && storedSessionId == dbSessionId -> true
+                                            // Session ID mismatch - invalidated
+                                            storedSessionId != null && dbSessionId != null && storedSessionId != dbSessionId -> false
+                                            // Database has session but local doesn't - user logged in elsewhere
+                                            storedSessionId == null && dbSessionId != null -> false
+                                            // Local has session but database doesn't - session expired
+                                            storedSessionId != null && dbSessionId == null -> false
+                                            // Both missing - be strict now
+                                            storedSessionId == null && dbSessionId == null -> false
+                                            // Default - be strict
+                                            else -> false
+                                        }
+                                        
+                                        if (shouldAllowSession) {
+                                            println("✅ SupabaseAuthRepository: Session validation passed - attempting session import")
+                                            // Since the token works and we have user data, we can proceed
+                                            // We'll need to work around the UserInfo requirement
+                                            
+                                            // For now, let's try one more session import attempt with better error handling
+                                            println("🔄 SupabaseAuthRepository: Attempting session import with valid token...")
+                                            val userSession = UserSession(
+                                                accessToken = sessionInfo.accessToken,
+                                                refreshToken = sessionInfo.refreshToken,
+                                                expiresIn = 3600,
+                                                tokenType = "Bearer",
+                                                user = null
+                                            )
+                                            
+                                            auth.importSession(userSession)
+                                            val user = auth.currentUserOrNull()
+                                            
+                                            if (user != null) {
+                                                println("✅ SupabaseAuthRepository: Session import successful on retry")
+                                                Result.success(user)
+                                            } else {
+                                                println("❌ SupabaseAuthRepository: Session import failed on retry, but token is valid")
+                                                // Since the token is valid but session import fails, we have a problem
+                                                // Let's clear and force re-login for now
+                                                tokenStorage.clearSession()
+                                                Result.success(null)
+                                            }
                                         } else {
-                                            println("❌ SupabaseAuthRepository: Session import failed on retry, but token is valid")
-                                            // Since the token is valid but session import fails, we have a problem
-                                            // Let's clear and force re-login for now
+                                            println("❌ SupabaseAuthRepository: Session validation failed - session was invalidated")
                                             tokenStorage.clearSession()
                                             Result.success(null)
                                         }
@@ -475,6 +610,110 @@ class SupabaseAuthRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception("Failed to flag account for deletion: ${e.message}"))
+        }
+    }
+    
+    suspend fun validateCurrentSession(): Result<Unit> {
+        return try {
+            println("🔐 SupabaseAuthRepository: Validating current session for API call")
+            
+            val sessionInfo = tokenStorage.getSessionInfo()
+            if (sessionInfo == null) {
+                println("❌ SupabaseAuthRepository: No session info found")
+                return Result.failure(Exception("SESSION_REQUIRED:Please log in to continue."))
+            }
+            
+            if (!tokenStorage.isTokenValid()) {
+                println("❌ SupabaseAuthRepository: Local tokens are expired")
+                tokenStorage.clearSession()
+                return Result.failure(Exception("SESSION_EXPIRED:Your session has expired. Please log in again."))
+            }
+            
+            // Check session validity against database
+            val userProfile = postgrest.from("user_profiles")
+                .select {
+                    filter {
+                        eq("id", sessionInfo.userId)
+                    }
+                }
+                .decodeSingleOrNull<UserProfile>()
+            
+            if (userProfile == null) {
+                println("❌ SupabaseAuthRepository: User profile not found during session validation")
+                tokenStorage.clearSession()
+                return Result.failure(Exception("SESSION_INVALID:Session validation failed. Please log in again."))
+            }
+            
+            // Check if user is flagged for deletion
+            if (userProfile.flaggedForDeletion) {
+                println("❌ SupabaseAuthRepository: User account flagged for deletion during API call")
+                tokenStorage.clearSession()
+                
+                val errorMessage = if (userProfile.deletionType == "ADMIN") {
+                    "FLAGGED_ACCOUNT:Your account has been flagged for deletion by an administrator. Please contact support."
+                } else {
+                    "SESSION_TERMINATED:Your session has been terminated."
+                }
+                return Result.failure(Exception(errorMessage))
+            }
+            
+            // Validate session IDs
+            val storedSessionId = sessionInfo.sessionId
+            val dbSessionId = userProfile.currentSessionId
+            
+            println("🔐 SupabaseAuthRepository: API call session validation - Stored: $storedSessionId, DB: $dbSessionId")
+            
+            when {
+                // Perfect match - session is valid
+                storedSessionId != null && dbSessionId != null && storedSessionId == dbSessionId -> {
+                    println("✅ SupabaseAuthRepository: Session validation passed for API call")
+                    Result.success(Unit)
+                }
+                
+                // Session ID mismatch - user logged in elsewhere
+                storedSessionId != null && dbSessionId != null && storedSessionId != dbSessionId -> {
+                    println("❌ SupabaseAuthRepository: Session ID mismatch during API call - invalidated by another login")
+                    tokenStorage.clearSession()
+                    Result.failure(Exception("SESSION_INVALIDATED:Your session has been terminated because you logged in from another device."))
+                }
+                
+                // Database has session but local doesn't - user logged in elsewhere
+                storedSessionId == null && dbSessionId != null -> {
+                    println("❌ SupabaseAuthRepository: Database has session but local doesn't during API call")
+                    tokenStorage.clearSession()
+                    Result.failure(Exception("SESSION_INVALIDATED:Your session has been terminated because you logged in from another device."))
+                }
+                
+                // Local has session but database doesn't - session expired
+                storedSessionId != null && dbSessionId == null -> {
+                    println("❌ SupabaseAuthRepository: Local has session but database doesn't during API call")
+                    tokenStorage.clearSession()
+                    Result.failure(Exception("SESSION_EXPIRED:Your session has expired. Please log in again."))
+                }
+                
+                // Both missing - strict validation
+                storedSessionId == null && dbSessionId == null -> {
+                    println("❌ SupabaseAuthRepository: Both session IDs missing during API call - forcing logout")
+                    tokenStorage.clearSession()
+                    Result.failure(Exception("SESSION_EXPIRED:Your session has expired. Please log in again."))
+                }
+                
+                // Default case - be safe
+                else -> {
+                    println("❌ SupabaseAuthRepository: Session validation failed during API call")
+                    tokenStorage.clearSession()
+                    Result.failure(Exception("SESSION_INVALID:Session validation failed. Please log in again."))
+                }
+            }
+        } catch (e: Exception) {
+            println("❌ SupabaseAuthRepository: Exception during session validation: ${e.message}")
+            if (e.message?.startsWith("SESSION_") == true || e.message?.startsWith("FLAGGED_") == true) {
+                // Re-throw our custom session errors
+                Result.failure(e)
+            } else {
+                // For network/other errors, don't invalidate the session but fail the validation
+                Result.failure(Exception("SESSION_CHECK_FAILED:Unable to verify session. Please check your connection and try again."))
+            }
         }
     }
 }
