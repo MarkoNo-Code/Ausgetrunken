@@ -54,7 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import kotlinx.coroutines.delay
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -67,6 +67,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.clipToBounds
 import com.ausgetrunken.data.local.entities.WineEntity
 import org.koin.androidx.compose.koinViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +81,7 @@ fun WineyardDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val pullToRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
     var showFinished by remember { mutableStateOf(false) }
     var isDismissing by remember { mutableStateOf(false) }
@@ -230,7 +232,9 @@ fun WineyardDetailScreen(
         ) {
             // Custom pull-to-refresh accordion
             PullToRefreshAccordion(
+                pullToRefreshState = pullToRefreshState,
                 isLoading = uiState.isLoading,
+                isRefreshing = isRefreshing,
                 showFinished = showFinished,
                 isDismissing = isDismissing,
                 modifier = Modifier.fillMaxWidth()
@@ -238,6 +242,7 @@ fun WineyardDetailScreen(
             
             // Hide default indicator pull-to-refresh
             PullToRefreshBox(
+                state = pullToRefreshState,
                 isRefreshing = isRefreshing,
                 onRefresh = { isRefreshing = true },
                 modifier = Modifier
@@ -306,25 +311,34 @@ fun WineyardDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PullToRefreshAccordion(
+    pullToRefreshState: androidx.compose.material3.pulltorefresh.PullToRefreshState,
     isLoading: Boolean,
+    isRefreshing: Boolean,
     showFinished: Boolean,
     isDismissing: Boolean,
     modifier: Modifier = Modifier
 ) {
-    // Calculate the accordion height based on state
+    // Calculate the accordion height based on pull progress and state
     val maxHeight = 60.dp
+    val pullProgress = pullToRefreshState.distanceFraction.coerceIn(0f, 1f)
     
     val targetHeight = when {
         isDismissing -> 0.dp // Smooth dismissal to 0
-        isLoading || showFinished -> maxHeight
+        showFinished -> maxHeight // Hold at full height when showing success
+        isRefreshing -> maxHeight // Snap to full height when user refreshes
+        pullProgress > 0f -> (maxHeight * pullProgress) // Follow finger during pull
         else -> 0.dp
     }
     
-    // Animate height changes smoothly
+    // Animate height changes smoothly, faster during pull, slower for state changes
     val accordionHeight by animateDpAsState(
         targetValue = targetHeight,
         animationSpec = tween(
-            durationMillis = if (isDismissing) 500 else 300,
+            durationMillis = when {
+                isDismissing -> 500
+                pullProgress > 0f && !isRefreshing && !showFinished -> 50 // Very fast during pull
+                else -> 300
+            },
             delayMillis = 0
         ),
         label = "accordionHeight"
@@ -372,7 +386,7 @@ private fun PullToRefreshAccordion(
                             )
                         }
                     }
-                    isLoading -> {
+                    isRefreshing || isLoading -> {
                         // Show loading indicator
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -390,6 +404,15 @@ private fun PullToRefreshAccordion(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+                    pullProgress > 0f -> {
+                        // Show pull progress hint
+                        val alpha = (pullProgress * 2f).coerceAtMost(1f)
+                        Text(
+                            text = if (pullProgress >= 0.8f) "Release to refresh" else "Pull to refresh",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+                        )
                     }
                 }
             }

@@ -51,6 +51,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clipToBounds
 import kotlin.math.min
@@ -88,6 +89,7 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
+    val pullToRefreshState = rememberPullToRefreshState()
     
     // Handle manual refresh trigger
     LaunchedEffect(isRefreshing) {
@@ -96,35 +98,25 @@ fun ProfileScreen(
         }
     }
     
-    // End refresh when loading completes
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading && isRefreshing) {
-            delay(500) // Small delay to show refresh completed
-            isRefreshing = false
+    // State to maintain green color during dismissal
+    var showingSuccess by remember { mutableStateOf(false) }
+    
+    // Simplified refresh completion logic that doesn't interfere with PullToRefreshState
+    LaunchedEffect(isRefreshing, uiState.isLoading) {
+        if (isRefreshing && !uiState.isLoading) {
+            // Show success briefly, then keep green during dismissal
+            showingSuccess = true
+            delay(800) // Success display duration
+            isRefreshing = false // Reset to allow next pull
+            delay(300) // Keep green during dismissal animation
+            showingSuccess = false // Finally reset to normal
         }
     }
     
-    // Handle loading completion with finished state and smooth dismissal
-    var showFinished by remember { mutableStateOf(false) }
-    var isDismissing by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading && !showFinished) {
-            showFinished = true
-            delay(1050) // Show "Finished" for 1.05 seconds
-            isDismissing = true // Start smooth dismissal
-            delay(400) // Wait for dismissal animation
-            showFinished = false
-            isDismissing = false
-            // Refresh animation handled above
-        }
-    }
-    
-    // Reset states when starting new refresh
+    // Reset success state when starting new refresh
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
-            showFinished = false
-            isDismissing = false
+            showingSuccess = false
         }
     }
     
@@ -215,22 +207,27 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Custom pull-to-refresh accordion
+            // Custom pull-to-refresh accordion that follows finger
             PullToRefreshAccordion(
+                pullToRefreshState = pullToRefreshState,
                 isLoading = uiState.isLoading,
-                showFinished = showFinished,
-                isDismissing = isDismissing,
+                isRefreshing = isRefreshing,
+                showingSuccess = showingSuccess,
                 modifier = Modifier.fillMaxWidth()
             )
             
             // Content with pull-to-refresh (hide default indicator)
             PullToRefreshBox(
+                state = pullToRefreshState,
                 isRefreshing = isRefreshing,
                 onRefresh = { isRefreshing = true },
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f),
-                indicator = { /* Hide default indicator */ }
+                indicator = { 
+                    // Completely suppress the built-in indicator and any default UI
+                    Box(modifier = Modifier.size(0.dp))
+                }
             ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -374,27 +371,32 @@ fun ProfileScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PullToRefreshAccordion(
+    pullToRefreshState: androidx.compose.material3.pulltorefresh.PullToRefreshState,
     isLoading: Boolean,
-    showFinished: Boolean,
-    isDismissing: Boolean,
+    isRefreshing: Boolean,
+    showingSuccess: Boolean,
     modifier: Modifier = Modifier
 ) {
-    // Calculate the accordion height based on state
+    // Calculate the accordion height based on pull progress and state
     val maxHeight = 60.dp
+    val pullProgress = pullToRefreshState.distanceFraction.coerceIn(0f, 1f)
     
+    // Simplified state logic - let PullToRefreshState manage its own lifecycle
     val targetHeight = when {
-        isDismissing -> 0.dp // Smooth dismissal to 0
-        isLoading || showFinished -> maxHeight
+        showingSuccess || (isRefreshing && !isLoading) -> maxHeight // Show success when refresh completes
+        isRefreshing -> maxHeight // Show during refresh
+        pullProgress > 0f -> (maxHeight * pullProgress) // Follow finger - works consistently
         else -> 0.dp
     }
     
-    // Animate height changes smoothly
+    // Use immediate animation during pull for perfect finger following
     val accordionHeight by animateDpAsState(
         targetValue = targetHeight,
-        animationSpec = tween(
-            durationMillis = if (isDismissing) 500 else 300,
-            delayMillis = 0
-        ),
+        animationSpec = if (pullProgress > 0f && !isRefreshing) {
+            tween(durationMillis = 0) // Immediate response during pull
+        } else {
+            tween(durationMillis = 300) // Smooth for state changes
+        },
         label = "accordionHeight"
     )
     
@@ -408,7 +410,7 @@ private fun PullToRefreshAccordion(
             shape = RoundedCornerShape(0.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when {
-                    showFinished -> Color(0xFF4CAF50) // Green when finished
+                    showingSuccess || (isRefreshing && !isLoading) -> Color(0xFF4CAF50) // Green when refresh completes
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             )
@@ -420,7 +422,7 @@ private fun PullToRefreshAccordion(
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    showFinished -> {
+                    showingSuccess || (isRefreshing && !isLoading) -> {
                         // Show finished state
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -440,7 +442,7 @@ private fun PullToRefreshAccordion(
                             )
                         }
                     }
-                    isLoading -> {
+                    isRefreshing || isLoading -> {
                         // Show loading indicator
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -458,6 +460,15 @@ private fun PullToRefreshAccordion(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+                    pullProgress > 0f -> {
+                        // Show pull progress hint
+                        val alpha = (pullProgress * 2f).coerceAtMost(1f)
+                        Text(
+                            text = if (pullProgress >= 0.8f) "Release to refresh" else "Pull to refresh",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
+                        )
                     }
                 }
             }
