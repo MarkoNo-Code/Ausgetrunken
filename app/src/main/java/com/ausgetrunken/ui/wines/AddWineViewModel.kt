@@ -229,8 +229,8 @@ class AddWineViewModel(
                                 isSuccess = true
                             )
                         }
-                        // Navigate to the newly created wine's detail page
-                        _navigationEvents.trySend(NavigationEvent.NavigateToWineDetail(createdWine.id))
+                        // Navigate back to wineyard detail page with success
+                        _navigationEvents.trySend(NavigationEvent.NavigateBack)
                     }
                     .onFailure { exception ->
                         _uiState.update { 

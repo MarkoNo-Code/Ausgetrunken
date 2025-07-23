@@ -53,12 +53,6 @@ class AuthenticatedRepository(
             
             // Step 3: Execute operation with guaranteed auth context
             operation(authenticatedUser)
-        }.mapError { error ->
-            // Convert authentication exceptions to proper AppError types
-            when (error) {
-                is AuthenticationException -> error.toAppError()
-                else -> error
-            }
         }
     }
     
