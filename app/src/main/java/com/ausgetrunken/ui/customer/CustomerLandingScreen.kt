@@ -5,13 +5,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
-// import androidx.compose.material3.pulltorefresh.PullToRefreshState
-// import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clipToBounds
 import kotlin.math.min
@@ -46,39 +46,49 @@ fun CustomerLandingScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
-    // val pullToRefreshState = rememberPullToRefreshState()
+    // PullToRefreshBox handles its own state internally
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    // Handle pull-to-refresh - DISABLED
-    // LaunchedEffect(pullToRefreshState.isRefreshing) {
-    //     if (pullToRefreshState.isRefreshing) {
-    //         viewModel.refreshData()
-    //     }
-    // }
+    var isRefreshing by remember { mutableStateOf(false) }
+    
+    // Handle manual refresh trigger
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            viewModel.refreshData()
+        }
+    }
+    
+    // End refresh when loading completes
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading && isRefreshing) {
+            delay(500) // Small delay to show refresh completed
+            isRefreshing = false
+        }
+    }
     
     // Handle loading completion with finished state and smooth dismissal
     var showFinished by remember { mutableStateOf(false) }
     var isDismissing by remember { mutableStateOf(false) }
     
     LaunchedEffect(uiState.isLoading) {
-        if (!uiState.isLoading && false && !showFinished) { // DISABLED pullToRefreshState.isRefreshing
+        if (!uiState.isLoading && !showFinished) {
             showFinished = true
             delay(1050) // Show "Finished" for 1.05 seconds
             isDismissing = true // Start smooth dismissal
             delay(400) // Wait for dismissal animation
             showFinished = false
             isDismissing = false
-            // pullToRefreshState.endRefresh() // DISABLED
+            // Refresh animation handled above
         }
     }
     
-    // Reset states when starting new refresh - DISABLED
-    // LaunchedEffect(pullToRefreshState.isRefreshing) {
-    //     if (pullToRefreshState.isRefreshing) {
-    //         showFinished = false
-    //         isDismissing = false
-    //     }
-    // }
+    // Reset states when starting new refresh
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            showFinished = false
+            isDismissing = false
+        }
+    }
     
     // Handle error messages
     LaunchedEffect(uiState.errorMessage) {
@@ -170,20 +180,23 @@ fun CustomerLandingScreen(
                 )
             }
             
-            // Pull-to-refresh accordion - DISABLED
-            // PullToRefreshAccordion(
-            //     pullToRefreshState = pullToRefreshState,
-            //     isLoading = uiState.isLoading,
-            //     showFinished = showFinished,
-            //     isDismissing = isDismissing
-            // )
+            // Custom pull-to-refresh accordion
+            PullToRefreshAccordion(
+                isLoading = uiState.isLoading,
+                showFinished = showFinished,
+                isDismissing = isDismissing,
+                currentTab = uiState.currentTab,
+                modifier = Modifier.fillMaxWidth()
+            )
             
-            // Content with pull-to-refresh (but hiding default indicator)
-            Box(
+            // Content with pull-to-refresh (hide default indicator)
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { isRefreshing = true },
                 modifier = Modifier
                     .fillMaxSize()
-                    .weight(1f)
-                    // .nestedScroll(pullToRefreshState.nestedScrollConnection) // DISABLED
+                    .weight(1f),
+                indicator = { /* Hide default indicator */ }
             ) {
                 when (uiState.currentTab) {
                     CustomerTab.WINEYARDS -> {
@@ -326,39 +339,39 @@ private fun WinesList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PullToRefreshAccordion(
-    // pullToRefreshState: PullToRefreshState, // DISABLED
     isLoading: Boolean,
     showFinished: Boolean,
-    isDismissing: Boolean
+    isDismissing: Boolean,
+    currentTab: CustomerTab,
+    modifier: Modifier = Modifier
 ) {
-    // Calculate the accordion height based on pull progress (slimmer)
-    val maxHeight = 56.dp
-    val pullProgress = 0f // pullToRefreshState.progress // DISABLED
+    // Calculate the accordion height based on state
+    val maxHeight = 60.dp
     
     val targetHeight = when {
         isDismissing -> 0.dp // Smooth dismissal to 0
-        isLoading || false || showFinished -> maxHeight // DISABLED pullToRefreshState.isRefreshing
-        else -> (maxHeight * min(pullProgress, 1f))
+        isLoading || showFinished -> maxHeight
+        else -> 0.dp
     }
     
     // Animate height changes smoothly
     val accordionHeight by animateDpAsState(
         targetValue = targetHeight,
         animationSpec = tween(
-            durationMillis = if (isDismissing) 400 else 200,
+            durationMillis = if (isDismissing) 500 else 300,
             delayMillis = 0
         ),
         label = "accordionHeight"
     )
     
-    // Only show if there's some progress or we're loading
+    // Only show if there's some height
     if (accordionHeight.value > 0) {
         Card(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .height(accordionHeight)
                 .clipToBounds(),
-            shape = RoundedCornerShape(0.dp), // Remove rounded corners
+            shape = RoundedCornerShape(0.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when {
                     showFinished -> Color(0xFF4CAF50) // Green when finished
@@ -375,39 +388,48 @@ private fun PullToRefreshAccordion(
                 when {
                     showFinished -> {
                         // Show finished state
-                        Text(
-                            text = "Finished",
-                            style = MaterialTheme.typography.bodySmall, // Smaller text
-                            color = Color.White
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = when (currentTab) {
+                                    CustomerTab.WINEYARDS -> "Wineyards refreshed"
+                                    CustomerTab.WINES -> "Wines refreshed"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
+                        }
                     }
-                    isLoading || false -> { // DISABLED pullToRefreshState.isRefreshing
+                    isLoading -> {
                         // Show loading indicator
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp), // Smaller indicator
+                                modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Loading...",
-                                style = MaterialTheme.typography.bodySmall, // Smaller text
+                                text = when (currentTab) {
+                                    CustomerTab.WINEYARDS -> "Refreshing wineyards..."
+                                    CustomerTab.WINES -> "Refreshing wines..."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                    else -> {
-                        // Show pull-to-refresh hint based on progress
-                        val alpha = min(pullProgress * 2f, 1f)
-                        Text(
-                            text = if (pullProgress >= 1f) "Release to refresh" else "Pull to refresh",
-                            style = MaterialTheme.typography.bodySmall, // Smaller text
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
-                        )
                     }
                 }
             }

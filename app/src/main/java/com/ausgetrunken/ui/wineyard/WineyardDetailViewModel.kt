@@ -244,4 +244,17 @@ class WineyardDetailViewModel(
             }
         }
     }
+    
+    fun refreshData() {
+        val wineyardId = _uiState.value.wineyard?.id ?: return
+        execute("refreshData") {
+            AppResult.catchingSuspend {
+                // Sync wines and get latest data
+                wineService.syncWines()
+                val wines = wineService.getWinesByWineyard(wineyardId).first()
+                _uiState.value = _uiState.value.copy(wines = wines)
+                wines
+            }
+        }
+    }
 }

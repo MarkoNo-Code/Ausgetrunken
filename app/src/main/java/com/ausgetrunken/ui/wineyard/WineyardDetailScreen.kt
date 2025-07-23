@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
@@ -49,6 +51,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +62,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.clipToBounds
 import com.ausgetrunken.data.local.entities.WineEntity
 import org.koin.androidx.compose.koinViewModel
 
@@ -71,6 +80,38 @@ fun WineyardDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var showFinished by remember { mutableStateOf(false) }
+    var isDismissing by remember { mutableStateOf(false) }
+    
+    // Handle manual refresh trigger
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            viewModel.refreshData()
+        }
+    }
+    
+    // End refresh when loading completes
+    val baseLoadingState by viewModel.loadingState.collectAsState()
+    LaunchedEffect(baseLoadingState) {
+        if (!baseLoadingState && isRefreshing) {
+            showFinished = true
+            delay(500) // Show "Finished" for 500ms
+            isDismissing = true // Start smooth dismissal
+            delay(300) // Wait for dismissal animation
+            showFinished = false
+            isDismissing = false
+            isRefreshing = false
+        }
+    }
+    
+    // Reset states when starting new refresh
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            showFinished = false
+            isDismissing = false
+        }
+    }
     
     LaunchedEffect(wineyardId) {
         viewModel.loadWineyard(wineyardId)
@@ -182,11 +223,28 @@ fun WineyardDetailScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Custom pull-to-refresh accordion
+            PullToRefreshAccordion(
+                isLoading = uiState.isLoading,
+                showFinished = showFinished,
+                isDismissing = isDismissing,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            // Hide default indicator pull-to-refresh
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { isRefreshing = true },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                indicator = { /* Hide default indicator */ }
+            ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier
@@ -236,6 +294,101 @@ fun WineyardDetailScreen(
                         
                         item {
                             Spacer(modifier = Modifier.height(80.dp))
+                        }
+                    }
+                }
+            }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PullToRefreshAccordion(
+    isLoading: Boolean,
+    showFinished: Boolean,
+    isDismissing: Boolean,
+    modifier: Modifier = Modifier
+) {
+    // Calculate the accordion height based on state
+    val maxHeight = 60.dp
+    
+    val targetHeight = when {
+        isDismissing -> 0.dp // Smooth dismissal to 0
+        isLoading || showFinished -> maxHeight
+        else -> 0.dp
+    }
+    
+    // Animate height changes smoothly
+    val accordionHeight by animateDpAsState(
+        targetValue = targetHeight,
+        animationSpec = tween(
+            durationMillis = if (isDismissing) 500 else 300,
+            delayMillis = 0
+        ),
+        label = "accordionHeight"
+    )
+    
+    // Only show if there's some height
+    if (accordionHeight.value > 0) {
+        Card(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(accordionHeight)
+                .clipToBounds(),
+            shape = RoundedCornerShape(0.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = when {
+                    showFinished -> Color(0xFF4CAF50) // Green when finished
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    showFinished -> {
+                        // Show finished state
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Wines refreshed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    isLoading -> {
+                        // Show loading indicator
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Refreshing wines...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
