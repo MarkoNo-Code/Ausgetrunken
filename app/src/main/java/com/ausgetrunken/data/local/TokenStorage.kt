@@ -20,11 +20,13 @@ class TokenStorage(context: Context) {
     fun saveLoginSession(accessToken: String, refreshToken: String, userId: String, sessionId: String? = null) {
         val expirationTime = System.currentTimeMillis() + TOKEN_EXPIRATION_DURATION
         
-        println("💾 TokenStorage: Saving login session for user: $userId")
+        println("💾 TokenStorage: SAVING login session for user: $userId")
         println("💾 TokenStorage: Access token length: ${accessToken.length}")
         println("💾 TokenStorage: Refresh token length: ${refreshToken.length}")
         println("💾 TokenStorage: Session ID: $sessionId")
         println("💾 TokenStorage: Expiration time: $expirationTime")
+        println("💾 TokenStorage: Current time: ${System.currentTimeMillis()}")
+        println("💾 TokenStorage: Time until expiration: ${(expirationTime - System.currentTimeMillis()) / 1000 / 60 / 60 / 24} days")
         
         preferences.edit().apply {
             putString(KEY_ACCESS_TOKEN, accessToken)
@@ -38,35 +40,21 @@ class TokenStorage(context: Context) {
             apply()
         }
         
-        println("✅ TokenStorage: Session saved successfully")
+        println("✅ TokenStorage: Session saved successfully to SharedPreferences")
+        println("✅ TokenStorage: Verification - can retrieve userId: ${preferences.getString(KEY_USER_ID, null)}")
         _isLoggedIn.value = true
     }
     
     fun getAccessToken(): String? {
-        return if (isTokenValid()) {
-            preferences.getString(KEY_ACCESS_TOKEN, null)
-        } else {
-            clearSession()
-            null
-        }
+        return preferences.getString(KEY_ACCESS_TOKEN, null)
     }
     
     fun getRefreshToken(): String? {
-        return if (isTokenValid()) {
-            preferences.getString(KEY_REFRESH_TOKEN, null)
-        } else {
-            clearSession()
-            null
-        }
+        return preferences.getString(KEY_REFRESH_TOKEN, null)
     }
     
     fun getUserId(): String? {
-        return if (isTokenValid()) {
-            preferences.getString(KEY_USER_ID, null)
-        } else {
-            clearSession()
-            null
-        }
+        return preferences.getString(KEY_USER_ID, null)
     }
     
     fun isTokenValid(): Boolean {
@@ -114,21 +102,30 @@ class TokenStorage(context: Context) {
     }
     
     fun getSessionInfo(): SessionInfo? {
-        println("🔄 TokenStorage: Getting session info...")
-        val isValid = isTokenValid()
-        println("🔄 TokenStorage: Token valid = $isValid")
+        println("🔄 TokenStorage: LOADING session info from SharedPreferences...")
         
-        return if (isValid) {
-            val accessToken = getAccessToken()
-            val refreshToken = getRefreshToken()
-            val userId = getUserId()
+        val accessToken = getAccessToken()
+        val refreshToken = getRefreshToken()
+        val userId = getUserId()
+        val sessionId = preferences.getString(KEY_SESSION_ID, null)
+        val expirationTime = preferences.getLong(KEY_EXPIRATION_TIME, 0)
+        val loginTime = preferences.getLong(KEY_LOGIN_TIME, 0)
+        
+        println("🔄 TokenStorage: AccessToken = ${if (accessToken != null) "EXISTS (${accessToken.length} chars)" else "NULL"}")
+        println("🔄 TokenStorage: RefreshToken = ${if (refreshToken != null) "EXISTS (${refreshToken.length} chars)" else "NULL"}")
+        println("🔄 TokenStorage: UserId = $userId")
+        println("🔄 TokenStorage: SessionId = $sessionId")
+        println("🔄 TokenStorage: ExpirationTime = $expirationTime")
+        println("🔄 TokenStorage: LoginTime = $loginTime")
+        println("🔄 TokenStorage: Current time = ${System.currentTimeMillis()}")
+        
+        if (accessToken != null && refreshToken != null && userId != null) {
+            val isValid = isTokenValid()
+            println("🔄 TokenStorage: Token valid = $isValid")
             
-            println("🔄 TokenStorage: AccessToken = ${if (accessToken != null) "EXISTS" else "NULL"}")
-            println("🔄 TokenStorage: RefreshToken = ${if (refreshToken != null) "EXISTS" else "NULL"}")
-            println("🔄 TokenStorage: UserId = $userId")
-            
-            if (accessToken != null && refreshToken != null && userId != null) {
-                SessionInfo(
+            if (isValid) {
+                println("✅ TokenStorage: Valid tokens found, creating SessionInfo")
+                return SessionInfo(
                     accessToken = accessToken,
                     refreshToken = refreshToken,
                     userId = userId,
@@ -137,12 +134,13 @@ class TokenStorage(context: Context) {
                     sessionId = preferences.getString(KEY_SESSION_ID, null)
                 )
             } else {
-                println("❌ TokenStorage: Missing required tokens")
-                null
+                println("❌ TokenStorage: Tokens found but expired - allowing for potential refresh")
+                // Don't clear session here - let the caller decide what to do with expired tokens
+                return null
             }
         } else {
-            println("❌ TokenStorage: Tokens invalid or expired")
-            null
+            println("❌ TokenStorage: Missing required tokens")
+            return null
         }
     }
     

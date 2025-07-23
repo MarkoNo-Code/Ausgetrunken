@@ -77,7 +77,9 @@
       "Bash(npx supabase:*)",
       "Bash(npx:*)",
       "Bash(where:*)",
-      "Bash(del nul)"
+      "Bash(del nul)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" logcat -d -v time)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" logcat -v time)"
     ],
     "deny": []
   }

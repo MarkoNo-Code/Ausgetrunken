@@ -7,6 +7,7 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.data.repository.WineRepository
 import com.ausgetrunken.data.repository.WineyardRepository
 import com.ausgetrunken.data.repository.WineyardSubscriptionRepository
+import com.ausgetrunken.domain.repository.AuthenticatedRepository
 import com.ausgetrunken.domain.repository.NotificationRepository
 import com.ausgetrunken.domain.service.NotificationService
 import com.ausgetrunken.domain.service.WineService
@@ -25,6 +26,7 @@ val repositoryModule = module {
     single { WineyardRepository(get(), get(), get()) }
     single { WineyardSubscriptionRepository(get(), get(), get()) }
     single<NotificationRepository> { NotificationRepositoryImpl(get(), get()) }
+    single { AuthenticatedRepository(get()) }
     
     // Use Cases
     factory { GetLowStockWinesUseCase(get<WineService>()) }

@@ -124,9 +124,8 @@ class AddWineViewModel(
         }
         
         viewModelScope.launch {
-            // Check user permissions first
-            val currentUser = authService.getCurrentUser().first()
-            if (currentUser == null) {
+            // Check if we have a valid session first
+            if (!authService.hasValidSession()) {
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
@@ -136,7 +135,43 @@ class AddWineViewModel(
                 return@launch
             }
             
-            val user = userRepository.getUserById(currentUser.id).first()
+            // Try to get current user, fallback to session restoration
+            var currentUser = authService.getCurrentUser().first()
+            var userIdFromSession: String? = null
+            
+            if (currentUser == null) {
+                println("⚠️ AddWineViewModel: No UserInfo available, attempting session restoration...")
+                authService.restoreSession()
+                    .onSuccess { user ->
+                        if (user != null) {
+                            currentUser = user
+                            println("✅ AddWineViewModel: Session restored successfully")
+                        }
+                    }
+                    .onFailure { error ->
+                        val errorMessage = error.message ?: ""
+                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                            if (parts.size >= 2) {
+                                userIdFromSession = parts[0]
+                                println("✅ AddWineViewModel: Extracted userId from session: $userIdFromSession")
+                            }
+                        }
+                    }
+            }
+            
+            val userId = currentUser?.id ?: userIdFromSession
+            if (userId == null) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "User not authenticated"
+                    )
+                }
+                return@launch
+            }
+            
+            val user = userRepository.getUserById(userId).first()
             if (user?.userType != UserType.WINEYARD_OWNER) {
                 _uiState.update { 
                     it.copy(
@@ -148,7 +183,7 @@ class AddWineViewModel(
             }
             
             // Validate wineyard ownership for security
-            val isOwner = wineyardService.validateWineyardOwnership(currentUser.id, currentState.wineyardId)
+            val isOwner = wineyardService.validateWineyardOwnership(userId, currentState.wineyardId)
             if (!isOwner) {
                 _uiState.update { 
                     it.copy(

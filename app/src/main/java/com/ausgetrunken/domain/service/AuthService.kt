@@ -49,4 +49,8 @@ class AuthService(
     suspend fun deleteAccount(): Result<Unit> {
         return authRepository.deleteAccount()
     }
+    
+    fun hasValidSession(): Boolean {
+        return authRepository.hasValidSession()
+    }
 }

@@ -7,7 +7,6 @@ import com.ausgetrunken.ui.profile.ProfileViewModel
 import com.ausgetrunken.ui.splash.SplashViewModel
 import com.ausgetrunken.ui.wineyard.AddWineyardViewModel
 import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
-import com.ausgetrunken.ui.wines.ManageWinesViewModel
 import com.ausgetrunken.ui.wines.WineDetailViewModel
 import com.ausgetrunken.ui.wines.AddWineViewModel
 import com.ausgetrunken.ui.wines.EditWineViewModel
@@ -23,10 +22,9 @@ val viewModelModule = module {
     viewModel { LoginViewModel(get(), get()) }
     viewModel { RegisterViewModel(get()) }
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { SplashViewModel(get()) }
+    viewModel { SplashViewModel(get(), get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
-    viewModel { WineyardDetailViewModel(get(), get(), get(), get()) }
-    viewModel { ManageWinesViewModel(get(), get(), get(), get()) }
+    viewModel { WineyardDetailViewModel(get(), get(), get(), get(), get()) }
     viewModel { WineDetailViewModel(get()) }
     viewModel { AddWineViewModel(get(), get(), get(), get()) }
     viewModel { EditWineViewModel(get(), get(), get(), get()) }

@@ -119,10 +119,18 @@ project-docs/
 *.txt
 *.hprof
 
-# Node.js dependencies (if any MCP or web tools are used)
+# Node.js dependencies and scripts (SHOULD NOT BE IN ROOT - use project-docs/)
 node_modules/
 package-lock.json
 package.json
+*.js
+
+# Database scripts (SHOULD NOT BE IN ROOT - use project-docs/database-scripts/)
+*.sql
+cli-commands.txt
+
+# Supabase configuration (SHOULD NOT BE IN ROOT - use project-docs/supabase-config/)
+supabase/
 
 # Setup and Development Scripts
 setup-env.*

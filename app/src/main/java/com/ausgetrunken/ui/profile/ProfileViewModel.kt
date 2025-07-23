@@ -34,16 +34,57 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             
-            val currentUser = authRepository.currentUser
-            if (currentUser != null) {
+            // Check if we have a valid session first (more robust than just checking currentUser)
+            if (!authRepository.hasValidSession()) {
+                println("❌ ProfileViewModel: No valid session found")
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "User not authenticated"
+                )
+                return@launch
+            }
+            
+            // Try to get current user, but fallback to session restoration if needed
+            var currentUser = authRepository.currentUser
+            var userIdFromSession: String? = null
+            var userEmailFromSession: String? = null
+            
+            if (currentUser == null) {
+                println("⚠️ ProfileViewModel: No Supabase UserInfo, attempting session restoration...")
+                // Try to restore session to get user info
+                authService.restoreSession()
+                    .onSuccess { user ->
+                        if (user != null) {
+                            currentUser = user
+                            println("✅ ProfileViewModel: Session restored successfully")
+                        }
+                    }
+                    .onFailure { error ->
+                        val errorMessage = error.message ?: ""
+                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                            println("✅ ProfileViewModel: Valid session without UserInfo, extracting data...")
+                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                            if (parts.size >= 2) {
+                                userIdFromSession = parts[0]
+                                userEmailFromSession = parts[1]
+                                println("✅ ProfileViewModel: Extracted userId: $userIdFromSession, email: $userEmailFromSession")
+                            }
+                        }
+                    }
+            }
+            
+            // Determine user ID and email from either currentUser or session data
+            val userId = currentUser?.id ?: userIdFromSession
+            val userEmail = currentUser?.email ?: userEmailFromSession ?: ""
+            
+            if (userId != null) {
                 try {
-                    println("🔍 ProfileViewModel: Loading profile for user ID: ${currentUser.id}")
-                    println("🔍 ProfileViewModel: User email: ${currentUser.email}")
+                    println("🔍 ProfileViewModel: Loading profile for user ID: $userId")
+                    println("🔍 ProfileViewModel: User email: $userEmail")
                     
                     // Load user info
-                    val userEmail = currentUser.email ?: ""
-                    val userName = currentUser.userMetadata?.get("full_name")?.toString() ?: "Wineyard Owner"
-                    val profilePictureUrl = currentUser.userMetadata?.get("avatar_url")?.toString()
+                    val userName = currentUser?.userMetadata?.get("full_name")?.toString() ?: "Wineyard Owner"
+                    val profilePictureUrl = currentUser?.userMetadata?.get("avatar_url")?.toString()
                     
                     // First, sync wineyards from Supabase to ensure we have the latest data
                     println("🔄 ProfileViewModel: Syncing wineyards from Supabase...")
@@ -54,8 +95,8 @@ class ProfileViewModel(
                         println("✅ ProfileViewModel: Sync completed successfully")
                     }
                     
-                    wineyardService.getWineyardsByOwner(currentUser.id).collect { wineyards ->
-                        println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner ${currentUser.id}")
+                    wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
+                        println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner $userId")
                         wineyards.forEach { wineyard ->
                             println("  - Wineyard: ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
                         }
@@ -78,7 +119,7 @@ class ProfileViewModel(
                     )
                 }
             } else {
-                println("❌ ProfileViewModel: User not authenticated")
+                println("❌ ProfileViewModel: Unable to determine user ID")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = "User not authenticated"
@@ -129,10 +170,29 @@ class ProfileViewModel(
     
     fun debugWineyardData() {
         viewModelScope.launch {
-            val currentUser = authRepository.currentUser
-            if (currentUser != null) {
-                println("🐛 DEBUG: Current user ID: ${currentUser.id}")
-                println("🐛 DEBUG: Current user email: ${currentUser.email}")
+            // Get user ID from session if currentUser is not available
+            var currentUser = authRepository.currentUser
+            var userIdFromSession: String? = null
+            
+            if (currentUser == null && authRepository.hasValidSession()) {
+                println("🐛 DEBUG: No currentUser but valid session exists, attempting restoration...")
+                authService.restoreSession()
+                    .onFailure { error ->
+                        val errorMessage = error.message ?: ""
+                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                            if (parts.size >= 2) {
+                                userIdFromSession = parts[0]
+                            }
+                        }
+                    }
+            }
+            
+            val userId = currentUser?.id ?: userIdFromSession
+            
+            if (userId != null) {
+                println("🐛 DEBUG: Current user ID: $userId")
+                println("🐛 DEBUG: Current user email: ${currentUser?.email ?: "Not available from session"}")
                 
                 // Force sync wineyards
                 println("🐛 DEBUG: Force syncing wineyards...")
@@ -145,14 +205,16 @@ class ProfileViewModel(
                     println("🐛 DEBUG: Total wineyards in local DB: ${wineyards.size}")
                     wineyards.forEach { wineyard ->
                         println("🐛 DEBUG:   - ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
-                        println("🐛 DEBUG:     Owner matches current user: ${wineyard.ownerId == currentUser.id}")
+                        println("🐛 DEBUG:     Owner matches current user: ${wineyard.ownerId == userId}")
                     }
                     
                     // Check specifically for current user's wineyards
-                    val userWineyards = wineyards.filter { it.ownerId == currentUser.id }
+                    val userWineyards = wineyards.filter { it.ownerId == userId }
                     println("🐛 DEBUG: Wineyards for current user: ${userWineyards.size}")
                     return@collect // Exit after first emission
                 }
+            } else {
+                println("🐛 DEBUG: No authenticated user found")
             }
         }
     }
@@ -241,14 +303,33 @@ class ProfileViewModel(
     
     fun debugFCMToken() {
         viewModelScope.launch {
-            val currentUser = authRepository.currentUser
-            if (currentUser != null) {
-                println("🔍 DEBUG FCM: Starting FCM token debug for user: ${currentUser.id}")
-                println("🔍 DEBUG FCM: User email: ${currentUser.email}")
+            // Get user ID from session if currentUser is not available
+            var currentUser = authRepository.currentUser
+            var userIdFromSession: String? = null
+            
+            if (currentUser == null && authRepository.hasValidSession()) {
+                println("🔍 DEBUG FCM: No currentUser but valid session exists, attempting restoration...")
+                authService.restoreSession()
+                    .onFailure { error ->
+                        val errorMessage = error.message ?: ""
+                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                            if (parts.size >= 2) {
+                                userIdFromSession = parts[0]
+                            }
+                        }
+                    }
+            }
+            
+            val userId = currentUser?.id ?: userIdFromSession
+            
+            if (userId != null) {
+                println("🔍 DEBUG FCM: Starting FCM token debug for user: $userId")
+                println("🔍 DEBUG FCM: User email: ${currentUser?.email ?: "Not available from session"}")
                 
                 try {
                     // 1. Check what token is stored in Supabase
-                    val storedToken = notificationService.getUserFcmToken(currentUser.id)
+                    val storedToken = notificationService.getUserFcmToken(userId)
                     println("🔍 DEBUG FCM: Stored token in Supabase: ${storedToken?.take(20) ?: "NULL"}...")
                     
                     if (storedToken != null) {
@@ -267,11 +348,11 @@ class ProfileViewModel(
                     
                     // 2. Force update the FCM token
                     println("🔍 DEBUG FCM: Force updating FCM token...")
-                    fcmTokenManager.updateTokenForUser(currentUser.id)
+                    fcmTokenManager.updateTokenForUser(userId)
                     
                     // 3. Check again after update
                     kotlinx.coroutines.delay(3000) // Wait for update to complete
-                    val updatedToken = notificationService.getUserFcmToken(currentUser.id)
+                    val updatedToken = notificationService.getUserFcmToken(userId)
                     println("🔍 DEBUG FCM: Updated token in Supabase: ${updatedToken?.take(20) ?: "NULL"}...")
                     
                     // 4. Compare tokens
@@ -284,7 +365,7 @@ class ProfileViewModel(
                     // 5. Log token details for edge function debugging
                     if (updatedToken != null) {
                         println("🔍 DEBUG FCM: For Edge Function debugging:")
-                        println("   - User ID: ${currentUser.id}")
+                        println("   - User ID: $userId")
                         println("   - Token prefix: ${updatedToken.take(30)}...")
                         println("   - Token suffix: ...${updatedToken.takeLast(10)}")
                     }

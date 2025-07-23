@@ -31,8 +31,8 @@ class SubscriptionsViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                 
-                val currentUser = authService.getCurrentUser().first()
-                if (currentUser == null) {
+                // Check if we have a valid session first
+                if (!authService.hasValidSession()) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = "User not authenticated"
@@ -40,10 +40,44 @@ class SubscriptionsViewModel(
                     return@launch
                 }
                 
-                println("🔄 SubscriptionsViewModel: Loading real-time subscriptions for user: ${currentUser.id}")
+                // Try to get current user, fallback to session restoration
+                var currentUser = authService.getCurrentUser().first()
+                var userIdFromSession: String? = null
+                
+                if (currentUser == null) {
+                    println("⚠️ SubscriptionsViewModel: No UserInfo available, attempting session restoration...")
+                    authService.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("✅ SubscriptionsViewModel: Session restored successfully")
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                    println("✅ SubscriptionsViewModel: Extracted userId from session: $userIdFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                val userId = currentUser?.id ?: userIdFromSession
+                if (userId == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "User not authenticated"
+                    )
+                    return@launch
+                }
+                
+                println("🔄 SubscriptionsViewModel: Loading real-time subscriptions for user: $userId")
                 
                 // Fetch subscriptions directly from Supabase (real-time, no local cache)
-                subscriptionService.getUserSubscriptionsFromSupabase(currentUser.id)
+                subscriptionService.getUserSubscriptionsFromSupabase(userId)
                     .onSuccess { subscriptions ->
                         println("📊 SubscriptionsViewModel: Found ${subscriptions.size} real-time subscriptions")
                         
@@ -90,8 +124,38 @@ class SubscriptionsViewModel(
     fun unsubscribe(wineyardId: String) {
         viewModelScope.launch {
             try {
-                val currentUser = authService.getCurrentUser().first()
+                // Check if we have a valid session first
+                if (!authService.hasValidSession()) {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "User not authenticated"
+                    )
+                    return@launch
+                }
+                
+                // Try to get current user, fallback to session restoration
+                var currentUser = authService.getCurrentUser().first()
+                var userIdFromSession: String? = null
+                
                 if (currentUser == null) {
+                    authService.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                }
+                            }
+                        }
+                }
+                
+                val userId = currentUser?.id ?: userIdFromSession
+                if (userId == null) {
                     _uiState.value = _uiState.value.copy(
                         errorMessage = "User not authenticated"
                     )
@@ -100,7 +164,7 @@ class SubscriptionsViewModel(
                 
                 println("🔄 SubscriptionsViewModel: Unsubscribing from wineyard: $wineyardId")
                 
-                subscriptionService.unsubscribeFromWineyard(currentUser.id, wineyardId)
+                subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
                     .onSuccess {
                         println("✅ SubscriptionsViewModel: Successfully unsubscribed from wineyard: $wineyardId")
                         // Reload subscriptions immediately to reflect changes across devices
@@ -130,8 +194,38 @@ class SubscriptionsViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val currentUser = authService.getCurrentUser().first()
+                // Check if we have a valid session first
+                if (!authService.hasValidSession()) {
+                    _uiState.value = _uiState.value.copy(
+                        errorMessage = "User not authenticated"
+                    )
+                    return@launch
+                }
+                
+                // Try to get current user, fallback to session restoration
+                var currentUser = authService.getCurrentUser().first()
+                var userIdFromSession: String? = null
+                
                 if (currentUser == null) {
+                    authService.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                }
+                            }
+                        }
+                }
+                
+                val userId = currentUser?.id ?: userIdFromSession
+                if (userId == null) {
                     _uiState.value = _uiState.value.copy(
                         errorMessage = "User not authenticated"
                     )
@@ -141,7 +235,7 @@ class SubscriptionsViewModel(
                 println("🔄 SubscriptionsViewModel: Updating notification preferences for wineyard: $wineyardId")
                 
                 subscriptionService.updateNotificationPreferences(
-                    currentUser.id,
+                    userId,
                     wineyardId,
                     lowStock,
                     newRelease,

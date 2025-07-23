@@ -108,46 +108,56 @@ class WineRepository(
     
     suspend fun getWinesByWineyardFromSupabase(wineyardId: String): List<WineEntity> {
         return try {
-            withSessionValidationForList {
-                val response = postgrest.from("wines")
-                    .select() {
-                        filter {
-                            eq("wineyard_id", wineyardId)
-                        }
+            println("🍷 WineRepository: Fetching wines for wineyard: $wineyardId")
+            val response = postgrest.from("wines")
+                .select() {
+                    filter {
+                        eq("wineyard_id", wineyardId)
                     }
-                    .decodeList<Wine>()
-                
-                response.map { wineData ->
-                    WineEntity(
-                        id = wineData.id,
-                        wineyardId = wineData.wineyardId,
-                        name = wineData.name,
-                        description = wineData.description,
-                        wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
-                        vintage = wineData.vintage,
-                        price = wineData.price,
-                        discountedPrice = null, // Not in current database schema
-                        stockQuantity = wineData.stockQuantity,
-                        fullStockQuantity = wineData.stockQuantity, // Use current stock as full stock
-                        lowStockThreshold = 20, // Default value since not in database schema
-                        photos = emptyList(), // Not in current database schema
-                        createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                        updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
-                    )
                 }
+                .decodeList<Wine>()
+            
+            println("🍷 WineRepository: Found ${response.size} wines for wineyard $wineyardId in Supabase")
+            
+            val wines = response.map { wineData ->
+                val entity = WineEntity(
+                    id = wineData.id,
+                    wineyardId = wineData.wineyardId,
+                    name = wineData.name,
+                    description = wineData.description,
+                    wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
+                    vintage = wineData.vintage,
+                    price = wineData.price,
+                    discountedPrice = null, // Not in current database schema
+                    stockQuantity = wineData.stockQuantity,
+                    fullStockQuantity = wineData.stockQuantity, // Use current stock as full stock
+                    lowStockThreshold = 20, // Default value since not in database schema
+                    photos = emptyList(), // Not in current database schema
+                    createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                    updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
+                )
+                println("🍷 WineRepository: Wine: ${entity.name} (${entity.id})")
+                entity
             }
+            
+            wines
         } catch (e: Exception) {
+            println("❌ WineRepository: Failed to fetch wines for wineyard $wineyardId: ${e.message}")
+            e.printStackTrace()
             emptyList()
         }
     }
 
     suspend fun syncWinesFromSupabase(): Result<Unit> {
-        return withSessionValidation {
+        return withoutSessionValidation {
             try {
+                println("🍷 WineRepository: Starting sync of wines from Supabase...")
                 val response = postgrest.from("wines")
                     .select()
                     .decodeList<Wine>()
                     
+                println("🍷 WineRepository: Found ${response.size} wines in Supabase")
+                
                 response.forEach { wineData ->
                     val entity = WineEntity(
                         id = wineData.id,
@@ -167,12 +177,17 @@ class WineRepository(
                     )
                     try {
                         wineDao.insertWine(entity)
+                        println("🍷 WineRepository: Synced wine: ${entity.name} (${entity.id}) for wineyard ${entity.wineyardId}")
                     } catch (e: Exception) {
+                        println("⚠️ WineRepository: Failed to insert wine ${entity.name}: ${e.message}")
                         // Continue with other wines even if one fails
                     }
                 }
+                println("✅ WineRepository: Wine sync completed successfully")
                 Result.success(Unit)
             } catch (e: Exception) {
+                println("❌ WineRepository: Wine sync failed: ${e.message}")
+                e.printStackTrace()
                 Result.failure(e)
             }
         }

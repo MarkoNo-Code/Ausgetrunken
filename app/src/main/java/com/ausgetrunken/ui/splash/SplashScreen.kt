@@ -72,18 +72,35 @@ fun SplashScreen(
         label = "shimmer"
     )
     
-    LaunchedEffect(uiState) {
+    // Only trigger navigation when loading is complete
+    LaunchedEffect(uiState.isLoading, uiState.isAuthenticated, uiState.userType) {
         if (!uiState.isLoading) {
+            println("🔍 SplashScreen: LaunchedEffect triggered - Loading complete")
+            println("🔍 SplashScreen: isAuthenticated = ${uiState.isAuthenticated}, userType = ${uiState.userType}")
+            
             delay(500) // Small delay to complete animation
+            
             if (uiState.isAuthenticated) {
                 when (uiState.userType) {
-                    UserType.CUSTOMER -> onNavigateToWineyardList()
-                    UserType.WINEYARD_OWNER -> onNavigateToProfile()
-                    null -> onNavigateToLogin(null) // If userType is null, go to login
+                    UserType.CUSTOMER -> {
+                        println("🔍 SplashScreen: Navigating to WineyardList for CUSTOMER")
+                        onNavigateToWineyardList()
+                    }
+                    UserType.WINEYARD_OWNER -> {
+                        println("🔍 SplashScreen: Navigating to Profile for WINEYARD_OWNER")
+                        onNavigateToProfile()
+                    }
+                    null -> {
+                        println("🔍 SplashScreen: UserType is null, navigating to login")
+                        onNavigateToLogin(null)
+                    }
                 }
             } else {
+                println("🔍 SplashScreen: Not authenticated, navigating to login with error: ${uiState.errorMessage}")
                 onNavigateToLogin(uiState.errorMessage)
             }
+        } else {
+            println("🔍 SplashScreen: Still loading, not triggering navigation")
         }
     }
     

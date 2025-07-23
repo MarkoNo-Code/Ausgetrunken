@@ -174,9 +174,40 @@ class CustomerLandingViewModel(
         viewModelScope.launch {
             try {
                 println("🔄 CustomerLandingViewModel: Loading subscriptions...")
-                val currentUser = authRepository.currentUser
-                val userId = currentUser?.id ?: return@launch.also {
-                    println("❌ CustomerLandingViewModel: No user found for subscription loading")
+                
+                // Check for valid session first
+                if (!authRepository.hasValidSession()) {
+                    println("❌ CustomerLandingViewModel: No valid session for subscription loading")
+                    return@launch
+                }
+                
+                // Try to get current user, fallback to session restoration
+                var currentUser = authRepository.currentUser
+                var userIdFromSession: String? = null
+                
+                if (currentUser == null) {
+                    println("⚠️ CustomerLandingViewModel: No UserInfo available, attempting session restoration...")
+                    authRepository.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("✅ CustomerLandingViewModel: Session restored successfully")
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                    println("✅ CustomerLandingViewModel: Extracted userId from session: $userIdFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                val userId = currentUser?.id ?: userIdFromSession ?: return@launch.also {
+                    println("❌ CustomerLandingViewModel: Unable to determine user ID for subscription loading")
                 }
                 
                 println("👤 CustomerLandingViewModel: Loading subscriptions for user: $userId")
@@ -208,9 +239,40 @@ class CustomerLandingViewModel(
         viewModelScope.launch {
             try {
                 println("🔄 CustomerLandingViewModel: toggleWineyardSubscription called")
-                val currentUser = authRepository.currentUser
-                val userId = currentUser?.id ?: return@launch.also {
-                    println("❌ CustomerLandingViewModel: No authenticated user found")
+                
+                // Check for valid session first
+                if (!authRepository.hasValidSession()) {
+                    println("❌ CustomerLandingViewModel: No valid session for subscription toggle")
+                    return@launch
+                }
+                
+                // Try to get current user, fallback to session restoration
+                var currentUser = authRepository.currentUser
+                var userIdFromSession: String? = null
+                
+                if (currentUser == null) {
+                    println("⚠️ CustomerLandingViewModel: No UserInfo available, attempting session restoration...")
+                    authRepository.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("✅ CustomerLandingViewModel: Session restored successfully")
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                    println("✅ CustomerLandingViewModel: Extracted userId from session: $userIdFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                val userId = currentUser?.id ?: userIdFromSession ?: return@launch.also {
+                    println("❌ CustomerLandingViewModel: Unable to determine user ID for subscription toggle")
                 }
                 println("👤 CustomerLandingViewModel: User ID: $userId")
                 

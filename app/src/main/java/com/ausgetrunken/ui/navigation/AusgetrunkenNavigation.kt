@@ -18,7 +18,6 @@ import com.ausgetrunken.ui.profile.ProfileScreen
 import com.ausgetrunken.ui.splash.SplashScreen
 import com.ausgetrunken.ui.wineyard.AddWineyardScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
-import com.ausgetrunken.ui.wines.ManageWinesScreen
 import com.ausgetrunken.ui.wines.WineDetailScreen
 import com.ausgetrunken.ui.wines.AddWineScreen
 import com.ausgetrunken.ui.wines.EditWineScreen
@@ -173,8 +172,11 @@ fun AusgetrunkenNavigation(
             WineyardDetailScreen(
                 wineyardId = wineyardId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToWineManagement = { wineyardId ->
-                    navController.navigate(Screen.ManageWines.createRoute(wineyardId))
+                onNavigateToAddWine = { wineyardId ->
+                    navController.navigate(Screen.AddWine.createRoute(wineyardId))
+                },
+                onNavigateToEditWine = { wineId ->
+                    navController.navigate(Screen.EditWine.createRoute(wineId))
                 }
             )
         }
@@ -232,20 +234,6 @@ fun AusgetrunkenNavigation(
             }
         }
         
-        composable(Screen.ManageWines.route) { backStackEntry ->
-            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
-            println("🔥 Navigation: ManageWines with wineyardId: $wineyardId")
-            ManageWinesScreen(
-                wineyardId = wineyardId,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToWineDetail = { wineId ->
-                    navController.navigate(Screen.WineDetail.createRoute(wineId))
-                },
-                onNavigateToAddWine = { wineyardId ->
-                    navController.navigate(Screen.AddWine.createRoute(wineyardId))
-                }
-            )
-        }
         
         composable(Screen.AddWine.route) { backStackEntry ->
             val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""

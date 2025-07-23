@@ -153,10 +153,46 @@ class AddWineyardViewModel(
             _uiState.value = _uiState.value.copy(isSubmitting = true, error = null)
 
             try {
-                val currentUser = authRepository.currentUser
-                println("🔥 AddWineyardViewModel: Current user: ${currentUser?.id}")
+                // Check if we have a valid session first
+                if (!authRepository.hasValidSession()) {
+                    println("🔥 AddWineyardViewModel: ERROR - No valid session found")
+                    _uiState.value = _uiState.value.copy(
+                        error = "User not authenticated",
+                        isSubmitting = false
+                    )
+                    return@launch
+                }
+                
+                // Try to get current user, fallback to session restoration if needed
+                var currentUser = authRepository.currentUser
+                var userIdFromSession: String? = null
+                
                 if (currentUser == null) {
-                    println("🔥 AddWineyardViewModel: ERROR - User not authenticated")
+                    println("🔥 AddWineyardViewModel: No UserInfo available, attempting session restoration...")
+                    authRepository.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("🔥 AddWineyardViewModel: Session restored successfully")
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                    println("🔥 AddWineyardViewModel: Extracted userId from session: $userIdFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                val userId = currentUser?.id ?: userIdFromSession
+                println("🔥 AddWineyardViewModel: Current user ID: $userId")
+                
+                if (userId == null) {
+                    println("🔥 AddWineyardViewModel: ERROR - Unable to determine user ID")
                     _uiState.value = _uiState.value.copy(
                         error = "User not authenticated",
                         isSubmitting = false
@@ -170,7 +206,7 @@ class AddWineyardViewModel(
                 // Create wineyard entity
                 val wineyardEntity = WineyardEntity(
                     id = wineyardId,
-                    ownerId = currentUser.id,
+                    ownerId = userId,
                     name = state.name,
                     description = state.description,
                     address = state.address,

@@ -26,12 +26,12 @@ import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.data.local.entities.WineEntity
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +64,8 @@ import org.koin.androidx.compose.koinViewModel
 fun WineyardDetailScreen(
     wineyardId: String,
     onNavigateBack: () -> Unit,
-    onNavigateToWineManagement: (String) -> Unit,
+    onNavigateToAddWine: (String) -> Unit,
+    onNavigateToEditWine: (String) -> Unit,
     viewModel: WineyardDetailViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -177,21 +179,6 @@ fun WineyardDetailScreen(
                 }
             )
         },
-        floatingActionButton = {
-            if (!uiState.isEditing && uiState.wineyard != null && uiState.canEdit) {
-                ExtendedFloatingActionButton(
-                    onClick = { onNavigateToWineManagement(wineyardId) },
-                    icon = {
-                        Icon(
-                            Icons.Default.LocalBar,
-                            contentDescription = "Manage Wines"
-                        )
-                    },
-                    text = { Text("Manage Wines") },
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
@@ -232,6 +219,16 @@ fun WineyardDetailScreen(
                                 canEdit = uiState.canEdit,
                                 onAddPhoto = { viewModel.showImagePicker() },
                                 onRemovePhoto = viewModel::removePhoto
+                            )
+                        }
+                        
+                        item {
+                            WinesSection(
+                                wines = uiState.wines,
+                                canEdit = uiState.canEdit,
+                                onNavigateToAddWine = { onNavigateToAddWine(wineyardId) },
+                                onNavigateToEditWine = onNavigateToEditWine,
+                                onDeleteWine = viewModel::deleteWine
                             )
                         }
                         
@@ -509,6 +506,223 @@ private fun FullWidthPhotoItem(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WinesSection(
+    wines: List<WineEntity>,
+    canEdit: Boolean,
+    onNavigateToAddWine: () -> Unit,
+    onNavigateToEditWine: (String) -> Unit,
+    onDeleteWine: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column {
+            // Header with wine count and manage button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Wines (${wines.size})",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                if (canEdit) {
+                    Button(
+                        onClick = onNavigateToAddWine,
+                        modifier = Modifier.height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add Wine",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = "Add Wine",
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+            
+            if (wines.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (canEdit) "No wines added yet" else "No wines available",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    if (canEdit) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Tap 'Add Wine' to add your first wine",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                // Display all wines with full management
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    wines.forEach { wine ->
+                        WineManagementItem(
+                            wine = wine,
+                            canEdit = canEdit,
+                            onEditWine = { onNavigateToEditWine(wine.id) },
+                            onDeleteWine = onDeleteWine
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WineManagementItem(
+    wine: WineEntity,
+    canEdit: Boolean,
+    onEditWine: () -> Unit,
+    onDeleteWine: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = wine.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = "${wine.wineType} • ${wine.vintage}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    if (wine.description.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = wine.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "€${wine.price}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    if (wine.discountedPrice != null && wine.discountedPrice < wine.price) {
+                        Text(
+                            text = "€${wine.discountedPrice}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Stock: ${wine.stockQuantity}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (wine.stockQuantity <= wine.lowStockThreshold) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontWeight = if (wine.stockQuantity <= wine.lowStockThreshold) {
+                        FontWeight.Medium
+                    } else {
+                        FontWeight.Normal
+                    }
+                )
+                
+                if (canEdit) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            onClick = onEditWine
+                        ) {
+                            Text(
+                                text = "Edit",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 12.sp
+                            )
+                        }
+                        
+                        TextButton(
+                            onClick = { onDeleteWine(wine.id) }
+                        ) {
+                            Text(
+                                text = "Delete",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
                 }
             }
         }

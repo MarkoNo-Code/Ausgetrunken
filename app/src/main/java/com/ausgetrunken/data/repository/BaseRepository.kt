@@ -3,63 +3,42 @@ package com.ausgetrunken.data.repository
 import com.ausgetrunken.auth.SupabaseAuthRepository
 
 /**
- * Base repository class that provides session validation for all API calls.
- * All repositories should extend this class to ensure proper session handling.
+ * Base repository class - simplified session validation.
+ * Session management is now handled simply at app startup.
  */
 abstract class BaseRepository(
     protected val authRepository: SupabaseAuthRepository
 ) {
     
     /**
-     * Executes an API call with automatic session validation.
-     * If session validation fails, returns the session error instead of executing the call.
+     * Executes an API call with simplified session validation.
+     * Just checks if we have valid local tokens.
      */
     protected suspend fun <T> withSessionValidation(
         skipValidation: Boolean = false,
         apiCall: suspend () -> Result<T>
     ): Result<T> {
         return try {
-            // Skip validation if explicitly requested (for non-critical operations)
             if (skipValidation) {
                 return apiCall()
             }
             
-            // Validate session before making API call
-            authRepository.validateCurrentSession().getOrElse { error ->
-                // If session validation fails, check if it's a critical error
-                val errorMessage = error.message ?: ""
-                
-                // For some errors, we might want to skip validation and continue
-                val shouldSkipValidation = when {
-                    // Network errors - allow API call to proceed
-                    errorMessage.startsWith("SESSION_CHECK_FAILED:") -> true
-                    // Database connection issues - allow API call to proceed  
-                    errorMessage.contains("connection") -> true
-                    errorMessage.contains("network") -> true
-                    // All other session errors should block the API call
-                    else -> false
-                }
-                
-                if (shouldSkipValidation) {
-                    println("⚠️ BaseRepository: Session validation failed with non-critical error, allowing API call: ${error.message}")
-                    return apiCall()
-                } else {
-                    println("❌ BaseRepository: Session validation failed, blocking API call: ${error.message}")
-                    return Result.failure(error)
-                }
+            // Simple check: do we have valid local tokens?
+            if (!authRepository.hasValidSession()) {
+                println("❌ BaseRepository: No valid local session")
+                return Result.failure(Exception("SESSION_REQUIRED:Please log in to continue."))
             }
             
-            // Session is valid, proceed with API call
+            // Session is valid locally, proceed with API call
             apiCall()
         } catch (e: Exception) {
-            println("❌ BaseRepository: Exception during API call: ${e.message}")
+            println("❌ BaseRepository: API call failed: ${e.message}")
             Result.failure(e)
         }
     }
     
     /**
      * Executes an API call without session validation.
-     * Use this for operations that don't require authentication.
      */
     protected suspend fun <T> withoutSessionValidation(
         apiCall: suspend () -> Result<T>
@@ -68,38 +47,20 @@ abstract class BaseRepository(
     }
     
     /**
-     * Executes an API call that returns a list with session validation.
-     * If session validation fails, returns empty list for non-critical errors.
+     * Executes an API call that returns a list with simple session validation.
      */
     protected suspend fun <T> withSessionValidationForList(
         apiCall: suspend () -> List<T>
     ): List<T> {
         return try {
-            // Validate session before making API call
-            authRepository.validateCurrentSession().getOrElse { error ->
-                val errorMessage = error.message ?: ""
-                
-                // For some errors, allow API call to proceed
-                val shouldSkipValidation = when {
-                    errorMessage.startsWith("SESSION_CHECK_FAILED:") -> true
-                    errorMessage.contains("connection") -> true
-                    errorMessage.contains("network") -> true
-                    else -> false
-                }
-                
-                if (shouldSkipValidation) {
-                    println("⚠️ BaseRepository: Session validation failed for list operation, allowing API call: ${error.message}")
-                    return apiCall()
-                } else {
-                    println("❌ BaseRepository: Session validation failed for list operation, returning empty list: ${error.message}")
-                    return emptyList()
-                }
+            if (!authRepository.hasValidSession()) {
+                println("❌ BaseRepository: No valid local session for list operation")
+                return emptyList()
             }
             
-            // Session is valid, proceed with API call
             apiCall()
         } catch (e: Exception) {
-            println("❌ BaseRepository: Exception during list API call: ${e.message}")
+            println("❌ BaseRepository: List API call failed: ${e.message}")
             emptyList()
         }
     }

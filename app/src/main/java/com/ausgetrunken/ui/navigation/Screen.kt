@@ -18,9 +18,6 @@ sealed class Screen(val route: String) {
     object CustomerProfile : Screen("customer_profile")
     object CreateWineyard : Screen("create_wineyard")
     object AddWineyard : Screen("add_wineyard")
-    object ManageWines : Screen("manage_wines/{wineyardId}") {
-        fun createRoute(wineyardId: String) = "manage_wines/$wineyardId"
-    }
     object AddWine : Screen("add_wine/{wineyardId}") {
         fun createRoute(wineyardId: String) = "add_wine/$wineyardId"
     }
