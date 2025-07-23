@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +21,6 @@ import org.koin.androidx.compose.koinViewModel
 fun WineDetailScreen(
     wineId: String,
     onNavigateBack: () -> Unit,
-    onNavigateToEdit: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WineDetailViewModel = koinViewModel()
 ) {
@@ -39,13 +37,6 @@ fun WineDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    if (uiState.wine != null) {
-                        IconButton(onClick = { onNavigateToEdit(wineId) }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Wine")
-                        }
                     }
                 }
             )

@@ -177,6 +177,9 @@ fun AusgetrunkenNavigation(
                 },
                 onNavigateToEditWine = { wineId ->
                     navController.navigate(Screen.EditWine.createRoute(wineId))
+                },
+                onNavigateToWineDetail = { wineId ->
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
                 }
             )
         }
@@ -185,10 +188,7 @@ fun AusgetrunkenNavigation(
             val wineId = backStackEntry.arguments?.getString("wineId") ?: ""
             WineDetailScreen(
                 wineId = wineId,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToEdit = { wineId ->
-                    navController.navigate(Screen.EditWine.createRoute(wineId))
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         
@@ -261,6 +261,9 @@ fun AusgetrunkenNavigation(
                 onNavigateBackWithSuccess = {
                     // Navigate back to the wine detail screen
                     navController.popBackStack()
+                },
+                onNavigateToWineDetail = { wineId ->
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
                 }
             )
         }

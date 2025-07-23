@@ -66,6 +66,7 @@ fun WineyardDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddWine: (String) -> Unit,
     onNavigateToEditWine: (String) -> Unit,
+    onNavigateToWineDetail: (String) -> Unit,
     viewModel: WineyardDetailViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -228,6 +229,7 @@ fun WineyardDetailScreen(
                                 canEdit = uiState.canEdit,
                                 onNavigateToAddWine = { onNavigateToAddWine(wineyardId) },
                                 onNavigateToEditWine = onNavigateToEditWine,
+                                onNavigateToWineDetail = onNavigateToWineDetail,
                                 onDeleteWine = viewModel::deleteWine
                             )
                         }
@@ -518,6 +520,7 @@ private fun WinesSection(
     canEdit: Boolean,
     onNavigateToAddWine: () -> Unit,
     onNavigateToEditWine: (String) -> Unit,
+    onNavigateToWineDetail: (String) -> Unit,
     onDeleteWine: (String) -> Unit
 ) {
     Card(
@@ -597,6 +600,7 @@ private fun WinesSection(
                         WineManagementItem(
                             wine = wine,
                             canEdit = canEdit,
+                            onWineClick = { onNavigateToWineDetail(wine.id) },
                             onEditWine = { onNavigateToEditWine(wine.id) },
                             onDeleteWine = onDeleteWine
                         )
@@ -609,15 +613,24 @@ private fun WinesSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WineManagementItem(
     wine: WineEntity,
     canEdit: Boolean,
+    onWineClick: () -> Unit,
     onEditWine: () -> Unit,
     onDeleteWine: (String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = { 
+            if (canEdit) {
+                onEditWine()
+            } else {
+                onWineClick()
+            }
+        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         ),
@@ -700,28 +713,14 @@ private fun WineManagementItem(
                 )
                 
                 if (canEdit) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    TextButton(
+                        onClick = { onDeleteWine(wine.id) }
                     ) {
-                        TextButton(
-                            onClick = onEditWine
-                        ) {
-                            Text(
-                                text = "Edit",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 12.sp
-                            )
-                        }
-                        
-                        TextButton(
-                            onClick = { onDeleteWine(wine.id) }
-                        ) {
-                            Text(
-                                text = "Delete",
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 12.sp
-                            )
-                        }
+                        Text(
+                            text = "Delete",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp
+                        )
                     }
                 }
             }

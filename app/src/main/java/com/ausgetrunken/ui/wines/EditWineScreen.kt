@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ fun EditWineScreen(
     wineId: String,
     onNavigateBack: () -> Unit,
     onNavigateBackWithSuccess: () -> Unit,
+    onNavigateToWineDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EditWineViewModel = koinViewModel()
 ) {
@@ -44,6 +46,18 @@ fun EditWineScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    // View as Customer button
+                    IconButton(
+                        onClick = { onNavigateToWineDetail(wineId) }
+                    ) {
+                        Icon(
+                            Icons.Default.Visibility, 
+                            contentDescription = "View as Customer",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             )
