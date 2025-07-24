@@ -76,6 +76,7 @@ import kotlinx.coroutines.delay
 fun WineyardDetailScreen(
     wineyardId: String,
     onNavigateBack: () -> Unit,
+    onNavigateBackAfterSave: (String) -> Unit = { onNavigateBack() },
     onNavigateToAddWine: (String) -> Unit,
     onNavigateToEditWine: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
@@ -119,6 +120,14 @@ fun WineyardDetailScreen(
     LaunchedEffect(uiState.navigateBackAfterDelete) {
         if (uiState.navigateBackAfterDelete) {
             onNavigateBack()
+        }
+    }
+    
+    LaunchedEffect(uiState.navigateBackAfterSave) {
+        if (uiState.navigateBackAfterSave) {
+            uiState.wineyard?.let { wineyard ->
+                onNavigateBackAfterSave(wineyard.id)
+            } ?: onNavigateBack()
         }
     }
     

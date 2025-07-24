@@ -119,8 +119,38 @@ class WineyardDetailViewModel(
     }
     
     fun saveWineyard() {
-        // TODO: Implement save functionality
-        // Temporarily disabled to fix compilation
+        val wineyard = _uiState.value.wineyard ?: return
+        if (!_uiState.value.canEdit) return
+        
+        execute("saveWineyard") {
+            authenticatedRepository.executeAuthenticated { user ->
+                
+                // Set updating state
+                _uiState.value = _uiState.value.copy(isUpdating = true)
+                
+                // Business rule: Only owner can save
+                if (!_uiState.value.canEdit) {
+                    return@executeAuthenticated AppResult.failure(
+                        AppError.AuthError.PermissionDenied("update wineyard", "WINEYARD_OWNER")
+                    )
+                }
+                
+                return@executeAuthenticated wineyardService.updateWineyard(wineyard).fold(
+                    onSuccess = {
+                        _uiState.value = _uiState.value.copy(
+                            isUpdating = false,
+                            isEditing = false,
+                            navigateBackAfterSave = true
+                        )
+                        AppResult.success(Unit)
+                    },
+                    onFailure = { error ->
+                        _uiState.value = _uiState.value.copy(isUpdating = false)
+                        AppResult.failure(error.toAppError("wineyard update"))
+                    }
+                )
+            }
+        }
     }
     
     fun deleteWineyard() {

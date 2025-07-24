@@ -172,6 +172,10 @@ fun AusgetrunkenNavigation(
             WineyardDetailScreen(
                 wineyardId = wineyardId,
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateBackAfterSave = { updatedWineyardId ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("updatedWineyardId", updatedWineyardId)
+                    navController.popBackStack()
+                },
                 onNavigateToAddWine = { wineyardId ->
                     navController.navigate(Screen.AddWine.createRoute(wineyardId))
                 },
@@ -208,7 +212,8 @@ fun AusgetrunkenNavigation(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId")
+                newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId"),
+                updatedWineyardId = backStackEntry.savedStateHandle.get<String>("updatedWineyardId")
             )
         }
         

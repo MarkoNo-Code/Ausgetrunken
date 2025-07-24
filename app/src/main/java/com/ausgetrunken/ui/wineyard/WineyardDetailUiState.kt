@@ -14,6 +14,7 @@ data class WineyardDetailUiState(
     val showImagePicker: Boolean = false,
     val showLocationPicker: Boolean = false,
     val navigateBackAfterDelete: Boolean = false,
+    val navigateBackAfterSave: Boolean = false,
     val canEdit: Boolean = false,
     val isSubscribed: Boolean = false,
     val isSubscriptionLoading: Boolean = false

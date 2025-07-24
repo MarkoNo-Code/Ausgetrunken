@@ -85,6 +85,7 @@ fun ProfileScreen(
     onNavigateToNotificationManagement: (String) -> Unit,
     onLogoutSuccess: () -> Unit,
     newWineyardId: String? = null,
+    updatedWineyardId: String? = null,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -146,6 +147,15 @@ fun ProfileScreen(
     LaunchedEffect(newWineyardId) {
         newWineyardId?.let {
             println("ProfileScreen: Received newWineyardId: $it")
+            // Wait for animation to complete then clear the saved state
+            kotlinx.coroutines.delay(2000) // 2 seconds
+        }
+    }
+    
+    // Clear the updatedWineyardId after animation completes
+    LaunchedEffect(updatedWineyardId) {
+        updatedWineyardId?.let {
+            println("ProfileScreen: Received updatedWineyardId: $it")
             // Wait for animation to complete then clear the saved state
             kotlinx.coroutines.delay(2000) // 2 seconds
         }
@@ -255,7 +265,8 @@ fun ProfileScreen(
                         WineyardCard(
                             wineyard = wineyard,
                             onWineyardClick = onNavigateToWineyardDetail,
-                            isNewlyAdded = newWineyardId == wineyard.id
+                            isNewlyAdded = newWineyardId == wineyard.id,
+                            isUpdated = updatedWineyardId == wineyard.id
                         )
                     }
                     
