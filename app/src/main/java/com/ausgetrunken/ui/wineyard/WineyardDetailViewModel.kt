@@ -1,5 +1,6 @@
 package com.ausgetrunken.ui.wineyard
 
+import android.util.Log
 import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.common.AppResult
@@ -101,11 +102,39 @@ class WineyardDetailViewModel(
     }
     
     fun addPhoto(photoUrl: String) {
+        Log.d("WineyardDetailViewModel", "Adding photo URL: $photoUrl")
         _uiState.value.wineyard?.let { wineyard ->
             val updatedPhotos = wineyard.photos + photoUrl
+            Log.d("WineyardDetailViewModel", "Updated photos list: $updatedPhotos")
             _uiState.value = _uiState.value.copy(
                 wineyard = wineyard.copy(photos = updatedPhotos)
             )
+            
+            // Auto-save the photo immediately for better UX
+            if (_uiState.value.canEdit) {
+                Log.d("WineyardDetailViewModel", "Auto-saving photo to database")
+                saveWineyardPhotosOnly()
+            }
+        }
+    }
+    
+    private fun saveWineyardPhotosOnly() {
+        val wineyard = _uiState.value.wineyard ?: return
+        if (!_uiState.value.canEdit) return
+        
+        execute("saveWineyardPhotos") {
+            authenticatedRepository.executeAuthenticated { user ->
+                return@executeAuthenticated wineyardService.updateWineyard(wineyard).fold(
+                    onSuccess = {
+                        Log.d("WineyardDetailViewModel", "Photos saved successfully")
+                        AppResult.success(Unit)
+                    },
+                    onFailure = { error ->
+                        Log.e("WineyardDetailViewModel", "Failed to save photos: $error")
+                        AppResult.failure(error.toAppError("photo save"))
+                    }
+                )
+            }
         }
     }
     
