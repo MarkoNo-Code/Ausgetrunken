@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.ausgetrunken.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -116,7 +118,7 @@ fun CustomerLandingScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = "Discover Wines",
+                        text = stringResource(R.string.discover_wines),
                         fontWeight = FontWeight.Bold
                     ) 
                 },
@@ -124,7 +126,7 @@ fun CustomerLandingScreen(
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "Profile"
+                            contentDescription = stringResource(R.string.cd_profile)
                         )
                     }
                 },
@@ -153,7 +155,7 @@ fun CustomerLandingScreen(
                     onClick = { viewModel.switchTab(CustomerTab.WINEYARDS) },
                     text = { 
                         Text(
-                            text = "Wineyards",
+                            text = stringResource(R.string.tab_wineyards),
                             fontWeight = if (uiState.currentTab == CustomerTab.WINEYARDS) FontWeight.Bold else FontWeight.Normal
                         ) 
                     }
@@ -163,7 +165,7 @@ fun CustomerLandingScreen(
                     onClick = { viewModel.switchTab(CustomerTab.WINES) },
                     text = { 
                         Text(
-                            text = "Wines",
+                            text = stringResource(R.string.tab_wines),
                             fontWeight = if (uiState.currentTab == CustomerTab.WINES) FontWeight.Bold else FontWeight.Normal
                         ) 
                     }
@@ -270,7 +272,7 @@ private fun WineyardsList(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No wineyards found",
+                        text = stringResource(R.string.no_wineyards_found),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -322,7 +324,7 @@ private fun WinesList(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No wines found",
+                        text = stringResource(R.string.no_wines_found),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -375,7 +377,7 @@ private fun PullToRefreshAccordion(
             shape = RoundedCornerShape(0.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when {
-                    showingSuccess || (isRefreshing && !isLoading) -> Color(0xFF4CAF50) // Green when refresh completes
+                    showingSuccess -> Color(0xFF4CAF50) // Green only when explicitly showing success
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             )
@@ -387,7 +389,7 @@ private fun PullToRefreshAccordion(
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    showingSuccess || (isRefreshing && !isLoading) -> {
+                    showingSuccess -> {
                         // Show finished state
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -402,8 +404,8 @@ private fun PullToRefreshAccordion(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = when (currentTab) {
-                                    CustomerTab.WINEYARDS -> "Wineyards refreshed"
-                                    CustomerTab.WINES -> "Wines refreshed"
+                                    CustomerTab.WINEYARDS -> stringResource(R.string.wineyards_refreshed)
+                                    CustomerTab.WINES -> stringResource(R.string.wines_refreshed)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White
@@ -424,8 +426,8 @@ private fun PullToRefreshAccordion(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = when (currentTab) {
-                                    CustomerTab.WINEYARDS -> "Refreshing wineyards..."
-                                    CustomerTab.WINES -> "Refreshing wines..."
+                                    CustomerTab.WINEYARDS -> stringResource(R.string.refreshing_wineyards)
+                                    CustomerTab.WINES -> stringResource(R.string.refreshing_wines)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -436,7 +438,7 @@ private fun PullToRefreshAccordion(
                         // Show pull progress hint
                         val alpha = (pullProgress * 2f).coerceAtMost(1f)
                         Text(
-                            text = if (pullProgress >= 0.8f) "Release to refresh" else "Pull to refresh",
+                            text = if (pullProgress >= 0.8f) stringResource(R.string.release_to_refresh) else stringResource(R.string.pull_to_refresh),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
                         )
@@ -471,7 +473,7 @@ private fun LoadingAccordion() {
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Loading...",
+                text = stringResource(R.string.loading),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

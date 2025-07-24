@@ -57,6 +57,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.UserType
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.animation.core.*
@@ -130,7 +132,7 @@ fun AuthScreen(
             onDismissRequest = { viewModel.dismissFlaggedAccountDialog() },
             title = {
                 Text(
-                    text = "Account Flagged",
+                    text = stringResource(R.string.account_flagged_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -148,7 +150,7 @@ fun AuthScreen(
                         val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
                             data = Uri.parse("mailto:ausgetrunken@gmail.com")
                             putExtra(Intent.EXTRA_SUBJECT, "Account Flagged for Deletion - Support Request")
-                            putExtra(Intent.EXTRA_TEXT, "Hello,\n\nMy account has been flagged for deletion by an administrator. I believe this may be an error and would like to request a review.\n\nPlease help me resolve this issue.\n\nThank you.")
+                            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.account_flagged_message))
                         }
                         try {
                             context.startActivity(emailIntent)
@@ -158,14 +160,14 @@ fun AuthScreen(
                         viewModel.dismissFlaggedAccountDialog()
                     }
                 ) {
-                    Text("Contact Support")
+                    Text(stringResource(R.string.contact_support))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { viewModel.dismissFlaggedAccountDialog() }
                 ) {
-                    Text("Dismiss")
+                    Text(stringResource(R.string.dismiss))
                 }
             }
         )
@@ -196,7 +198,7 @@ fun AuthScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Welcome to Ausgetrunken",
+                    text = stringResource(R.string.welcome_title),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -206,7 +208,7 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = if (uiState.mode == AuthMode.LOGIN) "Sign in to continue" else "Create your account",
+                    text = if (uiState.mode == AuthMode.LOGIN) stringResource(R.string.sign_in_subtitle) else stringResource(R.string.sign_up_subtitle),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
@@ -230,7 +232,7 @@ fun AuthScreen(
                             androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
                         }
                     ) {
-                        Text("Sign In")
+                        Text(stringResource(R.string.sign_in))
                     }
                     
                     OutlinedButton(
@@ -244,7 +246,7 @@ fun AuthScreen(
                             androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
                         }
                     ) {
-                        Text("Sign Up")
+                        Text(stringResource(R.string.sign_up))
                     }
                 }
                 
@@ -261,11 +263,11 @@ fun AuthScreen(
                             .replace(" ", "")
                         viewModel.updateEmail(cleanEmail)
                     },
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Email,
-                            contentDescription = "Email"
+                            contentDescription = stringResource(R.string.email)
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -288,11 +290,11 @@ fun AuthScreen(
                             .replace("\t", "")
                         viewModel.updatePassword(cleanPassword)
                     },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.password)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Password"
+                            contentDescription = stringResource(R.string.password)
                         )
                     },
                     trailingIcon = {
@@ -302,8 +304,8 @@ fun AuthScreen(
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff 
                                 else Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible) "Hide password" 
-                                else "Show password"
+                                contentDescription = if (passwordVisible) stringResource(R.string.cd_hide_password) 
+                                else stringResource(R.string.cd_show_password)
                             )
                         }
                     },
@@ -335,11 +337,11 @@ fun AuthScreen(
                                     .replace("\t", "")
                                 viewModel.updateConfirmPassword(cleanPassword)
                             },
-                            label = { Text("Confirm Password") },
+                            label = { Text(stringResource(R.string.confirm_password)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Lock,
-                                    contentDescription = "Confirm Password"
+                                    contentDescription = stringResource(R.string.confirm_password)
                                 )
                             },
                             trailingIcon = {
@@ -349,8 +351,8 @@ fun AuthScreen(
                                     Icon(
                                         imageVector = if (confirmPasswordVisible) Icons.Default.VisibilityOff 
                                         else Icons.Default.Visibility,
-                                        contentDescription = if (confirmPasswordVisible) "Hide password" 
-                                        else "Show password"
+                                        contentDescription = if (confirmPasswordVisible) stringResource(R.string.cd_hide_password) 
+                                        else stringResource(R.string.cd_show_password)
                                     )
                                 }
                             },
@@ -386,7 +388,7 @@ fun AuthScreen(
                                 modifier = Modifier.padding(16.dp)
                             ) {
                                 Text(
-                                    text = "Account Type",
+                                    text = stringResource(R.string.account_type),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -407,7 +409,7 @@ fun AuthScreen(
                                             enabled = !uiState.isLoading
                                         )
                                         Text(
-                                            text = "Customer",
+                                            text = stringResource(R.string.customer),
                                             modifier = Modifier.padding(start = 8.dp)
                                         )
                                     }
@@ -421,7 +423,7 @@ fun AuthScreen(
                                             enabled = !uiState.isLoading
                                         )
                                         Text(
-                                            text = "Wineyard Owner",
+                                            text = stringResource(R.string.wineyard_owner),
                                             modifier = Modifier.padding(start = 8.dp)
                                         )
                                     }
@@ -457,7 +459,7 @@ fun AuthScreen(
                         )
                     } else {
                         Text(
-                            text = if (uiState.mode == AuthMode.LOGIN) "Sign In" else "Create Account",
+                            text = if (uiState.mode == AuthMode.LOGIN) stringResource(R.string.sign_in) else stringResource(R.string.create_account),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -545,7 +547,7 @@ private fun SplashLoadingScreen() {
             
             // App Title
             Text(
-                text = "Ausgetrunken",
+                text = stringResource(R.string.app_name),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFD4AF37), // Gold color
@@ -557,7 +559,7 @@ private fun SplashLoadingScreen() {
             
             // Tagline
             Text(
-                text = "Sip. Savor. Celebrate.",
+                text = stringResource(R.string.app_tagline),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Light,
                 color = Color(0xFFB8860B).copy(alpha = 0.8f),
@@ -569,7 +571,7 @@ private fun SplashLoadingScreen() {
             
             // Loading text
             Text(
-                text = "Preparing your cellar...",
+                text = stringResource(R.string.loading_message),
                 fontSize = 14.sp,
                 color = Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.alpha(textAlpha)

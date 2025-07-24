@@ -48,6 +48,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.UserType
 import org.koin.androidx.compose.koinViewModel
 
@@ -117,7 +119,7 @@ fun RegisterScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Create Account",
+                    text = stringResource(R.string.create_account),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -127,7 +129,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = "Sign up to get started",
+                    text = stringResource(R.string.sign_up_subtitle),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
@@ -138,11 +140,11 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = viewModel::updateEmail,
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Email,
-                            contentDescription = "Email"
+                            contentDescription = stringResource(R.string.email)
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -157,11 +159,11 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = viewModel::updatePassword,
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.password)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Password"
+                            contentDescription = stringResource(R.string.password)
                         )
                     },
                     trailingIcon = {
@@ -171,8 +173,8 @@ fun RegisterScreen(
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff 
                                 else Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible) "Hide password" 
-                                else "Show password"
+                                contentDescription = if (passwordVisible) stringResource(R.string.cd_hide_password) 
+                                else stringResource(R.string.cd_show_password)
                             )
                         }
                     },
@@ -190,11 +192,11 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = uiState.confirmPassword,
                     onValueChange = viewModel::updateConfirmPassword,
-                    label = { Text("Confirm Password") },
+                    label = { Text(stringResource(R.string.confirm_password)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Confirm Password"
+                            contentDescription = stringResource(R.string.confirm_password)
                         )
                     },
                     trailingIcon = {
@@ -204,8 +206,8 @@ fun RegisterScreen(
                             Icon(
                                 imageVector = if (confirmPasswordVisible) Icons.Default.VisibilityOff 
                                 else Icons.Default.Visibility,
-                                contentDescription = if (confirmPasswordVisible) "Hide password" 
-                                else "Show password"
+                                contentDescription = if (confirmPasswordVisible) stringResource(R.string.cd_hide_password) 
+                                else stringResource(R.string.cd_show_password)
                             )
                         }
                     },
@@ -231,7 +233,7 @@ fun RegisterScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "Account Type",
+                            text = stringResource(R.string.account_type),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -252,7 +254,7 @@ fun RegisterScreen(
                                     enabled = !uiState.isLoading
                                 )
                                 Text(
-                                    text = "Customer",
+                                    text = stringResource(R.string.customer),
                                     modifier = Modifier.padding(start = 8.dp)
                                 )
                             }
@@ -266,7 +268,7 @@ fun RegisterScreen(
                                     enabled = !uiState.isLoading
                                 )
                                 Text(
-                                    text = "Wineyard Owner",
+                                    text = stringResource(R.string.wineyard_owner),
                                     modifier = Modifier.padding(start = 8.dp)
                                 )
                             }
@@ -293,7 +295,7 @@ fun RegisterScreen(
                         )
                     } else {
                         Text(
-                            text = "Create Account",
+                            text = stringResource(R.string.create_account),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -307,7 +309,7 @@ fun RegisterScreen(
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        text = "Already have an account? Sign in",
+                        text = stringResource(R.string.already_have_account),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

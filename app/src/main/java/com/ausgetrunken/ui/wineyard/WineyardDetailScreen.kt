@@ -58,10 +58,12 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.R
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.clipToBounds
@@ -83,8 +85,7 @@ fun WineyardDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val pullToRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
-    var showFinished by remember { mutableStateOf(false) }
-    var isDismissing by remember { mutableStateOf(false) }
+    var showingSuccess by remember { mutableStateOf(false) }
     
     // Handle manual refresh trigger
     LaunchedEffect(isRefreshing) {
@@ -93,25 +94,14 @@ fun WineyardDetailScreen(
         }
     }
     
-    // End refresh when loading completes
-    val baseLoadingState by viewModel.loadingState.collectAsState()
-    LaunchedEffect(baseLoadingState) {
-        if (!baseLoadingState && isRefreshing) {
-            showFinished = true
-            delay(500) // Show "Finished" for 500ms
-            isDismissing = true // Start smooth dismissal
-            delay(300) // Wait for dismissal animation
-            showFinished = false
-            isDismissing = false
+    // Simplified refresh completion logic that doesn't interfere with PullToRefreshState
+    LaunchedEffect(isRefreshing, uiState.isLoading) {
+        if (isRefreshing && !uiState.isLoading) {
+            // Show success briefly, then keep green during dismissal
+            showingSuccess = true
+            delay(800) // Success display duration
+            showingSuccess = false
             isRefreshing = false
-        }
-    }
-    
-    // Reset states when starting new refresh
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            showFinished = false
-            isDismissing = false
         }
     }
     
@@ -135,10 +125,10 @@ fun WineyardDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.wineyard?.name ?: "Wineyard Details") },
+                title = { Text(uiState.wineyard?.name ?: stringResource(R.string.wineyard_details)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -168,9 +158,9 @@ fun WineyardDetailScreen(
                                     else 
                                         Icons.Outlined.Notifications,
                                     contentDescription = if (uiState.isSubscribed) 
-                                        "Unsubscribe from notifications" 
+                                        stringResource(R.string.cd_unsubscribe) 
                                     else 
-                                        "Subscribe to notifications",
+                                        stringResource(R.string.cd_subscribe),
                                     modifier = Modifier.size(18.dp),
                                     tint = if (uiState.isSubscribed) 
                                         MaterialTheme.colorScheme.primary 
@@ -194,12 +184,12 @@ fun WineyardDetailScreen(
                                         color = MaterialTheme.colorScheme.onPrimary
                                     )
                                 } else {
-                                    Icon(Icons.Default.Save, contentDescription = "Save")
+                                    Icon(Icons.Default.Save, contentDescription = stringResource(R.string.save))
                                 }
                             }
                         } else {
                             IconButton(onClick = { viewModel.toggleEdit() }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit")
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit))
                             }
                             IconButton(
                                 onClick = { viewModel.deleteWineyard() },
@@ -213,7 +203,7 @@ fun WineyardDetailScreen(
                                 } else {
                                     Icon(
                                         Icons.Default.Delete, 
-                                        contentDescription = "Delete",
+                                        contentDescription = stringResource(R.string.delete),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -235,8 +225,7 @@ fun WineyardDetailScreen(
                 pullToRefreshState = pullToRefreshState,
                 isLoading = uiState.isLoading,
                 isRefreshing = isRefreshing,
-                showFinished = showFinished,
-                isDismissing = isDismissing,
+                showingSuccess = showingSuccess,
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -314,33 +303,29 @@ private fun PullToRefreshAccordion(
     pullToRefreshState: androidx.compose.material3.pulltorefresh.PullToRefreshState,
     isLoading: Boolean,
     isRefreshing: Boolean,
-    showFinished: Boolean,
-    isDismissing: Boolean,
+    showingSuccess: Boolean,
     modifier: Modifier = Modifier
 ) {
     // Calculate the accordion height based on pull progress and state
     val maxHeight = 60.dp
     val pullProgress = pullToRefreshState.distanceFraction.coerceIn(0f, 1f)
     
+    // Simplified state logic - let PullToRefreshState manage its own lifecycle
     val targetHeight = when {
-        isDismissing -> 0.dp // Smooth dismissal to 0
-        showFinished -> maxHeight // Hold at full height when showing success
-        isRefreshing -> maxHeight // Snap to full height when user refreshes
-        pullProgress > 0f -> (maxHeight * pullProgress) // Follow finger during pull
+        showingSuccess || (isRefreshing && !isLoading) -> maxHeight // Show success when refresh completes
+        isRefreshing -> maxHeight // Show during refresh
+        pullProgress > 0f -> (maxHeight * pullProgress) // Follow finger - works consistently
         else -> 0.dp
     }
     
-    // Animate height changes smoothly, faster during pull, slower for state changes
+    // Use immediate animation during pull for perfect finger following
     val accordionHeight by animateDpAsState(
         targetValue = targetHeight,
-        animationSpec = tween(
-            durationMillis = when {
-                isDismissing -> 500
-                pullProgress > 0f && !isRefreshing && !showFinished -> 50 // Very fast during pull
-                else -> 300
-            },
-            delayMillis = 0
-        ),
+        animationSpec = if (pullProgress > 0f && !isRefreshing) {
+            tween(durationMillis = 0) // Immediate response during pull
+        } else {
+            tween(durationMillis = 300) // Smooth for state changes
+        },
         label = "accordionHeight"
     )
     
@@ -354,7 +339,7 @@ private fun PullToRefreshAccordion(
             shape = RoundedCornerShape(0.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when {
-                    showFinished -> Color(0xFF4CAF50) // Green when finished
+                    showingSuccess || (isRefreshing && !isLoading) -> Color(0xFF4CAF50) // Green when refresh completes
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             )
@@ -366,7 +351,7 @@ private fun PullToRefreshAccordion(
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    showFinished -> {
+                    showingSuccess || (isRefreshing && !isLoading) -> {
                         // Show finished state
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -380,7 +365,7 @@ private fun PullToRefreshAccordion(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Wines refreshed",
+                                text = stringResource(R.string.wines_refreshed_success),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White
                             )
@@ -399,7 +384,7 @@ private fun PullToRefreshAccordion(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Refreshing wines...",
+                                text = stringResource(R.string.refreshing_wines),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -409,7 +394,7 @@ private fun PullToRefreshAccordion(
                         // Show pull progress hint
                         val alpha = (pullProgress * 2f).coerceAtMost(1f)
                         Text(
-                            text = if (pullProgress >= 0.8f) "Release to refresh" else "Pull to refresh",
+                            text = if (pullProgress >= 0.8f) stringResource(R.string.release_to_refresh) else stringResource(R.string.pull_to_refresh),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)
                         )
@@ -444,7 +429,7 @@ private fun WineyardInfoCard(
                 OutlinedTextField(
                     value = wineyard.name,
                     onValueChange = onNameChange,
-                    label = { Text("Wineyard Name") },
+                    label = { Text(stringResource(R.string.wineyard_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -453,7 +438,7 @@ private fun WineyardInfoCard(
                 OutlinedTextField(
                     value = wineyard.description,
                     onValueChange = onDescriptionChange,
-                    label = { Text("Description") },
+                    label = { Text(stringResource(R.string.description)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )
@@ -463,7 +448,7 @@ private fun WineyardInfoCard(
                 OutlinedTextField(
                     value = wineyard.address,
                     onValueChange = onAddressChange,
-                    label = { Text("Address") },
+                    label = { Text(stringResource(R.string.address)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -475,7 +460,7 @@ private fun WineyardInfoCard(
                 ) {
                     Icon(Icons.Default.LocationOn, contentDescription = null)
                     Spacer(modifier = Modifier.padding(4.dp))
-                    Text("Update Location")
+                    Text(stringResource(R.string.update_location))
                 }
             } else {
                 Text(
@@ -502,7 +487,7 @@ private fun WineyardInfoCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Location",
+                        contentDescription = stringResource(R.string.cd_location),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
@@ -519,7 +504,7 @@ private fun WineyardInfoCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = "Coordinates: ${String.format("%.4f", wineyard.latitude)}, ${String.format("%.4f", wineyard.longitude)}",
+                    text = stringResource(R.string.coordinates, "${String.format("%.4f", wineyard.latitude)}, ${String.format("%.4f", wineyard.longitude)}"),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -553,7 +538,7 @@ private fun PhotosSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Photos (${photos.size})",
+                    text = stringResource(R.string.photos_count, photos.size),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -563,7 +548,7 @@ private fun PhotosSection(
                     IconButton(onClick = onAddPhoto) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Add Photo",
+                            contentDescription = stringResource(R.string.cd_add_photo),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -572,7 +557,7 @@ private fun PhotosSection(
             
             if (photos.isEmpty()) {
                 Text(
-                    text = if (isEditing && canEdit) "Tap + to add your first photo" else "No photos yet",
+                    text = if (isEditing && canEdit) stringResource(R.string.tap_plus_add_photo) else stringResource(R.string.no_photos_yet),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -621,7 +606,7 @@ private fun PhotoItem(
         ) {
             Icon(
                 imageVector = Icons.Default.Photo,
-                contentDescription = "Photo",
+                contentDescription = stringResource(R.string.wineyard_photo),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(48.dp)
             )
@@ -666,7 +651,7 @@ private fun FullWidthPhotoItem(
             // For now, showing placeholder
             Icon(
                 imageVector = Icons.Default.Photo,
-                contentDescription = "Wineyard Photo",
+                contentDescription = stringResource(R.string.wineyard_photo),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(64.dp)
             )
@@ -716,7 +701,7 @@ private fun WinesSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Wines (${wines.size})",
+                    text = stringResource(R.string.wines_count, wines.size),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -730,12 +715,12 @@ private fun WinesSection(
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Add Wine",
+                            contentDescription = stringResource(R.string.add_wine),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.padding(4.dp))
                         Text(
-                            text = "Add Wine",
+                            text = stringResource(R.string.add_wine),
                             fontSize = 14.sp
                         )
                     }
@@ -750,7 +735,7 @@ private fun WinesSection(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = if (canEdit) "No wines added yet" else "No wines available",
+                        text = if (canEdit) stringResource(R.string.no_wines_added_yet) else stringResource(R.string.no_wines_available),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -759,7 +744,7 @@ private fun WinesSection(
                     if (canEdit) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Tap 'Add Wine' to add your first wine",
+                            text = stringResource(R.string.tap_add_wine),
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -874,7 +859,7 @@ private fun WineManagementItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Stock: ${wine.stockQuantity}",
+                    text = stringResource(R.string.stock_count, wine.stockQuantity),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (wine.stockQuantity <= wine.lowStockThreshold) {
                         MaterialTheme.colorScheme.error
@@ -893,7 +878,7 @@ private fun WineManagementItem(
                         onClick = { onDeleteWine(wine.id) }
                     ) {
                         Text(
-                            text = "Delete",
+                            text = stringResource(R.string.delete),
                             color = MaterialTheme.colorScheme.error,
                             fontSize = 12.sp
                         )

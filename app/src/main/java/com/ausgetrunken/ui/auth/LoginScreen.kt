@@ -45,6 +45,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.UserType
 import org.koin.androidx.compose.koinViewModel
 
@@ -110,7 +112,7 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Welcome to Ausgetrunken",
+                    text = stringResource(R.string.welcome_title),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -120,7 +122,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = "Sign in to continue",
+                    text = stringResource(R.string.sign_in_subtitle),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
@@ -139,7 +141,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "🚀 Supabase Backend\n\nThis app is now powered by Supabase! Please configure your Supabase credentials to enable authentication and wine database features.",
+                        text = stringResource(R.string.supabase_backend_message),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         textAlign = TextAlign.Center,
@@ -159,11 +161,11 @@ fun LoginScreen(
                             .replace(" ", "")
                         viewModel.updateEmail(cleanEmail)
                     },
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Email,
-                            contentDescription = "Email"
+                            contentDescription = stringResource(R.string.email)
                         )
                     },
                     keyboardOptions = KeyboardOptions(
@@ -179,11 +181,11 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = viewModel::updatePassword,
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.password)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Password"
+                            contentDescription = stringResource(R.string.password)
                         )
                     },
                     trailingIcon = {
@@ -193,8 +195,8 @@ fun LoginScreen(
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff 
                                 else Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible) "Hide password" 
-                                else "Show password"
+                                contentDescription = if (passwordVisible) stringResource(R.string.cd_hide_password) 
+                                else stringResource(R.string.cd_show_password)
                             )
                         }
                     },
@@ -223,7 +225,7 @@ fun LoginScreen(
                         )
                     } else {
                         Text(
-                            text = "Sign In",
+                            text = stringResource(R.string.sign_in),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -237,7 +239,7 @@ fun LoginScreen(
                     enabled = !uiState.isLoading
                 ) {
                     Text(
-                        text = "Don't have an account? Sign up",
+                        text = stringResource(R.string.dont_have_account),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

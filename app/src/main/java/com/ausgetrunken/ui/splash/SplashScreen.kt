@@ -16,10 +16,12 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.UserType
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
@@ -133,7 +135,7 @@ fun SplashScreen(
             
             // App Title
             Text(
-                text = "Ausgetrunken",
+                text = stringResource(R.string.app_name),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFD4AF37), // Gold color
@@ -145,7 +147,7 @@ fun SplashScreen(
             
             // Tagline
             Text(
-                text = "Sip. Savor. Celebrate.",
+                text = stringResource(R.string.app_tagline),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Light,
                 color = Color(0xFFB8860B).copy(alpha = 0.8f),
@@ -158,7 +160,7 @@ fun SplashScreen(
             // Loading text
             if (uiState.isLoading) {
                 Text(
-                    text = "Preparing your cellar...",
+                    text = stringResource(R.string.loading_message),
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.6f),
                     modifier = Modifier.alpha(textAlpha)

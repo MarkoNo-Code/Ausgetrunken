@@ -20,10 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.NotificationType
 import com.ausgetrunken.data.local.entities.WineEntity
 import org.koin.androidx.compose.koinViewModel
@@ -56,10 +58,10 @@ fun NotificationManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notification Management") },
+                title = { Text(stringResource(R.string.notification_management)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -97,7 +99,7 @@ fun NotificationManagementScreen(
             if (uiState.lowStockWines.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Low Stock Wines",
+                        text = stringResource(R.string.low_stock_wines),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -116,7 +118,7 @@ fun NotificationManagementScreen(
             if (uiState.criticalStockWines.isNotEmpty()) {
                 item {
                     Text(
-                        text = "Critical Stock Wines (20% or less)",
+                        text = stringResource(R.string.critical_stock_wines),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
@@ -187,7 +189,7 @@ private fun QuickActionsSection(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Quick Actions",
+                text = stringResource(R.string.quick_actions),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -206,7 +208,7 @@ private fun QuickActionsSection(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(Icons.Default.Warning, contentDescription = null)
-                        Text("Low Stock ($lowStockCount)", textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.low_stock_count, lowStockCount), textAlign = TextAlign.Center)
                     }
                 }
 
@@ -223,7 +225,7 @@ private fun QuickActionsSection(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(Icons.Default.NotificationsActive, contentDescription = null)
-                        Text("Critical ($criticalStockCount)", textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.critical_count, criticalStockCount), textAlign = TextAlign.Center)
                     }
                 }
             }
@@ -236,7 +238,7 @@ private fun QuickActionsSection(
             ) {
                 Icon(Icons.Default.Send, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Send Custom Notification")
+                Text(stringResource(R.string.send_custom_notification))
             }
         }
     }
@@ -278,7 +280,7 @@ private fun LowStockWineCard(
             OutlinedButton(
                 onClick = onSendNotification
             ) {
-                Text("Notify")
+                Text(stringResource(R.string.notify))
             }
         }
     }
@@ -316,7 +318,7 @@ private fun CriticalStockWineCard(
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
-                    text = "CRITICAL: Almost 'ausgetrunken'!",
+                    text = stringResource(R.string.critical_stock_warning),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
@@ -329,7 +331,7 @@ private fun CriticalStockWineCard(
                     containerColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Alert Now!")
+                Text(stringResource(R.string.alert_now))
             }
         }
     }
@@ -352,7 +354,7 @@ private fun SubscriberInfoCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Subscriber Information",
+                text = stringResource(R.string.subscriber_information),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -361,7 +363,7 @@ private fun SubscriberInfoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Total Subscribers:")
+                Text(stringResource(R.string.total_subscribers))
                 Text(
                     text = subscriberCount.toString(),
                     fontWeight = FontWeight.Bold
@@ -372,7 +374,7 @@ private fun SubscriberInfoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Low Stock Notifications:")
+                Text(stringResource(R.string.low_stock_notifications))
                 Text(
                     text = lowStockSubscribers.toString(),
                     fontWeight = FontWeight.Bold
@@ -383,7 +385,7 @@ private fun SubscriberInfoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("General Notifications:")
+                Text(stringResource(R.string.general_notifications))
                 Text(
                     text = generalSubscribers.toString(),
                     fontWeight = FontWeight.Bold
@@ -405,7 +407,7 @@ private fun CustomNotificationDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Send Custom Notification") },
+        title = { Text(stringResource(R.string.send_custom_notification)) },
         text = {
             Column(
                 modifier = Modifier
@@ -415,7 +417,7 @@ private fun CustomNotificationDialog(
             ) {
                 // Notification Type Selection
                 Text(
-                    text = "Notification Type",
+                    text = stringResource(R.string.notification_type),
                     style = MaterialTheme.typography.labelMedium
                 )
                 
@@ -441,7 +443,7 @@ private fun CustomNotificationDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    label = { Text(stringResource(R.string.title)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -450,7 +452,7 @@ private fun CustomNotificationDialog(
                 OutlinedTextField(
                     value = message,
                     onValueChange = { message = it },
-                    label = { Text("Message") },
+                    label = { Text(stringResource(R.string.message_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 5
@@ -462,12 +464,12 @@ private fun CustomNotificationDialog(
                 onClick = { onSend(title, message, notificationType) },
                 enabled = title.isNotBlank() && message.isNotBlank()
             ) {
-                Text("Send")
+                Text(stringResource(R.string.send))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

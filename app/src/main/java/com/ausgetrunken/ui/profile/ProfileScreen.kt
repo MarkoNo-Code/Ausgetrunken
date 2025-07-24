@@ -65,8 +65,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.ausgetrunken.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.ui.common.DeleteAccountDialog
@@ -101,15 +103,14 @@ fun ProfileScreen(
     // State to maintain green color during dismissal
     var showingSuccess by remember { mutableStateOf(false) }
     
-    // Simplified refresh completion logic that doesn't interfere with PullToRefreshState
+    // Handle refresh completion - simpler logic that properly dismisses
     LaunchedEffect(isRefreshing, uiState.isLoading) {
         if (isRefreshing && !uiState.isLoading) {
-            // Show success briefly, then keep green during dismissal
+            // Show success briefly then dismiss
             showingSuccess = true
-            delay(800) // Success display duration
-            isRefreshing = false // Reset to allow next pull
-            delay(300) // Keep green during dismissal animation
-            showingSuccess = false // Finally reset to normal
+            delay(1000) // Show success for 1 second
+            showingSuccess = false // Dismiss
+            isRefreshing = false // Reset for next pull
         }
     }
     
@@ -410,7 +411,7 @@ private fun PullToRefreshAccordion(
             shape = RoundedCornerShape(0.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when {
-                    showingSuccess || (isRefreshing && !isLoading) -> Color(0xFF4CAF50) // Green when refresh completes
+                    showingSuccess -> Color(0xFF4CAF50) // Green only when explicitly showing success
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             )
@@ -422,7 +423,7 @@ private fun PullToRefreshAccordion(
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    showingSuccess || (isRefreshing && !isLoading) -> {
+                    showingSuccess -> {
                         // Show finished state
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -436,7 +437,7 @@ private fun PullToRefreshAccordion(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Profile refreshed",
+                                text = stringResource(R.string.profile_refreshed),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White
                             )

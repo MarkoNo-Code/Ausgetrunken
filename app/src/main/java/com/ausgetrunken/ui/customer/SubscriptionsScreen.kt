@@ -13,11 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ausgetrunken.R
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,10 +46,10 @@ fun SubscriptionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Subscriptions") },
+                title = { Text(stringResource(R.string.my_subscriptions)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -78,7 +80,7 @@ fun SubscriptionsScreen(
                 ) {
                     item {
                         Text(
-                            text = "You're subscribed to ${uiState.subscriptions.size} wineyard${if (uiState.subscriptions.size != 1) "s" else ""}",
+                            text = stringResource(R.string.subscribed_to_wineyards, uiState.subscriptions.size),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -127,7 +129,7 @@ private fun EmptySubscriptionsMessage(
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "No subscriptions yet",
+            text = stringResource(R.string.no_subscriptions_yet),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -136,7 +138,7 @@ private fun EmptySubscriptionsMessage(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = "Subscribe to wineyards to get notified about low stock wines, new releases, and special offers",
+            text = stringResource(R.string.subscribe_to_wineyards_message),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -177,7 +179,7 @@ private fun SubscriptionCard(
                     )
                     
                     Text(
-                        text = "Subscribed since ${subscription.formattedDate}",
+                        text = stringResource(R.string.subscribed_since, subscription.formattedDate),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -189,7 +191,7 @@ private fun SubscriptionCard(
                     ) {
                         Icon(
                             Icons.Default.Settings,
-                            contentDescription = "Notification settings"
+                            contentDescription = stringResource(R.string.cd_notification_settings)
                         )
                     }
                 }
@@ -215,7 +217,7 @@ private fun SubscriptionCard(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Unsubscribe from ${subscription.wineyardName}")
+                    Text(stringResource(R.string.unsubscribe_from_wineyard, subscription.wineyardName))
                 }
             }
         }
@@ -242,36 +244,36 @@ private fun NotificationPreferences(
     
     Column(modifier = modifier) {
         Text(
-            text = "Notification Preferences",
+            text = stringResource(R.string.notification_preferences_header),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
         NotificationToggle(
-            text = "Low stock alerts",
-            description = "Get notified when wines are running low",
+            text = stringResource(R.string.low_stock_alerts),
+            description = stringResource(R.string.low_stock_alerts_desc),
             checked = lowStockEnabled,
             onCheckedChange = { lowStockEnabled = it }
         )
         
         NotificationToggle(
-            text = "New releases",
-            description = "Be first to know about new wines",
+            text = stringResource(R.string.new_releases),
+            description = stringResource(R.string.new_releases_desc),
             checked = newReleaseEnabled,
             onCheckedChange = { newReleaseEnabled = it }
         )
         
         NotificationToggle(
-            text = "Special offers",
-            description = "Don't miss out on discounts and promotions",
+            text = stringResource(R.string.special_offers),
+            description = stringResource(R.string.special_offers_desc),
             checked = specialOfferEnabled,
             onCheckedChange = { specialOfferEnabled = it }
         )
         
         NotificationToggle(
-            text = "General updates",
-            description = "News and updates from the wineyard",
+            text = stringResource(R.string.general_updates),
+            description = stringResource(R.string.general_updates_desc),
             checked = generalEnabled,
             onCheckedChange = { generalEnabled = it }
         )

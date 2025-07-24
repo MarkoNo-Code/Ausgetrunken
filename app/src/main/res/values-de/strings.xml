@@ -1,0 +1,196 @@
+<resources>
+    <string name="app_name">Ausgetrunken</string>
+    
+    <!-- App Tagline -->
+    <string name="app_tagline">Nippen. Genießen. Feiern.</string>
+    <string name="loading_message">Ihr Weinkeller wird vorbereitet…</string>
+    
+    <!-- Authentication -->
+    <string name="welcome_title">Willkommen bei Ausgetrunken</string>
+    <string name="sign_in_subtitle">Anmelden um fortzufahren</string>
+    <string name="sign_up_subtitle">Erstellen Sie Ihr Konto</string>
+    <string name="account_flagged_title">Konto Markiert</string>
+    
+    <!-- Form Labels -->
+    <string name="email">E-Mail</string>
+    <string name="password">Passwort</string>
+    <string name="confirm_password">Passwort bestätigen</string>
+    <string name="account_type">Kontotyp</string>
+    <string name="wine_name">Weinname</string>
+    <string name="description">Beschreibung</string>
+    <string name="wine_type">Weinart</string>
+    <string name="vintage_year">Jahrgang</string>
+    <string name="price_euro">Preis (€)</string>
+    <string name="discounted_price_euro">Rabattpreis (€) - Optional</string>
+    <string name="stock_quantity">Lagermenge</string>
+    <string name="low_stock_threshold">Niedriglager-Schwelle</string>
+    <string name="wineyard_name">Weingut Name</string>
+    <string name="address">Adresse</string>
+    
+    <!-- Button Labels -->
+    <string name="sign_in">Anmelden</string>
+    <string name="sign_up">Registrieren</string>
+    <string name="create_account">Konto erstellen</string>
+    <string name="contact_support">Support kontaktieren</string>
+    <string name="dismiss">Schließen</string>
+    <string name="save">Speichern</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="add_wine">Wein hinzufügen</string>
+    <string name="update_wine">Wein aktualisieren</string>
+    <string name="update_location">Standort aktualisieren</string>
+    <string name="logout">Abmelden</string>
+    <string name="send">Senden</string>
+    <string name="notify">Benachrichtigen</string>
+    <string name="alert_now">Jetzt alarmieren!</string>
+    <string name="flag_for_deletion">ZUR LÖSCHUNG MARKIEREN</string>
+    <string name="flagging_account">Konto wird markiert…</string>
+    <string name="creating_wineyard">Weingut wird erstellt…</string>
+    
+    <!-- User Types -->
+    <string name="customer">Kunde</string>
+    <string name="wineyard_owner">Weingutsbesitzer</string>
+    
+    <!-- Screen Titles -->
+    <string name="discover_wines">Weine entdecken</string>
+    <string name="my_profile">Mein Profil</string>
+    <string name="profile">Profil</string>
+    <string name="my_subscriptions">Meine Abonnements</string>
+    <string name="add_wineyard">Weingut hinzufügen</string>
+    <string name="wineyard_details">Weingut Details</string>
+    <string name="add_wine_title">Wein hinzufügen</string>
+    <string name="edit_wine_title">Wein bearbeiten</string>
+    <string name="wine_details">Wein Details</string>
+    <string name="notification_management">Benachrichtigungsverwaltung</string>
+    
+    <!-- Navigation -->
+    <string name="tab_wineyards">Weingüter</string>
+    <string name="tab_wines">Weine</string>
+    
+    <!-- Content Descriptions -->
+    <string name="cd_back">Zurück</string>
+    <string name="cd_profile">Profil</string>
+    <string name="cd_notification_center">Benachrichtigungszentrale</string>
+    <string name="cd_delete_account">Konto löschen</string>
+    <string name="cd_hide_password">Passwort verbergen</string>
+    <string name="cd_show_password">Passwort anzeigen</string>
+    <string name="cd_add_photo">Foto hinzufügen</string>
+    <string name="cd_remove_photo">Foto entfernen</string>
+    <string name="cd_location">Standort</string>
+    <string name="cd_stock">Lagerbestand</string>
+    <string name="cd_subscribe">Für Benachrichtigungen abonnieren</string>
+    <string name="cd_unsubscribe">Von Benachrichtigungen abmelden</string>
+    <string name="cd_notification_settings">Benachrichtigungseinstellungen</string>
+    <string name="cd_view_as_customer">Als Kunde anzeigen</string>
+    
+    <!-- Messages -->
+    <string name="welcome_back">Willkommen zurück!</string>
+    <string name="happy_wine_tasting">Fröhliche Weinverkostung!</string>
+    <string name="dont_have_account">Haben Sie kein Konto? Registrieren</string>
+    <string name="already_have_account">Haben Sie bereits ein Konto? Anmelden</string>
+    <string name="supabase_backend_message">🚀 Supabase Backend\n\nDiese App wird jetzt von Supabase betrieben! Bitte konfigurieren Sie Ihre Supabase-Anmeldedaten, um Authentifizierung und Weindatenbank-Funktionen zu aktivieren.</string>
+    <string name="account_flagged_message">Hallo,\n\nMein Konto wurde von einem Administrator zur Löschung markiert. Ich glaube, dass dies ein Fehler sein könnte und möchte eine Überprüfung beantragen.\n\nBitte helfen Sie mir, dieses Problem zu lösen.\n\nVielen Dank.</string>
+    
+    <!-- Empty States -->
+    <string name="no_wineyards_found">Keine Weingüter gefunden</string>
+    <string name="no_wines_found">Keine Weine gefunden</string>
+    <string name="no_subscriptions_yet">Noch keine Abonnements</string>
+    <string name="subscribe_to_wineyards_message">Abonnieren Sie Weingüter, um über niedrige Lagerbestände, neue Veröffentlichungen und Sonderangebote benachrichtigt zu werden</string>
+    <string name="no_wines_added_yet">Noch keine Weine hinzugefügt.\nKlicken Sie auf \'Wein hinzufügen\', um zu beginnen.</string>
+    <string name="no_wines_available">Keine Weine verfügbar</string>
+    <string name="tap_add_wine">Tippen Sie auf \'Wein hinzufügen\', um Ihren ersten Wein hinzuzufügen</string>
+    <string name="no_photos_yet">Noch keine Fotos</string>
+    <string name="tap_add_first_photo">Tippen Sie auf +, um Ihr erstes Foto hinzuzufügen</string>
+    <string name="wine_not_found">Wein nicht gefunden</string>
+    
+    <!-- Loading States -->
+    <string name="loading">Lädt…</string>
+    <string name="refreshing_wineyards">Weingüter werden aktualisiert…</string>
+    <string name="refreshing_wines">Weine werden aktualisiert…</string>
+    <string name="pull_to_refresh">Zum Aktualisieren ziehen</string>
+    <string name="release_to_refresh">Zum Aktualisieren loslassen</string>
+    <string name="wineyards_refreshed">Weingüter aktualisiert</string>
+    <string name="wines_refreshed">Weine aktualisiert</string>
+    <string name="profile_refreshed">Profil aktualisiert</string>
+    
+    <!-- Account Information -->
+    <string name="account_information">Kontoinformationen</string>
+    <string name="subscribed_to_wineyards">Sie haben %d Weingut/güter abonniert</string>
+    <string name="subscribed_since">Abonniert seit %s</string>
+    
+    <!-- Notification Preferences -->
+    <string name="notification_preferences">Benachrichtigungseinstellungen</string>
+    <string name="low_stock_alerts">Niedriglager-Warnungen</string>
+    <string name="low_stock_alerts_desc">Benachrichtigt werden, wenn Weine zur Neige gehen</string>
+    <string name="new_releases">Neue Veröffentlichungen</string>
+    <string name="new_releases_desc">Als Erster über neue Weine erfahren</string>
+    <string name="special_offers">Sonderangebote</string>
+    <string name="special_offers_desc">Verpassen Sie keine Rabatte und Aktionen</string>
+    <string name="general_updates">Allgemeine Updates</string>
+    <string name="general_updates_desc">Neuigkeiten und Updates vom Weingut</string>
+    <string name="unsubscribe_from_wineyard">Von %s abmelden</string>
+    
+    <!-- Wine Information -->
+    <string name="regular_price">Regulärer Preis:</string>
+    <string name="discounted_price">Rabattpreis:</string>
+    <string name="current_stock">Aktueller Lagerbestand:</string>
+    <string name="wine_id">Wein-ID:</string>
+    <string name="stock_count">Lagerbestand: %d</string>
+    <string name="bottles_remaining">%d Flaschen verbleibend</string>
+    <string name="threshold_label">Schwelle: %d</string>
+    <string name="in_stock">%d auf Lager</string>
+    <string name="low_stock_warning">⚠️ Niedriglager-Warnung</string>
+    <string name="critical_stock_warning">KRITISCH: Fast \'ausgetrunken\'!</string>
+    
+    <!-- Wineyard Information -->
+    <string name="wineyard_photos">Weingut Fotos</string>
+    <string name="wineyard_information">Weingut Informationen</string>
+    <string name="wines_section">Weine</string>
+    <string name="photos_count">Fotos (%d)</string>
+    <string name="wines_count">Weine (%d)</string>
+    <string name="subscribed_status">✓ Abonniert</string>
+    
+    <!-- Notifications -->
+    <string name="quick_actions">Schnellaktionen</string>
+    <string name="low_stock_wines">Niedriglager-Weine</string>
+    <string name="critical_stock_wines">Kritische Lager-Weine (20%% oder weniger)</string>
+    <string name="subscriber_information">Abonnenten-Informationen</string>
+    <string name="low_stock_count">Niedriglager (%d)</string>
+    <string name="critical_count">Kritisch (%d)</string>
+    <string name="send_custom_notification">Benutzerdefinierte Benachrichtigung senden</string>
+    <string name="notification_type">Benachrichtigungstyp</string>
+    <string name="title">Titel</string>
+    <string name="message_label">Nachricht</string>
+    <string name="total_subscribers">Gesamte Abonnenten:</string>
+    <string name="low_stock_notifications">Niedriglager-Benachrichtigungen:</string>
+    <string name="general_notifications">Allgemeine Benachrichtigungen:</string>
+    
+    <!-- Settings & Debug -->
+    <string name="settings">Einstellungen</string>
+    <string name="debug_wineyards">🐛 Debug Weingüter</string>
+    <string name="debug_fcm_token">🔧 Debug FCM Token</string>
+    <string name="flag_account_for_deletion">Konto zur Löschung markieren</string>
+    
+    <!-- Dialogs -->
+    <string name="delete_account_title">Konto löschen?</string>
+    <string name="delete_account_message">Ihr Konto wird zur Löschung markiert und Sie können sich nicht mehr anmelden. Ihre Daten werden zu Wiederherstellungszwecken aufbewahrt und später von einem Administrator dauerhaft gelöscht.\n\nDaten, die zur Löschung markiert werden:\n• Ihre Profilinformationen\n• Alle von Ihnen erstellten Weingüter\n• Alle Weine in Ihren Weingütern\n• Ihr Abonnement-Verlauf\n• Alle anderen Kontodaten\n\nSind Sie sicher, dass Sie Ihr Konto zur Löschung markieren möchten?</string>
+    
+    <!-- Section Headers -->
+    <string name="price_information">Preisinformationen</string>
+    <string name="stock_information">Lagerinformationen</string>
+    <string name="information">Informationen</string>
+    
+    <!-- Missing UI Strings -->
+    <string name="coordinates">Koordinaten: %s</string>
+    <string name="remove_photo">Foto entfernen</string>
+    <string name="tap_plus_add_photo">Tippen Sie auf +, um Ihr erstes Foto hinzuzufügen</string>
+    <string name="wineyard_photo">Weingut Foto</string>
+    <string name="low_stock_threshold_label">Niedriglager-Schwelle:</string>
+    <string name="wines_refreshed_success">Weine aktualisiert</string>
+    <string name="wineyards_refreshed_success">Weingüter aktualisiert</string>
+    <string name="account_information_header">Kontoinformationen</string>
+    <string name="notification_preferences_header">Benachrichtigungseinstellungen</string>
+    <string name="subscriber_info">Abonnenten-Informationen</string>
+    <string name="sent_notification_success">Benachrichtigung an %d Abonnenten gesendet</string>
+</resources>

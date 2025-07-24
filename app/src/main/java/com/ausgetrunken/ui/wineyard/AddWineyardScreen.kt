@@ -24,11 +24,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import coil.compose.AsyncImage
+import com.ausgetrunken.R
 import com.ausgetrunken.ui.wineyard.components.WineFormCard
 import org.koin.androidx.compose.koinViewModel
 
@@ -77,10 +79,10 @@ fun AddWineyardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Wineyard") },
+                title = { Text(stringResource(R.string.add_wineyard)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -94,7 +96,7 @@ fun AddWineyardScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Save")
+                            Text(stringResource(R.string.save))
                         }
                     }
                 }
@@ -171,7 +173,7 @@ fun AddWineyardScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Creating wineyard...",
+                                text = stringResource(R.string.creating_wineyard),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -197,7 +199,7 @@ private fun WineyardImageSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Wineyard Photos",
+                text = stringResource(R.string.wineyard_photos),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -224,7 +226,7 @@ private fun WineyardImageSection(
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "Add Photo",
+                                contentDescription = stringResource(R.string.cd_add_photo),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -240,7 +242,7 @@ private fun WineyardImageSection(
                     ) {
                         AsyncImage(
                             model = imageUri,
-                            contentDescription = "Wineyard Photo",
+                            contentDescription = stringResource(R.string.wineyard_photo),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -258,7 +260,7 @@ private fun WineyardImageSection(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Remove Photo",
+                                contentDescription = stringResource(R.string.cd_remove_photo),
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )

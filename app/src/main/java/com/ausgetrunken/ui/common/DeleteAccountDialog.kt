@@ -8,8 +8,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.ausgetrunken.R
 
 @Composable
 fun DeleteAccountDialog(
@@ -20,7 +22,7 @@ fun DeleteAccountDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Delete Account?",
+                text = stringResource(R.string.delete_account_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error
@@ -28,14 +30,7 @@ fun DeleteAccountDialog(
         },
         text = {
             Text(
-                text = "Your account will be flagged for deletion and you will no longer be able to sign in. Your data will be preserved for recovery purposes and will be permanently deleted by an administrator at a later time.\n\n" +
-                        "Data that will be flagged for deletion:\n" +
-                        "• Your profile information\n" +
-                        "• All wineyards you've created\n" +
-                        "• All wines in your wineyards\n" +
-                        "• Your subscription history\n" +
-                        "• All other account data\n\n" +
-                        "Are you sure you want to flag your account for deletion?",
+                text = stringResource(R.string.delete_account_message),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Start,
                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
@@ -50,7 +45,7 @@ fun DeleteAccountDialog(
                 )
             ) {
                 Text(
-                    text = "FLAG FOR DELETION",
+                    text = stringResource(R.string.flag_for_deletion),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -58,7 +53,7 @@ fun DeleteAccountDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
-                    text = "Cancel",
+                    text = stringResource(R.string.cancel),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }

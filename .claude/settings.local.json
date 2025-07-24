@@ -79,7 +79,19 @@
       "Bash(where:*)",
       "Bash(del nul)",
       "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" logcat -d -v time)",
-      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" logcat -v time)"
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" logcat -v time)",
+      "Bash(touch:*)",
+      "WebFetch(domain:developer.android.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:canlioya.medium.com)",
+      "WebFetch(domain:issuetracker.google.com)",
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(\"C:\\Program Files\\Android\\Android Studio\\jbr\\bin\\java\" -version)",
+      "Bash(%PATH%)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb\" devices)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb\" -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(\"$ANDROID_HOME/emulator/emulator.exe\":*)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" logcat -s \"Ausgetrunken\" -d)"
     ],
     "deny": []
   }

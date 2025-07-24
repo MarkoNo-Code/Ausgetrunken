@@ -1,0 +1,196 @@
+<resources>
+    <string name="app_name">Ausgetrunken</string>
+    
+    <!-- App Tagline -->
+    <string name="app_tagline">จิบ ลิ้มรส เฉลิมฉลอง</string>
+    <string name="loading_message">กำลังเตรียมห้องเก็บไวน์ของคุณ…</string>
+    
+    <!-- Authentication -->
+    <string name="welcome_title">ยินดีต้อนรับสู่ Ausgetrunken</string>
+    <string name="sign_in_subtitle">เข้าสู่ระบบเพื่อดำเนินการต่อ</string>
+    <string name="sign_up_subtitle">สร้างบัญชีของคุณ</string>
+    <string name="account_flagged_title">บัญชีถูกระงับ</string>
+    
+    <!-- Form Labels -->
+    <string name="email">อีเมล</string>
+    <string name="password">รหัสผ่าน</string>
+    <string name="confirm_password">ยืนยันรหัสผ่าน</string>
+    <string name="account_type">ประเภทบัญชี</string>
+    <string name="wine_name">ชื่อไวน์</string>
+    <string name="description">คำอธิบาย</string>
+    <string name="wine_type">ประเภทไวน์</string>
+    <string name="vintage_year">ปีที่ผลิต</string>
+    <string name="price_euro">ราคา (€)</string>
+    <string name="discounted_price_euro">ราคาลดพิเศษ (€) - ไม่บังคับ</string>
+    <string name="stock_quantity">จำนวนในคลัง</string>
+    <string name="low_stock_threshold">เกณฑ์สต็อกต่ำ</string>
+    <string name="wineyard_name">ชื่อไร่องุ่น</string>
+    <string name="address">ที่อยู่</string>
+    
+    <!-- Button Labels -->
+    <string name="sign_in">เข้าสู่ระบบ</string>
+    <string name="sign_up">สมัครสมาชิก</string>
+    <string name="create_account">สร้างบัญชี</string>
+    <string name="contact_support">ติดต่อฝ่ายสนับสนุน</string>
+    <string name="dismiss">ปิด</string>
+    <string name="save">บันทึก</string>
+    <string name="cancel">ยกเลิก</string>
+    <string name="delete">ลบ</string>
+    <string name="edit">แก้ไข</string>
+    <string name="add_wine">เพิ่มไวน์</string>
+    <string name="update_wine">อัปเดตไวน์</string>
+    <string name="update_location">อัปเดตตำแหน่ง</string>
+    <string name="logout">ออกจากระบบ</string>
+    <string name="send">ส่ง</string>
+    <string name="notify">แจ้งเตือน</string>
+    <string name="alert_now">เตือนทันที!</string>
+    <string name="flag_for_deletion">ระงับเพื่อลบ</string>
+    <string name="flagging_account">กำลังระงับบัญชี…</string>
+    <string name="creating_wineyard">กำลังสร้างไร่องุ่น…</string>
+    
+    <!-- User Types -->
+    <string name="customer">ลูกค้า</string>
+    <string name="wineyard_owner">เจ้าของไร่องุ่น</string>
+    
+    <!-- Screen Titles -->
+    <string name="discover_wines">ค้นพบไวน์</string>
+    <string name="my_profile">โปรไฟล์ของฉัน</string>
+    <string name="profile">โปรไฟล์</string>
+    <string name="my_subscriptions">การสมัครสมาชิกของฉัน</string>
+    <string name="add_wineyard">เพิ่มไร่องุ่น</string>
+    <string name="wineyard_details">รายละเอียดไร่องุ่น</string>
+    <string name="add_wine_title">เพิ่มไวน์</string>
+    <string name="edit_wine_title">แก้ไขไวน์</string>
+    <string name="wine_details">รายละเอียดไวน์</string>
+    <string name="notification_management">จัดการการแจ้งเตือน</string>
+    
+    <!-- Navigation -->
+    <string name="tab_wineyards">ไร่องุ่น</string>
+    <string name="tab_wines">ไวน์</string>
+    
+    <!-- Content Descriptions -->
+    <string name="cd_back">กลับ</string>
+    <string name="cd_profile">โปรไฟล์</string>
+    <string name="cd_notification_center">ศูนย์การแจ้งเตือน</string>
+    <string name="cd_delete_account">ลบบัญชี</string>
+    <string name="cd_hide_password">ซ่อนรหัสผ่าน</string>
+    <string name="cd_show_password">แสดงรหัสผ่าน</string>
+    <string name="cd_add_photo">เพิ่มรูปภาพ</string>
+    <string name="cd_remove_photo">ลบรูปภาพ</string>
+    <string name="cd_location">ตำแหน่ง</string>
+    <string name="cd_stock">สต็อก</string>
+    <string name="cd_subscribe">สมัครรับการแจ้งเตือน</string>
+    <string name="cd_unsubscribe">ยกเลิกการแจ้งเตือน</string>
+    <string name="cd_notification_settings">ตั้งค่าการแจ้งเตือน</string>
+    <string name="cd_view_as_customer">ดูในฐานะลูกค้า</string>
+    
+    <!-- Messages -->
+    <string name="welcome_back">ยินดีต้อนรับกลับมา!</string>
+    <string name="happy_wine_tasting">ขอให้มีความสุขกับการชิมไวน์!</string>
+    <string name="dont_have_account">ไม่มีบัญชี? สมัครสมาชิก</string>
+    <string name="already_have_account">มีบัญชีแล้ว? เข้าสู่ระบบ</string>
+    <string name="supabase_backend_message">🚀 Supabase Backend\n\nแอปนี้ได้รับการสนับสนุนโดย Supabase! กรุณากำหนดค่าข้อมูลประจำตัว Supabase ของคุณเพื่อเปิดใช้งานการยืนยันตัวตนและคุณสมบัติฐานข้อมูลไวน์</string>
+    <string name="account_flagged_message">สวัสดี,\n\nบัญชีของฉันถูกระงับเพื่อลบโดยผู้ดูแลระบบ ฉันเชื่อว่านี่อาจเป็นข้อผิดพลาดและต้องการขอให้ตรวจสอบ\n\nกรุณาช่วยฉันแก้ไขปัญหานี้\n\nขอบคุณ</string>
+    
+    <!-- Empty States -->
+    <string name="no_wineyards_found">ไม่พบไร่องุ่น</string>
+    <string name="no_wines_found">ไม่พบไวน์</string>
+    <string name="no_subscriptions_yet">ยังไม่มีการสมัครสมาชิก</string>
+    <string name="subscribe_to_wineyards_message">สมัครสมาชิกไร่องุ่นเพื่อรับการแจ้งเตือนเกี่ยวกับไวน์ที่เหลือน้อย การเปิดตัวใหม่ และข้อเสนอพิเศษ</string>
+    <string name="no_wines_added_yet">ยังไม่มีไวน์ที่เพิ่ม\nคลิก \'เพิ่มไวน์\' เพื่อเริ่มต้น</string>
+    <string name="no_wines_available">ไม่มีไวน์</string>
+    <string name="tap_add_wine">แตะ \'เพิ่มไวน์\' เพื่อเพิ่มไวน์แรกของคุณ</string>
+    <string name="no_photos_yet">ยังไม่มีรูปภาพ</string>
+    <string name="tap_add_first_photo">แตะ + เพื่อเพิ่มรูปภาพแรกของคุณ</string>
+    <string name="wine_not_found">ไม่พบไวน์</string>
+    
+    <!-- Loading States -->
+    <string name="loading">กำลังโหลด…</string>
+    <string name="refreshing_wineyards">กำลังรีเฟรชไร่องุ่น…</string>
+    <string name="refreshing_wines">กำลังรีเฟรชไวน์…</string>
+    <string name="pull_to_refresh">ดึงเพื่อรีเฟรช</string>
+    <string name="release_to_refresh">ปล่อยเพื่อรีเฟรช</string>
+    <string name="wineyards_refreshed">รีเฟรชไร่องุ่นแล้ว</string>
+    <string name="wines_refreshed">รีเฟรชไวน์แล้ว</string>
+    <string name="profile_refreshed">รีเฟรชโปรไฟล์แล้ว</string>
+    
+    <!-- Account Information -->
+    <string name="account_information">ข้อมูลบัญชี</string>
+    <string name="subscribed_to_wineyards">คุณสมัครสมาชิก %d ไร่องุ่น</string>
+    <string name="subscribed_since">สมัครสมาชิกตั้งแต่ %s</string>
+    
+    <!-- Notification Preferences -->
+    <string name="notification_preferences">การตั้งค่าการแจ้งเตือน</string>
+    <string name="low_stock_alerts">แจ้งเตือนสต็อกต่ำ</string>
+    <string name="low_stock_alerts_desc">รับการแจ้งเตือนเมื่อไวน์เหลือน้อย</string>
+    <string name="new_releases">การเปิดตัวใหม่</string>
+    <string name="new_releases_desc">เป็นคนแรกที่รู้เกี่ยวกับไวน์ใหม่</string>
+    <string name="special_offers">ข้อเสนอพิเศษ</string>
+    <string name="special_offers_desc">อย่าพลาดส่วนลดและโปรโมชั่น</string>
+    <string name="general_updates">อัปเดตทั่วไป</string>
+    <string name="general_updates_desc">ข่าวสารและอัปเดตจากไร่องุ่น</string>
+    <string name="unsubscribe_from_wineyard">ยกเลิกการสมัครจาก %s</string>
+    
+    <!-- Wine Information -->
+    <string name="regular_price">ราคาปกติ:</string>
+    <string name="discounted_price">ราคาลดพิเศษ:</string>
+    <string name="current_stock">สต็อกปัจจุบัน:</string>
+    <string name="wine_id">รหัสไวน์:</string>
+    <string name="stock_count">สต็อก: %d</string>
+    <string name="bottles_remaining">เหลือ %d ขวด</string>
+    <string name="threshold_label">เกณฑ์: %d</string>
+    <string name="in_stock">มีในสต็อก %d</string>
+    <string name="low_stock_warning">⚠️ คำเตือนสต็อกต่ำ</string>
+    <string name="critical_stock_warning">วิกฤติ: เกือบ \'หมด\'!</string>
+    
+    <!-- Wineyard Information -->
+    <string name="wineyard_photos">รูปภาพไร่องุ่น</string>
+    <string name="wineyard_information">ข้อมูลไร่องุ่น</string>
+    <string name="wines_section">ไวน์</string>
+    <string name="photos_count">รูปภาพ (%d)</string>
+    <string name="wines_count">ไวน์ (%d)</string>
+    <string name="subscribed_status">✓ สมัครสมาชิกแล้ว</string>
+    
+    <!-- Notifications -->
+    <string name="quick_actions">การดำเนินการด่วน</string>
+    <string name="low_stock_wines">ไวน์สต็อกต่ำ</string>
+    <string name="critical_stock_wines">ไวน์สต็อกวิกฤติ (20%% หรือน้อยกว่า)</string>
+    <string name="subscriber_information">ข้อมูลผู้สมัครสมาชิก</string>
+    <string name="low_stock_count">สต็อกต่ำ (%d)</string>
+    <string name="critical_count">วิกฤติ (%d)</string>
+    <string name="send_custom_notification">ส่งการแจ้งเตือนแบบกำหนดเอง</string>
+    <string name="notification_type">ประเภทการแจ้งเตือน</string>
+    <string name="title">หัวข้อ</string>
+    <string name="message_label">ข้อความ</string>
+    <string name="total_subscribers">ผู้สมัครสมาชิกทั้งหมด:</string>
+    <string name="low_stock_notifications">การแจ้งเตือนสต็อกต่ำ:</string>
+    <string name="general_notifications">การแจ้งเตือนทั่วไป:</string>
+    
+    <!-- Settings & Debug -->
+    <string name="settings">การตั้งค่า</string>
+    <string name="debug_wineyards">🐛 ดีบักไร่องุ่น</string>
+    <string name="debug_fcm_token">🔧 ดีบัก FCM โทเค็น</string>
+    <string name="flag_account_for_deletion">ระงับบัญชีเพื่อลบ</string>
+    
+    <!-- Dialogs -->
+    <string name="delete_account_title">ลบบัญชี?</string>
+    <string name="delete_account_message">บัญชีของคุณจะถูกระงับเพื่อลบและคุณจะไม่สามารถเข้าสู่ระบบได้อีก ข้อมูลของคุณจะถูกเก็บไว้เพื่อการกู้คืนและจะถูกลบถาวรโดยผู้ดูแลระบบในภายหลัง\n\nข้อมูลที่จะถูกระงับเพื่อลบ:\n• ข้อมูลโปรไฟล์ของคุณ\n• ไร่องุ่นทั้งหมดที่คุณสร้าง\n• ไวน์ทั้งหมดในไร่องุ่นของคุณ\n• ประวัติการสมัครสมาชิกของคุณ\n• ข้อมูลบัญชีอื่นๆ ทั้งหมด\n\nคุณแน่ใจหรือไม่ว่าต้องการระงับบัญชีของคุณเพื่อลบ?</string>
+    
+    <!-- Section Headers -->
+    <string name="price_information">ข้อมูลราคา</string>
+    <string name="stock_information">ข้อมูลสต็อก</string>
+    <string name="information">ข้อมูล</string>
+    
+    <!-- Missing UI Strings -->
+    <string name="coordinates">พิกัด: %s</string>
+    <string name="remove_photo">ลบรูปภาพ</string>
+    <string name="tap_plus_add_photo">แตะ + เพื่อเพิ่มรูปภาพแรกของคุณ</string>
+    <string name="wineyard_photo">รูปภาพไร่องุ่น</string>
+    <string name="low_stock_threshold_label">เกณฑ์สต็อกต่ำ:</string>
+    <string name="wines_refreshed_success">รีเฟรชไวน์แล้ว</string>
+    <string name="wineyards_refreshed_success">รีเฟรชไร่องุ่นแล้ว</string>
+    <string name="account_information_header">ข้อมูลบัญชี</string>
+    <string name="notification_preferences_header">การตั้งค่าการแจ้งเตือน</string>
+    <string name="subscriber_info">ข้อมูลผู้สมัครสมาชิก</string>
+    <string name="sent_notification_success">ส่งการแจ้งเตือนไปยัง %d ผู้สมัครสมาชิกแล้ว</string>
+</resources>

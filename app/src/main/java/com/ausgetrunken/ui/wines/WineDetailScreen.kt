@@ -9,10 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.WineEntity
 import org.koin.androidx.compose.koinViewModel
 
@@ -33,10 +35,10 @@ fun WineDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Wine Details") },
+                title = { Text(stringResource(R.string.wine_details)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -59,7 +61,7 @@ fun WineDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Wine not found",
+                        text = stringResource(R.string.wine_not_found),
                         style = MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center
                     )
@@ -119,7 +121,7 @@ private fun WineDetailContent(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Description",
+                        text = stringResource(R.string.description),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -142,7 +144,7 @@ private fun WineDetailContent(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Price Information",
+                    text = stringResource(R.string.price_information),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -154,7 +156,7 @@ private fun WineDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Regular Price:",
+                        text = stringResource(R.string.regular_price),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
@@ -170,7 +172,7 @@ private fun WineDetailContent(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Discounted Price:",
+                            text = stringResource(R.string.discounted_price),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
@@ -192,7 +194,7 @@ private fun WineDetailContent(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Stock Information",
+                    text = stringResource(R.string.stock_information),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -204,7 +206,7 @@ private fun WineDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Current Stock:",
+                        text = stringResource(R.string.current_stock),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
@@ -224,7 +226,7 @@ private fun WineDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Low Stock Threshold:",
+                        text = stringResource(R.string.low_stock_threshold_label),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
@@ -252,7 +254,7 @@ private fun WineDetailContent(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "Information",
+                    text = stringResource(R.string.information),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -264,7 +266,7 @@ private fun WineDetailContent(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Wine ID:",
+                        text = stringResource(R.string.wine_id),
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
