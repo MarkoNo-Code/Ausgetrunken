@@ -16,10 +16,10 @@ interface WineyardSubscriptionDao {
     @Query("SELECT * FROM wineyard_subscriptions WHERE wineyardId = :wineyardId AND isActive = 1")
     suspend fun getWineyardSubscriptions(wineyardId: String): List<WineyardSubscriptionEntity>
     
-    @Query("SELECT * FROM wineyard_subscriptions WHERE userId = :userId AND wineyardId = :wineyardId LIMIT 1")
+    @Query("SELECT * FROM wineyard_subscriptions WHERE userId = :userId AND wineyardId = :wineyardId AND isActive = 1 LIMIT 1")
     suspend fun getSubscription(userId: String, wineyardId: String): WineyardSubscriptionEntity?
     
-    @Query("SELECT * FROM wineyard_subscriptions WHERE userId = :userId AND wineyardId = :wineyardId LIMIT 1")
+    @Query("SELECT * FROM wineyard_subscriptions WHERE userId = :userId AND wineyardId = :wineyardId AND isActive = 1 LIMIT 1")
     fun getSubscriptionFlow(userId: String, wineyardId: String): Flow<WineyardSubscriptionEntity?>
     
     @Query("SELECT COUNT(*) FROM wineyard_subscriptions WHERE wineyardId = :wineyardId AND isActive = 1")

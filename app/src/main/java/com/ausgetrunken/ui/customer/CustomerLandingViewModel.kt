@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.domain.service.WineyardService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardSubscriptionService
+import com.ausgetrunken.domain.util.RemoteFirstTestUtils
 import com.ausgetrunken.auth.SupabaseAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ class CustomerLandingViewModel(
     private val wineyardService: WineyardService,
     private val wineService: WineService,
     private val subscriptionService: WineyardSubscriptionService,
-    private val authRepository: SupabaseAuthRepository
+    private val authRepository: SupabaseAuthRepository,
+    private val remoteFirstTestUtils: RemoteFirstTestUtils
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CustomerLandingUiState())
@@ -212,25 +214,45 @@ class CustomerLandingViewModel(
                 
                 println("👤 CustomerLandingViewModel: Loading subscriptions for user: $userId")
                 
-                // First try to get real-time data from Supabase for cross-device sync
+                // Set loading state
+                _uiState.value = _uiState.value.copy(isSubscriptionDataLoading = true)
+                
+                // CRITICAL FIX: First sync ALL subscription data (active + inactive) from Supabase to local database
+                // This ensures local database stays in sync with Supabase
+                println("🔄 CustomerLandingViewModel: Syncing all subscription data from Supabase to local database...")
+                val syncResult = subscriptionService.syncSubscriptions(userId)
+                syncResult.onSuccess { syncedSubscriptions ->
+                    println("✅ CustomerLandingViewModel: Synced ${syncedSubscriptions.size} total subscriptions from Supabase to local database")
+                }.onFailure { syncError ->
+                    println("⚠️ CustomerLandingViewModel: Full sync failed: ${syncError.message}")
+                }
+                
+                // Now get real-time active subscriptions for UI display
                 val supabaseResult = subscriptionService.getUserSubscriptionsFromSupabase(userId)
                 supabaseResult.onSuccess { supabaseSubscriptions ->
-                    println("✅ CustomerLandingViewModel: Loaded ${supabaseSubscriptions.size} subscriptions from Supabase")
+                    println("✅ CustomerLandingViewModel: Loaded ${supabaseSubscriptions.size} active subscriptions from Supabase")
                     val subscribedIds = supabaseSubscriptions.map { it.wineyardId }.toSet()
-                    _uiState.value = _uiState.value.copy(subscribedWineyardIds = subscribedIds)
+                    _uiState.value = _uiState.value.copy(
+                        subscribedWineyardIds = subscribedIds,
+                        isSubscriptionDataLoading = false
+                    )
                 }.onFailure { supabaseError ->
-                    println("⚠️ CustomerLandingViewModel: Supabase sync failed, falling back to local: ${supabaseError.message}")
+                    println("⚠️ CustomerLandingViewModel: Supabase active subscription fetch failed, falling back to local: ${supabaseError.message}")
                     
                     // Fallback to local data if Supabase fails
                     val localSubscriptions = subscriptionService.getUserSubscriptions(userId).firstOrNull() ?: emptyList()
-                    println("💾 CustomerLandingViewModel: Loaded ${localSubscriptions.size} subscriptions from local database")
+                    println("💾 CustomerLandingViewModel: Loaded ${localSubscriptions.size} active subscriptions from local database")
                     val subscribedIds = localSubscriptions.map { it.wineyardId }.toSet()
-                    _uiState.value = _uiState.value.copy(subscribedWineyardIds = subscribedIds)
+                    _uiState.value = _uiState.value.copy(
+                        subscribedWineyardIds = subscribedIds,
+                        isSubscriptionDataLoading = false
+                    )
                 }
             } catch (e: Exception) {
                 println("❌ CustomerLandingViewModel: Error loading subscriptions: ${e.message}")
                 e.printStackTrace()
                 // Handle error silently for subscriptions - don't crash the app
+                _uiState.value = _uiState.value.copy(isSubscriptionDataLoading = false)
             }
         }
     }
@@ -281,7 +303,11 @@ class CustomerLandingViewModel(
                     subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds + wineyardId
                 )
                 
-                val isCurrentlySubscribed = _uiState.value.subscribedWineyardIds.contains(wineyardId)
+                // CRITICAL: Check real-time subscription status from database, not UI state
+                // UI state might be out of sync with actual database state
+                println("🔍 CustomerLandingViewModel: Checking real-time subscription status for user $userId, wineyard $wineyardId")
+                val isCurrentlySubscribed = subscriptionService.isSubscribed(userId, wineyardId)
+                println("🔍 CustomerLandingViewModel: Real-time subscription check result: $isCurrentlySubscribed")
                 
                 if (isCurrentlySubscribed) {
                     val result = subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
@@ -306,8 +332,21 @@ class CustomerLandingViewModel(
                     }.onFailure { error ->
                         println("❌ CustomerLandingViewModel: Subscription failed: ${error.message}")
                         error.printStackTrace()
+                        
+                        // Provide user-friendly error messages
+                        val userFriendlyMessage = when {
+                            error.message?.contains("unique constraint", ignoreCase = true) == true ||
+                            error.message?.contains("Already subscribed", ignoreCase = true) == true -> {
+                                "You are already subscribed to this wineyard"
+                            }
+                            error.message?.contains("wineyard_subscriptions_user_id_wineyard_id_key", ignoreCase = true) == true -> {
+                                "You are already subscribed to this wineyard"
+                            }
+                            else -> "Failed to subscribe: ${error.message}"
+                        }
+                        
                         _uiState.value = _uiState.value.copy(
-                            errorMessage = "Failed to subscribe: ${error.message}"
+                            errorMessage = userFriendlyMessage
                         )
                     }
                 }
@@ -319,6 +358,34 @@ class CustomerLandingViewModel(
                 // Remove loading state
                 _uiState.value = _uiState.value.copy(
                     subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds - wineyardId
+                )
+            }
+        }
+    }
+    
+    // ================================================================================================
+    // REMOTE-FIRST DATA STRATEGY TESTING
+    // ================================================================================================
+    
+    /**
+     * Test the new remote-first data strategy for wineyards
+     * This will show detailed logs of the process
+     */
+    fun testRemoteFirstDataStrategy() {
+        viewModelScope.launch {
+            try {
+                println("🚀 CustomerLandingViewModel: Starting remote-first test...")
+                remoteFirstTestUtils.runAllTests()
+                println("✅ CustomerLandingViewModel: Remote-first test completed successfully!")
+                
+                // Optionally refresh the UI with the new data
+                refreshData()
+                
+            } catch (e: Exception) {
+                println("❌ CustomerLandingViewModel: Remote-first test failed: ${e.message}")
+                e.printStackTrace()
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Remote-first test failed: ${e.message}"
                 )
             }
         }

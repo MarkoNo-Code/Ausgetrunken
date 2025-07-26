@@ -1,6 +1,7 @@
 package com.ausgetrunken.di
 
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import com.ausgetrunken.data.local.AusgetrunkenDatabase
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -12,7 +13,14 @@ val databaseModule = module {
             AusgetrunkenDatabase::class.java,
             AusgetrunkenDatabase.DATABASE_NAME
         )
-        .fallbackToDestructiveMigration() // Allow destructive migration during development
+        .addMigrations(
+            AusgetrunkenDatabase.MIGRATION_2_3,
+            AusgetrunkenDatabase.MIGRATION_3_4
+        )
+        // CRITICAL FIX: Use TRUNCATE mode for immediate consistency instead of WAL isolation issues
+        .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
+        // Enable to reset database if needed for testing
+        // .fallbackToDestructiveMigration()
         .build()
     }
 
@@ -23,4 +31,5 @@ val databaseModule = module {
     single { get<AusgetrunkenDatabase>().wineyardSubscriptionDao() }
     single { get<AusgetrunkenDatabase>().notificationDao() }
     single { get<AusgetrunkenDatabase>().notificationDeliveryDao() }
+    single { get<AusgetrunkenDatabase>().wineyardPhotoDao() }
 }

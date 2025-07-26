@@ -99,12 +99,14 @@ fun CustomerWineyardCard(
                         modifier = Modifier.size(32.dp)
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
+                            // Show spinning bell icon while loading subscription state
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "Loading subscription state...",
                                 modifier = Modifier
-                                    .size(16.dp)
+                                    .size(18.dp)
                                     .rotate(rotationAngle),
-                                strokeWidth = 2.dp,
-                                color = Color.White
+                                tint = Color.White.copy(alpha = 0.7f)
                             )
                         } else {
                             Icon(

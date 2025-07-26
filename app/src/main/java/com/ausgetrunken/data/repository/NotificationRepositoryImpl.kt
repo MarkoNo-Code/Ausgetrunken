@@ -4,6 +4,7 @@ import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.entities.NotificationType
 import com.ausgetrunken.domain.repository.NotificationRepository
 import com.ausgetrunken.domain.repository.NotificationSendResult
+import com.ausgetrunken.domain.util.NetworkConnectivityManager
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.postgrest
@@ -16,7 +17,8 @@ import kotlinx.serialization.json.put
 
 class NotificationRepositoryImpl(
     private val supabaseClient: SupabaseClient,
-    authRepository: SupabaseAuthRepository
+    authRepository: SupabaseAuthRepository,
+    private val networkManager: NetworkConnectivityManager
 ) : BaseRepository(authRepository), NotificationRepository {
 
     override suspend fun sendNotification(

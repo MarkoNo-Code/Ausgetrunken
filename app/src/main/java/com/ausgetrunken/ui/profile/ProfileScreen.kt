@@ -240,11 +240,104 @@ fun ProfileScreen(
                     Box(modifier = Modifier.size(0.dp))
                 }
             ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                if (uiState.isLoading && uiState.userName.isEmpty()) {
+                    // Show loading state only when initially loading
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Loading profile...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            
+                            // Emergency logout button in case loading fails
+                            Button(
+                                onClick = { viewModel.logout() },
+                                enabled = !uiState.isLoggingOut,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                if (uiState.isLoggingOut) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = MaterialTheme.colorScheme.onError
+                                    )
+                                } else {
+                                    Text("Emergency Logout")
+                                }
+                            }
+                        }
+                    }
+                } else if (uiState.errorMessage != null && uiState.userName.isEmpty()) {
+                    // Show error state with logout option
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Failed to load profile",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = uiState.errorMessage ?: "Unknown error",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                            
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Button(
+                                    onClick = { viewModel.refreshProfile() },
+                                    enabled = !uiState.isLoading
+                                ) {
+                                    Text("Retry")
+                                }
+                                
+                                Button(
+                                    onClick = { viewModel.logout() },
+                                    enabled = !uiState.isLoggingOut,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error
+                                    )
+                                ) {
+                                    if (uiState.isLoggingOut) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = MaterialTheme.colorScheme.onError
+                                        )
+                                    } else {
+                                        Text("Logout")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                     item {
                         ProfileHeader(
                             userName = uiState.userName,
@@ -365,6 +458,7 @@ fun ProfileScreen(
                                 }
                             }
                         }
+                    }
                     }
                 }
             }

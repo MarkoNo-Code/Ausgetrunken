@@ -23,6 +23,7 @@ import com.ausgetrunken.ui.wines.AddWineScreen
 import com.ausgetrunken.ui.wines.EditWineScreen
 import com.ausgetrunken.ui.customer.CustomerLandingScreen
 import com.ausgetrunken.ui.customer.CustomerProfileScreen
+import com.ausgetrunken.ui.customer.CustomerWineyardDetailScreen
 import com.ausgetrunken.ui.notifications.NotificationManagementScreen
 import kotlinx.coroutines.launch
 
@@ -131,7 +132,7 @@ fun AusgetrunkenNavigation(
         composable(Screen.WineyardList.route) {
             CustomerLandingScreen(
                 onWineyardClick = { wineyardId ->
-                    navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
+                    navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
                 },
                 onWineClick = { wineId ->
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
@@ -145,7 +146,7 @@ fun AusgetrunkenNavigation(
         composable(Screen.CustomerLanding.route) {
             CustomerLandingScreen(
                 onWineyardClick = { wineyardId ->
-                    navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
+                    navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
                 },
                 onWineClick = { wineId ->
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
@@ -184,6 +185,24 @@ fun AusgetrunkenNavigation(
                 },
                 onNavigateToWineDetail = { wineId ->
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
+                },
+                onNavigateToCustomerView = {
+                    navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
+                }
+            )
+        }
+        
+        composable(Screen.CustomerWineyardDetail.route) { backStackEntry ->
+            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            CustomerWineyardDetailScreen(
+                wineyardId = wineyardId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToWineDetail = { wineId ->
+                    navController.navigate(Screen.WineDetail.createRoute(wineId))
+                },
+                onNavigateToMap = { latitude, longitude ->
+                    // TODO: Implement map navigation with coordinates
+                    navController.navigate(Screen.Map.route)
                 }
             )
         }

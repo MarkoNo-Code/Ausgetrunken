@@ -32,9 +32,11 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.LocalBar
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -106,6 +108,7 @@ fun WineyardDetailScreen(
     onNavigateToAddWine: (String) -> Unit,
     onNavigateToEditWine: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
+    onNavigateToCustomerView: () -> Unit = {},
     viewModel: WineyardDetailViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -118,6 +121,9 @@ fun WineyardDetailScreen(
     // Image picker state
     var showImagePickerDialog by remember { mutableStateOf(false) }
     var photoUri by remember { mutableStateOf<Uri?>(null) }
+    
+    // Delete confirmation state
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     
     // Create file for camera capture
     fun createImageFile(): File {
@@ -352,43 +358,16 @@ fun WineyardDetailScreen(
                         }
                     }
                     
-                    // Edit/Delete buttons for wineyard owners
+                    // Customer view button for wineyard owners
                     if (uiState.canEdit) {
-                        if (uiState.isEditing) {
-                            IconButton(
-                                onClick = { viewModel.saveWineyard() },
-                                enabled = !uiState.isUpdating
-                            ) {
-                                if (uiState.isUpdating) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                } else {
-                                    Icon(Icons.Default.Save, contentDescription = stringResource(R.string.save))
-                                }
-                            }
-                        } else {
-                            IconButton(onClick = { viewModel.toggleEdit() }) {
-                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit))
-                            }
-                            IconButton(
-                                onClick = { viewModel.deleteWineyard() },
-                                enabled = !uiState.isDeleting
-                            ) {
-                                if (uiState.isDeleting) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                } else {
-                                    Icon(
-                                        Icons.Default.Delete, 
-                                        contentDescription = stringResource(R.string.delete),
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
+                        IconButton(
+                            onClick = onNavigateToCustomerView
+                        ) {
+                            Icon(
+                                Icons.Default.Visibility, 
+                                contentDescription = "View as customer",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -433,44 +412,33 @@ fun WineyardDetailScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Image carousel at the very top
-                        if (wineyard.photos.isNotEmpty()) {
-                            item {
-                                WineyardImageCarousel(
-                                    images = wineyard.photos,
-                                    isEditing = uiState.isEditing,
-                                    canEdit = uiState.canEdit,
-                                    onAddPhoto = { viewModel.showImagePicker() },
-                                    onRemovePhoto = viewModel::removePhoto
-                                )
-                            }
-                        }
-                        
+                        // Unified Photos Section - Always at the top
                         item {
-                            WineyardInfoCard(
-                                wineyard = wineyard,
+                            UnifiedPhotosSection(
+                                photos = uiState.photos,
                                 isEditing = uiState.isEditing,
                                 canEdit = uiState.canEdit,
-                                onNameChange = viewModel::updateWineyardName,
-                                onDescriptionChange = viewModel::updateWineyardDescription,
-                                onAddressChange = viewModel::updateWineyardAddress,
-                                onLocationClick = { viewModel.showLocationPicker() },
+                                onAddPhoto = { viewModel.showImagePicker() },
+                                onRemovePhoto = viewModel::removePhoto,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
                         
-                        // Photos section for adding/managing photos when empty or when owner can add more photos
-                        if (wineyard.photos.isEmpty() || (uiState.canEdit && wineyard.photos.size < 3)) {
-                            item {
-                                PhotosManagementSection(
-                                    photos = wineyard.photos,
-                                    isEditing = uiState.isEditing,
-                                    canEdit = uiState.canEdit,
-                                    onAddPhoto = { viewModel.showImagePicker() },
-                                    onRemovePhoto = viewModel::removePhoto,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                            }
+                        // Wineyard Info (Description, etc.) - Moved to second position
+                        item {
+                            WineyardInfoCard(
+                                wineyard = wineyard,
+                                canEdit = uiState.canEdit,
+                                onSaveWineyard = { name, description, address -> 
+                                    viewModel.updateWineyardName(name)
+                                    viewModel.updateWineyardDescription(description)
+                                    viewModel.updateWineyardAddress(address)
+                                    viewModel.saveWineyard()
+                                },
+                                onLocationClick = { viewModel.showLocationPicker() },
+                                isUpdating = uiState.isUpdating,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
                         }
                         
                         item {
@@ -485,6 +453,17 @@ fun WineyardDetailScreen(
                             )
                         }
                         
+                        // Delete Wineyard Button - Only for owners
+                        if (uiState.canEdit) {
+                            item {
+                                DeleteWineyardSection(
+                                    onDeleteClick = { showDeleteConfirmation = true },
+                                    isDeleting = uiState.isDeleting,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
+                        
                         item {
                             Spacer(modifier = Modifier.height(80.dp))
                         }
@@ -493,6 +472,17 @@ fun WineyardDetailScreen(
             }
             }
         }
+    }
+    
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
+        DeleteWineyardDialog(
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = { 
+                viewModel.deleteWineyard()
+                showDeleteConfirmation = false
+            }
+        )
     }
     
     // Image picker dialog
@@ -643,14 +633,26 @@ private fun PullToRefreshAccordion(
 @Composable
 private fun WineyardInfoCard(
     wineyard: com.ausgetrunken.data.local.entities.WineyardEntity,
-    isEditing: Boolean,
     canEdit: Boolean,
-    onNameChange: (String) -> Unit,
-    onDescriptionChange: (String) -> Unit,
-    onAddressChange: (String) -> Unit,
+    onSaveWineyard: (String, String, String) -> Unit,
     onLocationClick: () -> Unit,
+    isUpdating: Boolean,
     modifier: Modifier = Modifier
 ) {
+    // Local editing state
+    var isEditing by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(wineyard.name) }
+    var editDescription by remember { mutableStateOf(wineyard.description) }
+    var editAddress by remember { mutableStateOf(wineyard.address) }
+    
+    // Reset local state when wineyard changes
+    LaunchedEffect(wineyard) {
+        editName = wineyard.name
+        editDescription = wineyard.description
+        editAddress = wineyard.address
+        isEditing = false
+    }
+    
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -661,10 +663,72 @@ private fun WineyardInfoCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
+            // Header with title and edit/save button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.wineyard_details),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                if (canEdit) {
+                    if (isEditing) {
+                        Button(
+                            onClick = {
+                                onSaveWineyard(editName, editDescription, editAddress)
+                                isEditing = false
+                            },
+                            enabled = !isUpdating,
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            if (isUpdating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Save,
+                                    contentDescription = stringResource(R.string.save),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.save),
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    } else {
+                        IconButton(
+                            onClick = { isEditing = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit),
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             if (isEditing && canEdit) {
+                // Edit mode
                 OutlinedTextField(
-                    value = wineyard.name,
-                    onValueChange = onNameChange,
+                    value = editName,
+                    onValueChange = { editName = it },
                     label = { Text(stringResource(R.string.wineyard_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -672,8 +736,8 @@ private fun WineyardInfoCard(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
-                    value = wineyard.description,
-                    onValueChange = onDescriptionChange,
+                    value = editDescription,
+                    onValueChange = { editDescription = it },
                     label = { Text(stringResource(R.string.description)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
@@ -682,8 +746,8 @@ private fun WineyardInfoCard(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
-                    value = wineyard.address,
-                    onValueChange = onAddressChange,
+                    value = editAddress,
+                    onValueChange = { editAddress = it },
                     label = { Text(stringResource(R.string.address)) },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -699,6 +763,7 @@ private fun WineyardInfoCard(
                     Text(stringResource(R.string.update_location))
                 }
             } else {
+                // View mode
                 Text(
                     text = wineyard.name,
                     fontSize = 24.sp,
@@ -1318,5 +1383,306 @@ private fun ImagePickerDialog(
                 Text(stringResource(R.string.gallery))
             }
         }
+    )
+}
+
+@Composable
+private fun UnifiedPhotosSection(
+    photos: List<String>,
+    isEditing: Boolean,
+    canEdit: Boolean,
+    onAddPhoto: () -> Unit,
+    onRemovePhoto: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column {
+            // Header with photo count and add button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.photos_count_with_limit, photos.size, 3),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                if (canEdit && photos.size < 3) {
+                    Button(
+                        onClick = onAddPhoto,
+                        modifier = Modifier.height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = stringResource(R.string.cd_add_photo),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.padding(4.dp))
+                        Text(
+                            text = stringResource(R.string.add_photo),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+            
+            // Photo content area
+            if (photos.isEmpty()) {
+                // Empty state
+                Text(
+                    text = if (canEdit) 
+                        stringResource(R.string.tap_add_photo_wineyard) 
+                    else 
+                        stringResource(R.string.no_photos_yet),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 40.dp)
+                )
+            } else {
+                // Photos carousel for viewing
+                Log.d("UnifiedPhotosSection", "Rendering carousel with ${photos.size} photos: $photos")
+                val pagerState = rememberPagerState(pageCount = { photos.size })
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clipToBounds()
+                        ) {
+                            // Placeholder background
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Photo,
+                                    contentDescription = stringResource(R.string.wineyard_photo),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(48.dp)
+                                )
+                            }
+                            
+                            // Actual image
+                            val imageUrl = photos[page]
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(
+                                        when {
+                                            imageUrl.startsWith("/") -> File(imageUrl)
+                                            imageUrl.startsWith("content://") -> Uri.parse(imageUrl)
+                                            else -> imageUrl
+                                        }
+                                    )
+                                    .crossfade(true)
+                                    .memoryCachePolicy(CachePolicy.ENABLED)
+                                    .diskCachePolicy(CachePolicy.ENABLED)
+                                    .build(),
+                                contentDescription = stringResource(R.string.wineyard_photo),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+                            
+                            // Remove button for edit mode
+                            if (isEditing && canEdit) {
+                                FilledIconButton(
+                                    onClick = { onRemovePhoto(imageUrl) },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(12.dp)
+                                        .size(32.dp),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.delete),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Page indicator if multiple photos
+                if (photos.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(photos.size) { index ->
+                            val isSelected = index == pagerState.currentPage
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(
+                                        color = if (isSelected) 
+                                            MaterialTheme.colorScheme.primary 
+                                        else 
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                        shape = CircleShape
+                                    )
+                            )
+                            if (index < photos.size - 1) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteWineyardSection(
+    onDeleteClick: () -> Unit,
+    isDeleting: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.danger_zone),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = stringResource(R.string.delete_wineyard_warning),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Button(
+                onClick = onDeleteClick,
+                enabled = !isDeleting,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onError
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = if (isDeleting) 
+                        stringResource(R.string.deleting) 
+                    else 
+                        stringResource(R.string.delete_wineyard),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteWineyardDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.delete_wineyard_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.delete_wineyard_message),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Start,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.delete),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = stringResource(R.string.cancel),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.error,
+        textContentColor = MaterialTheme.colorScheme.onSurface
     )
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -123,6 +124,13 @@ fun CustomerLandingScreen(
                     ) 
                 },
                 actions = {
+                    // Remote-first test button (for testing only)
+                    IconButton(onClick = { viewModel.testRemoteFirstDataStrategy() }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Test Remote-First Data Strategy"
+                        )
+                    }
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -205,6 +213,7 @@ fun CustomerLandingScreen(
                             onWineyardClick = onWineyardClick,
                             subscribedWineyardIds = uiState.subscribedWineyardIds,
                             subscriptionLoadingIds = uiState.subscriptionLoadingIds,
+                            isSubscriptionDataLoading = uiState.isSubscriptionDataLoading,
                             onSubscriptionToggle = viewModel::toggleWineyardSubscription,
                             listState = listState
                         )
@@ -232,6 +241,7 @@ private fun WineyardsList(
     onWineyardClick: (String) -> Unit,
     subscribedWineyardIds: Set<String>,
     subscriptionLoadingIds: Set<String>,
+    isSubscriptionDataLoading: Boolean,
     onSubscriptionToggle: (String) -> Unit,
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
@@ -245,7 +255,7 @@ private fun WineyardsList(
                 wineyard = wineyard,
                 onWineyardClick = onWineyardClick,
                 isSubscribed = subscribedWineyardIds.contains(wineyard.id),
-                isLoading = subscriptionLoadingIds.contains(wineyard.id),
+                isLoading = isSubscriptionDataLoading || subscriptionLoadingIds.contains(wineyard.id),
                 onSubscriptionToggle = onSubscriptionToggle
             )
         }

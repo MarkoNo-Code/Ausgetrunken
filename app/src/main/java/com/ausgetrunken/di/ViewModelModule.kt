@@ -15,6 +15,7 @@ import com.ausgetrunken.ui.customer.CustomerProfileViewModel
 import com.ausgetrunken.ui.customer.SubscriptionsViewModel
 import com.ausgetrunken.ui.notifications.NotificationManagementViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 val viewModelModule = module {
@@ -24,11 +25,11 @@ val viewModelModule = module {
     viewModel { ProfileViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { SplashViewModel(get(), get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
-    viewModel { WineyardDetailViewModel(get(), get(), get(), get(), get()) }
+    viewModel { WineyardDetailViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), androidContext()) }
     viewModel { WineDetailViewModel(get()) }
     viewModel { AddWineViewModel(get(), get(), get(), get()) }
     viewModel { EditWineViewModel(get(), get(), get(), get()) }
-    viewModel { CustomerLandingViewModel(get(), get(), get(), get()) }
+    viewModel { CustomerLandingViewModel(get(), get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get()) }
     viewModel { SubscriptionsViewModel(get(), get(), get()) }
     viewModel { NotificationManagementViewModel(get(), get(), get()) }

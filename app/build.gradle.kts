@@ -101,8 +101,14 @@ dependencies {
     // Gson
     implementation(libs.gson)
     
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+    
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
+    
+    // Foundation for HorizontalPager
+    implementation("androidx.compose.foundation:foundation:1.7.6")
     
     // Firebase
     implementation(platform(libs.firebase.bom))

@@ -44,4 +44,16 @@ interface WineDao {
     
     @Query("UPDATE wines SET stockQuantity = :newQuantity, updatedAt = :timestamp WHERE id = :wineId")
     suspend fun updateWineStock(wineId: String, newQuantity: Int, timestamp: Long = System.currentTimeMillis())
+    
+    @Query("SELECT * FROM wines")
+    suspend fun getAllWinesList(): List<WineEntity>
+    
+    @Query("SELECT * FROM wines WHERE wineyardId = :wineyardId")
+    suspend fun getWinesByWineyardList(wineyardId: String): List<WineEntity>
+    
+    @Query("DELETE FROM wines")
+    suspend fun clearAllWines()
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWines(wines: List<WineEntity>)
 }

@@ -4,6 +4,7 @@ import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.local.dao.WineDao
 import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.data.remote.model.Wine
+import com.ausgetrunken.domain.util.NetworkConnectivityManager
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.buildJsonObject
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.put
 class WineRepository(
     private val wineDao: WineDao,
     private val postgrest: Postgrest,
+    private val networkManager: NetworkConnectivityManager,
     authRepository: SupabaseAuthRepository
 ) : BaseRepository(authRepository) {
     fun getAllWines(): Flow<List<WineEntity>> = wineDao.getAllWines()
@@ -191,5 +193,125 @@ class WineRepository(
                 Result.failure(e)
             }
         }
+    }
+    
+    suspend fun getAllWinesRemoteFirst(): List<WineEntity> {
+        return networkManager.executeRemoteFirst(
+            operationName = "getAllWines",
+            remoteOperation = {
+                val response = postgrest.from("wines")
+                    .select()
+                    .decodeList<Wine>()
+                    
+                val wines = response.map { wineData ->
+                    WineEntity(
+                        id = wineData.id,
+                        wineyardId = wineData.wineyardId,
+                        name = wineData.name,
+                        description = wineData.description,
+                        wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
+                        vintage = wineData.vintage,
+                        price = wineData.price,
+                        discountedPrice = null,
+                        stockQuantity = wineData.stockQuantity,
+                        fullStockQuantity = wineData.stockQuantity,
+                        lowStockThreshold = 20,
+                        photos = emptyList(),
+                        createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                        updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
+                    )
+                }
+                Result.success(wines)
+            },
+            localFallback = {
+                wineDao.getAllWinesList()
+            },
+            cacheUpdate = { wines ->
+                wineDao.clearAllWines()
+                wineDao.insertWines(wines)
+            }
+        )
+    }
+    
+    suspend fun getWinesByWineyardRemoteFirst(wineyardId: String): List<WineEntity> {
+        return networkManager.executeRemoteFirst(
+            operationName = "getWinesByWineyard",
+            remoteOperation = {
+                val response = postgrest.from("wines")
+                    .select() {
+                        filter {
+                            eq("wineyard_id", wineyardId)
+                        }
+                    }
+                    .decodeList<Wine>()
+                    
+                val wines = response.map { wineData ->
+                    WineEntity(
+                        id = wineData.id,
+                        wineyardId = wineData.wineyardId,
+                        name = wineData.name,
+                        description = wineData.description,
+                        wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
+                        vintage = wineData.vintage,
+                        price = wineData.price,
+                        discountedPrice = null,
+                        stockQuantity = wineData.stockQuantity,
+                        fullStockQuantity = wineData.stockQuantity,
+                        lowStockThreshold = 20,
+                        photos = emptyList(),
+                        createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                        updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
+                    )
+                }
+                Result.success(wines)
+            },
+            localFallback = {
+                wineDao.getWinesByWineyardList(wineyardId)
+            }
+        )
+    }
+    
+    suspend fun getWineByIdRemoteFirst(wineId: String): WineEntity? {
+        val wines = networkManager.executeRemoteFirst(
+            operationName = "getWineById",
+            remoteOperation = {
+                val response = postgrest.from("wines")
+                    .select() {
+                        filter {
+                            eq("id", wineId)
+                        }
+                    }
+                    .decodeList<Wine>()
+                    
+                val wine = response.firstOrNull()?.let { wineData ->
+                    WineEntity(
+                        id = wineData.id,
+                        wineyardId = wineData.wineyardId,
+                        name = wineData.name,
+                        description = wineData.description,
+                        wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
+                        vintage = wineData.vintage,
+                        price = wineData.price,
+                        discountedPrice = null,
+                        stockQuantity = wineData.stockQuantity,
+                        fullStockQuantity = wineData.stockQuantity,
+                        lowStockThreshold = 20,
+                        photos = emptyList(),
+                        createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                        updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
+                    )
+                }
+                Result.success(listOfNotNull(wine))
+            },
+            localFallback = {
+                listOfNotNull(wineDao.getWineById(wineId))
+            },
+            cacheUpdate = { wines ->
+                wines.forEach { wine ->
+                    wineDao.insertWine(wine)
+                }
+            }
+        )
+        return wines.firstOrNull()
     }
 }

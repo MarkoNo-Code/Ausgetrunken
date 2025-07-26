@@ -176,6 +176,15 @@
     <string name="delete_account_title">Delete Account?</string>
     <string name="delete_account_message">Your account will be flagged for deletion and you will no longer be able to sign in. Your data will be preserved for recovery purposes and will be permanently deleted by an administrator at a later time.\n\nData that will be flagged for deletion:\n• Your profile information\n• All wineyards you\'ve created\n• All wines in your wineyards\n• Your subscription history\n• All other account data\n\nAre you sure you want to flag your account for deletion?</string>
     
+    <string name="delete_wineyard_title">Delete Wineyard?</string>
+    <string name="delete_wineyard_message">This action cannot be undone. All data associated with this wineyard will be permanently deleted:\n\n• Wineyard information\n• All wines in this wineyard\n• All photos\n• Subscriber information\n\nAre you sure you want to delete this wineyard?</string>
+    
+    <!-- Danger Zone -->
+    <string name="danger_zone">Danger Zone</string>
+    <string name="delete_wineyard_warning">Once you delete a wineyard, there is no going back. Please be certain.</string>
+    <string name="delete_wineyard">Delete Wineyard</string>
+    <string name="deleting">Deleting…</string>
+    
     <!-- Section Headers -->
     <string name="price_information">Price Information</string>
     <string name="stock_information">Stock Information</string>
@@ -193,4 +202,13 @@
     <string name="notification_preferences_header">Notification Preferences</string>
     <string name="subscriber_info">Subscriber Information</string>
     <string name="sent_notification_success">Sent notification to %d subscribers</string>
+    
+    <!-- Photo Management -->
+    <string name="add_photo">Add Photo</string>
+    <string name="tap_add_photo_wineyard">Tap \'Add Photo\' to add up to 3 photos of your wineyard</string>
+    <string name="photos_count_with_limit">Photos (%1$d/%2$d)</string>
+    <string name="select_image_source">Select Image Source</string>
+    <string name="choose_image_source_message">Choose where to get your photo from</string>
+    <string name="camera">Camera</string>
+    <string name="gallery">Gallery</string>
 </resources>

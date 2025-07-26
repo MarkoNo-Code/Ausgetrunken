@@ -174,40 +174,69 @@ export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && ./gradlew asse
 ### Server Setup
 This project can be connected to MCP servers for enhanced functionality:
 
-1. **Database MCP Server** (for Supabase integration):
+> 🚨 **CRITICAL**: Use the complete MCP configuration from `C:\Users\marko\Documents\Claude-Projects\MCP\FINAL-MCP-CONFIG.json`
+
+1. **Complete MCP Configuration** (Required for full functionality):
    ```json
    {
      "mcpServers": {
-       "supabase": {
-         "command": "npx",
-         "args": ["@supabase/mcp-server"],
+       "android-studio": {
+         "command": "node",
+         "args": ["C:\\Users\\marko\\Documents\\Claude-Projects\\MCP\\android-studio-mcp-server\\dist\\index.js"],
          "env": {
-           "SUPABASE_URL": "https://xjlbypzhixeqvksxnilk.supabase.co",
-           "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+           "ANDROID_HOME": "C:\\Users\\marko\\AppData\\Local\\Android\\Sdk",
+           "ANDROID_SDK_ROOT": "C:\\Users\\marko\\AppData\\Local\\Android\\Sdk",
+           "ANDROID_STUDIO_PATH": "C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe"
+         }
+       },
+       "supabase": {
+         "command": "cmd",
+         "args": [
+           "/c",
+           "npx",
+           "-y",
+           "@supabase/mcp-server-supabase@latest",
+           "--project-ref=xjlbypzhixeqvksxnilk"
+         ],
+         "env": {
+           "SUPABASE_ACCESS_TOKEN": "sbp_299329bae09e3dbec01c9d9f560e7d56d8a2cded",
+           "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbGJ5cHpoaXhlcXZrc3huaWxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2OTQ4MjEsImV4cCI6MjA2ODI3MDgyMX0.PrcrF1pA4KB30VlOJm2MYkOLlgf3e3SPn2Uo_eiDKfc",
+           "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbGJ5cHpoaXhlcXZrc3huaWxrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjY5NDgyMSwiZXhwIjoyMDY4MjcwODIxfQ.s3a9J-qrCmK6iZcceGC4JMXoQgQU31fpPGQC5z3up5A"
          }
        }
      }
    }
    ```
 
-2. **File System MCP Server** (for project file management):
-   ```json
-   {
-     "mcpServers": {
-       "filesystem": {
-         "command": "npx",
-         "args": ["@modelcontextprotocol/server-filesystem"],
-         "args": ["C:\\Users\\marko\\Documents\\Claude-Projects\\Ausgetrunken"]
-       }
-     }
-   }
+### Supabase Database Access Instructions
+
+**✅ VERIFIED WORKING**: Direct database queries through Task tool agent using service role key.
+
+**For Database Queries:**
+1. Always use the Task tool with general-purpose agent for Supabase queries
+2. The agent will use the service role key to access full database
+3. Example query pattern:
+   ```
+   Task: Query Supabase database with SQL: SELECT * FROM user_profiles WHERE email = 'user@example.com'
    ```
 
+**Common Database Operations:**
+- **Find User**: `SELECT * FROM user_profiles WHERE email = 'email@example.com'`
+- **Check Subscriptions**: `SELECT * FROM wineyard_subscriptions WHERE user_id = 'user-id-here'`
+- **List Wineyards**: `SELECT * FROM wineyards WHERE is_active = true`
+- **Count Records**: `SELECT COUNT(*) FROM table_name WHERE condition`
+
+**Authentication Context:**
+- **Service Role Key**: Full database access, bypasses RLS policies
+- **Anon Key**: Limited access with Row Level Security enforcement
+- **Access Token**: Admin API access for project management
+
 ### MCP Benefits for This Project
-- Direct database queries and schema introspection
-- File system operations with proper permissions
-- Integration with external APIs and services
-- Enhanced debugging and logging capabilities
+- **Direct Database Queries**: Real-time Supabase data access with SQL queries
+- **Android Development**: Build, test, and deploy through MCP tools
+- **File System Operations**: Project file management with proper permissions
+- **Integration Testing**: End-to-end testing with database and device integration
+- **Enhanced Debugging**: Database inspection and logging capabilities
 
 ## Startup Optimization Tips
 
@@ -321,7 +350,42 @@ git pull origin master
 
 ## Recent Development History
 
-### UX Improvements & Code Quality (Latest) ✅
+### Data Synchronization Architecture Fix ✅
+**Status: ✅ Complete - 2025-07-26**
+
+**CRITICAL LEARNING**: Major subscription sync issue resolved - this pattern should be applied project-wide.
+
+**Problem Discovered:**
+- Customer had 3 inactive subscriptions in Supabase
+- Local database only stored active subscriptions (`AND isActive = 1` filter)
+- App checked local first → found nothing → tried to create new subscription
+- Supabase rejected due to existing inactive subscription → "duplicate key constraint" error
+- UI showed "already subscribed" despite logic returning `false`
+
+**Root Cause:**
+- **Local-First Architecture**: App prioritized local database over Supabase source of truth
+- **Incomplete Sync**: Local database didn't reflect complete Supabase state
+- **Logic Mismatch**: Different queries for UI display vs subscription checks
+
+**Solution Implemented:**
+- **Enhanced Logging**: Detailed debugging throughout subscription flow
+- **Fixed Sync Logic**: Clear local data before inserting fresh Supabase data  
+- **Supabase-First Checks**: Check Supabase directly for ANY existing subscription
+- **Reactivation Logic**: Reactivate inactive subscriptions instead of creating new ones
+
+**Key Files Modified:**
+- `CustomerLandingViewModel.kt`: Enhanced `loadSubscriptions()` with full sync
+- `WineyardSubscriptionRepository.kt`: Fixed `subscribeToWineyard()` and `syncSubscriptionsFromSupabase()`
+- `WineyardSubscriptionService.kt`: Enhanced `isSubscribed()` with detailed logging
+
+**ARCHITECTURAL DECISION FOR FUTURE:**
+> 🚨 **NEW DATA STRATEGY**: Always fetch from Supabase first, local database is backup only
+> - **Primary Source**: Supabase (real-time, always current)
+> - **Fallback**: Local database (offline/network failure only)
+> - **Benefit**: Eliminates sync issues, ensures data consistency
+> - **Implementation**: Update all repositories to follow remote-first pattern
+
+### UX Improvements & Code Quality ✅
 **Status: ✅ Complete - 2025-01-23**
 
 **Navigation Enhancement:**

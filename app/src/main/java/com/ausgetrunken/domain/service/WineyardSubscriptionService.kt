@@ -42,22 +42,38 @@ class WineyardSubscriptionService(
             println("🔍 WineyardSubscriptionService: Checking subscription status for user $userId, wineyard $wineyardId")
             
             // First try to get real-time data from Supabase
+            println("🌐 WineyardSubscriptionService: Attempting Supabase query...")
             val supabaseResult = subscriptionRepository.getUserSubscriptionsFromSupabase(userId)
             supabaseResult.onSuccess { subscriptions ->
+                println("✅ WineyardSubscriptionService: Supabase query succeeded with ${subscriptions.size} subscriptions")
+                subscriptions.forEach { sub ->
+                    println("   📝 Subscription: wineyardId=${sub.wineyardId}, isActive=${sub.isActive}")
+                }
                 val isSubscribed = subscriptions.any { it.wineyardId == wineyardId && it.isActive }
-                println("✅ WineyardSubscriptionService: Supabase check - isSubscribed: $isSubscribed")
+                println("🎯 WineyardSubscriptionService: Supabase check result for wineyard $wineyardId: $isSubscribed")
                 return isSubscribed
             }.onFailure { error ->
-                println("⚠️ WineyardSubscriptionService: Supabase check failed, falling back to local: ${error.message}")
+                println("❌ WineyardSubscriptionService: Supabase query failed: ${error.message}")
+                println("📱 WineyardSubscriptionService: Falling back to local database...")
             }
             
             // Fallback to local database
+            println("💾 WineyardSubscriptionService: Querying local database...")
             val subscription = subscriptionRepository.getSubscription(userId, wineyardId)
             val isSubscribed = subscription?.isActive == true
-            println("💾 WineyardSubscriptionService: Local check - isSubscribed: $isSubscribed")
+            println("💾 WineyardSubscriptionService: Local subscription found: $subscription")
+            println("🎯 WineyardSubscriptionService: Local check result for wineyard $wineyardId: $isSubscribed")
+            
+            // CRITICAL DEBUG: If local says subscribed but Supabase failed, we have a sync issue
+            if (isSubscribed) {
+                println("🚨 WineyardSubscriptionService: LOCAL DATABASE HAS STALE DATA!")
+                println("🚨 Local says subscribed but Supabase query failed - this is the root cause!")
+            }
+            
             isSubscribed
         } catch (e: Exception) {
             println("❌ WineyardSubscriptionService: Error checking subscription: ${e.message}")
+            e.printStackTrace()
             false
         }
     }

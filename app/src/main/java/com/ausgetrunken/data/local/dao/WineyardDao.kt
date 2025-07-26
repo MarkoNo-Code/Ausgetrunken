@@ -18,6 +18,16 @@ interface WineyardDao {
     @Query("SELECT * FROM wineyards WHERE ownerId = :ownerId")
     fun getWineyardsByOwner(ownerId: String): Flow<List<WineyardEntity>>
     
+    // Remote-first strategy support methods
+    @Query("SELECT * FROM wineyards")
+    suspend fun getAllWineyardsList(): List<WineyardEntity>
+    
+    @Query("SELECT * FROM wineyards WHERE ownerId = :ownerId")
+    suspend fun getWineyardsByOwnerList(ownerId: String): List<WineyardEntity>
+    
+    @Query("DELETE FROM wineyards")
+    suspend fun clearAllWineyards()
+    
     @Query("SELECT * FROM wineyards ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
     suspend fun getWineyardsPaginated(limit: Int, offset: Int): List<WineyardEntity>
     

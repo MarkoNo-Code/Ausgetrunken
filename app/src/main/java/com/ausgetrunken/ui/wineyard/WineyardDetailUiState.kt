@@ -6,6 +6,7 @@ import com.ausgetrunken.data.local.entities.WineEntity
 data class WineyardDetailUiState(
     val wineyard: WineyardEntity? = null,
     val wines: List<WineEntity> = emptyList(),
+    val photos: List<String> = emptyList(), // Photo paths for UI consumption
     val isLoading: Boolean = false,
     val isUpdating: Boolean = false,
     val isDeleting: Boolean = false,
