@@ -29,7 +29,7 @@ val viewModelModule = module {
     viewModel { WineDetailViewModel(get()) }
     viewModel { AddWineViewModel(get(), get(), get(), get()) }
     viewModel { EditWineViewModel(get(), get(), get(), get()) }
-    viewModel { CustomerLandingViewModel(get(), get(), get(), get(), get()) }
+    viewModel { CustomerLandingViewModel(get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get()) }
     viewModel { SubscriptionsViewModel(get(), get(), get()) }
     viewModel { NotificationManagementViewModel(get(), get(), get()) }

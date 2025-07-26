@@ -422,31 +422,6 @@ fun ProfileScreen(
                                     )
                                 }
                                 
-                                // Debug Button (Development only)
-                                OutlinedButton(
-                                    onClick = { viewModel.debugWineyardData() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.secondary
-                                    )
-                                ) {
-                                    Text("🐛 Debug Wineyards")
-                                }
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                // FCM Debug Button (Development only)
-                                OutlinedButton(
-                                    onClick = { viewModel.debugFCMToken() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.tertiary
-                                    )
-                                ) {
-                                    Text("🔧 Debug FCM Token")
-                                }
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
                                 
                                 // Delete Account Button
                                 OutlinedButton(

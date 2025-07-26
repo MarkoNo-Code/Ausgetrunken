@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.domain.service.WineyardService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardSubscriptionService
-import com.ausgetrunken.domain.util.RemoteFirstTestUtils
 import com.ausgetrunken.auth.SupabaseAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +16,7 @@ class CustomerLandingViewModel(
     private val wineyardService: WineyardService,
     private val wineService: WineService,
     private val subscriptionService: WineyardSubscriptionService,
-    private val authRepository: SupabaseAuthRepository,
-    private val remoteFirstTestUtils: RemoteFirstTestUtils
+    private val authRepository: SupabaseAuthRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CustomerLandingUiState())
@@ -358,34 +356,6 @@ class CustomerLandingViewModel(
                 // Remove loading state
                 _uiState.value = _uiState.value.copy(
                     subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds - wineyardId
-                )
-            }
-        }
-    }
-    
-    // ================================================================================================
-    // REMOTE-FIRST DATA STRATEGY TESTING
-    // ================================================================================================
-    
-    /**
-     * Test the new remote-first data strategy for wineyards
-     * This will show detailed logs of the process
-     */
-    fun testRemoteFirstDataStrategy() {
-        viewModelScope.launch {
-            try {
-                println("🚀 CustomerLandingViewModel: Starting remote-first test...")
-                remoteFirstTestUtils.runAllTests()
-                println("✅ CustomerLandingViewModel: Remote-first test completed successfully!")
-                
-                // Optionally refresh the UI with the new data
-                refreshData()
-                
-            } catch (e: Exception) {
-                println("❌ CustomerLandingViewModel: Remote-first test failed: ${e.message}")
-                e.printStackTrace()
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = "Remote-first test failed: ${e.message}"
                 )
             }
         }

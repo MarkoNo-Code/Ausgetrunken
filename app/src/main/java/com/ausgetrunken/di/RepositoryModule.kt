@@ -16,7 +16,6 @@ import com.ausgetrunken.domain.usecase.GetLowStockWinesUseCase
 import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
 import com.ausgetrunken.domain.usecase.SendNotificationUseCase
 import com.ausgetrunken.domain.util.NetworkConnectivityManager
-import com.ausgetrunken.domain.util.RemoteFirstTestUtils
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -36,6 +35,4 @@ val repositoryModule = module {
     factory { GetWineyardSubscribersUseCase(get<WineyardSubscriptionService>()) }
     factory { SendNotificationUseCase(get<NotificationService>()) }
     
-    // Testing Utils
-    factory { RemoteFirstTestUtils(get<WineyardRepository>(), get<WineRepository>()) }
 }

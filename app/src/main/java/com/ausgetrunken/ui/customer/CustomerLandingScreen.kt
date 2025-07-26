@@ -124,13 +124,6 @@ fun CustomerLandingScreen(
                     ) 
                 },
                 actions = {
-                    // Remote-first test button (for testing only)
-                    IconButton(onClick = { viewModel.testRemoteFirstDataStrategy() }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Test Remote-First Data Strategy"
-                        )
-                    }
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(
                             imageVector = Icons.Default.Person,
