@@ -28,6 +28,11 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
     
+    // Cache management
+    private var lastLoadTime = 0L
+    private var isInitialLoad = true
+    private val CACHE_DURATION_MS = 5 * 60 * 1000L // 5 minutes
+    
     init {
         // Immediately set some basic UI state so the screen isn't empty
         _uiState.value = _uiState.value.copy(
@@ -35,6 +40,12 @@ class ProfileViewModel(
             userEmail = "Please wait",
             isLoading = true
         )
+        loadUserProfileIfNeeded()
+    }
+    
+    private fun loadUserProfileIfNeeded() {
+        // Simple approach: always load user info, but be smart about wineyard syncing
+        println("🔄 ProfileViewModel: Loading profile...")
         loadUserProfile()
     }
     
@@ -117,23 +128,18 @@ class ProfileViewModel(
                     isLoading = true // Keep loading true while fetching wineyards
                 )
                 
-                // Now try to load wineyards with timeout
+                // Load wineyards from local database (fast) - no remote calls on navigation
                 try {
-                    println("🔄 ProfileViewModel: Syncing wineyards from Supabase...")
-                    val syncResult = wineyardService.syncWineyards()
-                    if (syncResult.isFailure) {
-                        println("⚠️ ProfileViewModel: Sync failed: ${syncResult.exceptionOrNull()?.message}")
-                    } else {
-                        println("✅ ProfileViewModel: Sync completed successfully")
-                    }
+                    println("🔄 ProfileViewModel: Loading wineyards from local database...")
                     
-                    // Use withTimeout to prevent hanging
-                    kotlinx.coroutines.withTimeout(15000L) { // 15 seconds timeout
+                    // Check if we have local data first
+                    var hasLoadedWineyards = false
+                    
+                    // Use withTimeout to prevent hanging, but keep it short since this should be local
+                    kotlinx.coroutines.withTimeout(5000L) { // 5 seconds timeout for local data
                         wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
-                            println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner $userId")
-                            wineyards.forEach { wineyard ->
-                                println("  - Wineyard: ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
-                            }
+                            println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards locally for owner $userId")
+                            hasLoadedWineyards = true
                             
                             _uiState.value = _uiState.value.copy(
                                 wineyards = wineyards,
@@ -142,6 +148,31 @@ class ProfileViewModel(
                             )
                             return@collect // Exit after first emission
                         }
+                    }
+                    
+                    // Only sync from remote if we have no local data AND it's been a while since last sync
+                    val timeSinceLastLoad = System.currentTimeMillis() - lastLoadTime
+                    val shouldSync = !hasLoadedWineyards || (isInitialLoad && timeSinceLastLoad > CACHE_DURATION_MS)
+                    
+                    if (shouldSync) {
+                        viewModelScope.launch {
+                            try {
+                                println("🔄 ProfileViewModel: Syncing wineyards from remote (${if (!hasLoadedWineyards) "no local data" else "cache expired"})...")
+                                wineyardService.syncWineyards()
+                                println("✅ ProfileViewModel: Remote sync completed")
+                                lastLoadTime = System.currentTimeMillis()
+                            } catch (e: Exception) {
+                                println("⚠️ ProfileViewModel: Remote sync failed: ${e.message}")
+                                // Only show error if we have no local data
+                                if (!hasLoadedWineyards) {
+                                    _uiState.value = _uiState.value.copy(
+                                        errorMessage = "Failed to load wineyards: ${e.message}"
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        println("✅ ProfileViewModel: Using local wineyards, skipping remote sync")
                     }
                     
                 } catch (e: TimeoutCancellationException) {
@@ -184,6 +215,10 @@ class ProfileViewModel(
     }
     
     fun refreshProfile() {
+        println("🔄 ProfileViewModel: Manual refresh requested")
+        // Force refresh by resetting cache time and ensuring sync happens
+        lastLoadTime = 0L
+        isInitialLoad = true
         loadUserProfile()
     }
     
