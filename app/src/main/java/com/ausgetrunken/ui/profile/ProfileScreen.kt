@@ -240,7 +240,7 @@ fun ProfileScreen(
                     Box(modifier = Modifier.size(0.dp))
                 }
             ) {
-                if (uiState.isLoading && uiState.userName.isEmpty()) {
+                if (uiState.isLoading && (uiState.userName.isEmpty() || uiState.userName == "Loading...")) {
                     // Show loading state only when initially loading
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -248,38 +248,56 @@ fun ProfileScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                            modifier = Modifier.padding(32.dp)
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(48.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "Loading profile...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                modifier = Modifier.size(64.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 4.dp
                             )
                             
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Loading your profile...",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "Please wait while we fetch your data",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            
                             // Emergency logout button in case loading fails
-                            Button(
+                            OutlinedButton(
                                 onClick = { viewModel.logout() },
                                 enabled = !uiState.isLoggingOut,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 if (uiState.isLoggingOut) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
-                                        color = MaterialTheme.colorScheme.onError
+                                        color = MaterialTheme.colorScheme.error
                                     )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Signing out...")
                                 } else {
-                                    Text("Emergency Logout")
+                                    Text("Sign Out")
                                 }
                             }
                         }
                     }
-                } else if (uiState.errorMessage != null && uiState.userName.isEmpty()) {
+                } else if (uiState.errorMessage != null && (uiState.userName.isEmpty() || uiState.userName == "Unknown User" || uiState.userName == "Error")) {
                     // Show error state with logout option
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -333,6 +351,7 @@ fun ProfileScreen(
                         }
                     }
                 } else {
+                    // Show profile content even if there are some errors, as long as we have user info
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),

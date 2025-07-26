@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 
 class ProfileViewModel(
     private val authRepository: SupabaseAuthRepository,
@@ -27,66 +29,98 @@ class ProfileViewModel(
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
     
     init {
+        // Immediately set some basic UI state so the screen isn't empty
+        _uiState.value = _uiState.value.copy(
+            userName = "Loading...",
+            userEmail = "Please wait",
+            isLoading = true
+        )
         loadUserProfile()
     }
     
     private fun loadUserProfile() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            
-            // Check if we have a valid session first (more robust than just checking currentUser)
-            if (!authRepository.hasValidSession()) {
-                println("❌ ProfileViewModel: No valid session found")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "User not authenticated"
-                )
-                return@launch
-            }
-            
-            // Try to get current user, but fallback to session restoration if needed
-            var currentUser = authRepository.currentUser
-            var userIdFromSession: String? = null
-            var userEmailFromSession: String? = null
-            
-            if (currentUser == null) {
-                println("⚠️ ProfileViewModel: No Supabase UserInfo, attempting session restoration...")
-                // Try to restore session to get user info
-                authService.restoreSession()
-                    .onSuccess { user ->
-                        if (user != null) {
-                            currentUser = user
-                            println("✅ ProfileViewModel: Session restored successfully")
-                        }
-                    }
-                    .onFailure { error ->
-                        val errorMessage = error.message ?: ""
-                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                            println("✅ ProfileViewModel: Valid session without UserInfo, extracting data...")
-                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
-                            if (parts.size >= 2) {
-                                userIdFromSession = parts[0]
-                                userEmailFromSession = parts[1]
-                                println("✅ ProfileViewModel: Extracted userId: $userIdFromSession, email: $userEmailFromSession")
+            try {
+                println("🔄 ProfileViewModel: Starting profile load...")
+                println("🔄 ProfileViewModel: Auth hasValidSession: ${authRepository.hasValidSession()}")
+                println("🔄 ProfileViewModel: Auth currentUser: ${authRepository.currentUser?.email ?: "NULL"}")
+                _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+                
+                // Check if we have a valid session first
+                if (!authRepository.hasValidSession()) {
+                    println("❌ ProfileViewModel: No valid session found")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        userName = "Unknown User",
+                        userEmail = "Please sign in again",
+                        errorMessage = "Session expired. Please sign in again."
+                    )
+                    return@launch
+                }
+                
+                // Try to get current user, but fallback to session restoration if needed
+                var currentUser = authRepository.currentUser
+                var userIdFromSession: String? = null
+                var userEmailFromSession: String? = null
+                
+                if (currentUser == null) {
+                    println("⚠️ ProfileViewModel: No Supabase UserInfo, attempting session restoration...")
+                    // Try to restore session to get user info
+                    authService.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("✅ ProfileViewModel: Session restored successfully")
                             }
                         }
-                    }
-            }
-            
-            // Determine user ID and email from either currentUser or session data
-            val userId = currentUser?.id ?: userIdFromSession
-            val userEmail = currentUser?.email ?: userEmailFromSession ?: ""
-            
-            if (userId != null) {
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                println("✅ ProfileViewModel: Valid session without UserInfo, extracting data...")
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.size >= 2) {
+                                    userIdFromSession = parts[0]
+                                    userEmailFromSession = parts[1]
+                                    println("✅ ProfileViewModel: Extracted userId: $userIdFromSession, email: $userEmailFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                // Determine user ID and email from either currentUser or session data
+                val userId = currentUser?.id ?: userIdFromSession
+                val userEmail = currentUser?.email ?: userEmailFromSession ?: ""
+                
+                if (userId.isNullOrEmpty()) {
+                    println("❌ ProfileViewModel: Unable to determine user ID")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        userName = "Unknown User",
+                        userEmail = "Error loading user info",
+                        wineyards = emptyList(),
+                        canAddMoreWineyards = false,
+                        errorMessage = "Unable to identify user. Please sign in again."
+                    )
+                    return@launch
+                }
+                
+                println("🔍 ProfileViewModel: Loading profile for user ID: $userId")
+                println("🔍 ProfileViewModel: User email: $userEmail")
+                
+                // Load user info - set defaults to ensure UI shows something
+                val userName = currentUser?.userMetadata?.get("full_name")?.toString() ?: userEmail.substringBefore("@").takeIf { it.isNotEmpty() } ?: "User"
+                val profilePictureUrl = currentUser?.userMetadata?.get("avatar_url")?.toString()
+                
+                // Update UI state immediately with user info, even before wineyards load
+                _uiState.value = _uiState.value.copy(
+                    userName = userName,
+                    userEmail = userEmail,
+                    profilePictureUrl = profilePictureUrl,
+                    isLoading = true // Keep loading true while fetching wineyards
+                )
+                
+                // Now try to load wineyards with timeout
                 try {
-                    println("🔍 ProfileViewModel: Loading profile for user ID: $userId")
-                    println("🔍 ProfileViewModel: User email: $userEmail")
-                    
-                    // Load user info
-                    val userName = currentUser?.userMetadata?.get("full_name")?.toString() ?: "Wineyard Owner"
-                    val profilePictureUrl = currentUser?.userMetadata?.get("avatar_url")?.toString()
-                    
-                    // First, sync wineyards from Supabase to ensure we have the latest data
                     println("🔄 ProfileViewModel: Syncing wineyards from Supabase...")
                     val syncResult = wineyardService.syncWineyards()
                     if (syncResult.isFailure) {
@@ -95,34 +129,53 @@ class ProfileViewModel(
                         println("✅ ProfileViewModel: Sync completed successfully")
                     }
                     
-                    wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
-                        println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner $userId")
-                        wineyards.forEach { wineyard ->
-                            println("  - Wineyard: ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
+                    // Use withTimeout to prevent hanging
+                    kotlinx.coroutines.withTimeout(15000L) { // 15 seconds timeout
+                        wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
+                            println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner $userId")
+                            wineyards.forEach { wineyard ->
+                                println("  - Wineyard: ${wineyard.name} (ID: ${wineyard.id}, Owner: ${wineyard.ownerId})")
+                            }
+                            
+                            _uiState.value = _uiState.value.copy(
+                                wineyards = wineyards,
+                                canAddMoreWineyards = wineyards.size < 5,
+                                isLoading = false
+                            )
+                            return@collect // Exit after first emission
                         }
-                        
-                        _uiState.value = _uiState.value.copy(
-                            wineyards = wineyards,
-                            canAddMoreWineyards = wineyards.size < 5,
-                            userName = userName,
-                            userEmail = userEmail,
-                            profilePictureUrl = profilePictureUrl,
-                            isLoading = false
-                        )
                     }
-                } catch (e: Exception) {
-                    println("❌ ProfileViewModel: Error loading profile: ${e.message}")
-                    e.printStackTrace()
+                    
+                } catch (e: TimeoutCancellationException) {
+                    println("⚠️ ProfileViewModel: Wineyard loading timed out")
                     _uiState.value = _uiState.value.copy(
+                        wineyards = emptyList(),
+                        canAddMoreWineyards = true,
                         isLoading = false,
-                        errorMessage = "Failed to load profile: ${e.message}"
+                        errorMessage = "Loading wineyards took too long - please try refreshing"
+                    )
+                } catch (e: Exception) {
+                    println("❌ ProfileViewModel: Error loading wineyards: ${e.message}")
+                    e.printStackTrace()
+                    // Still show user info even if wineyards fail to load
+                    _uiState.value = _uiState.value.copy(
+                        wineyards = emptyList(),
+                        canAddMoreWineyards = true,
+                        isLoading = false,
+                        errorMessage = "Failed to load wineyards: ${e.message}"
                     )
                 }
-            } else {
-                println("❌ ProfileViewModel: Unable to determine user ID")
+                
+            } catch (e: Exception) {
+                println("❌ ProfileViewModel: Critical error in loadUserProfile: ${e.message}")
+                e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "User not authenticated"
+                    userName = "Error",
+                    userEmail = "Failed to load profile",
+                    wineyards = emptyList(),
+                    canAddMoreWineyards = false,
+                    errorMessage = "Failed to load profile: ${e.message}"
                 )
             }
         }
