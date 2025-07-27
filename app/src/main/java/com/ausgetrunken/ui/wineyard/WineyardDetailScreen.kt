@@ -98,6 +98,15 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.compose.material3.AlertDialog
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import coil.compose.SubcomposeAsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1069,10 +1078,10 @@ private fun WineyardImageCarousel(
                     )
                 }
                 
-                // Then overlay the actual image on top
+                // Then overlay the actual image on top with skeleton loading
                 val imageUrl = images[page]
                 Log.d("WineyardImageCarousel", "Loading image at page $page: $imageUrl")
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(
                             when {
@@ -1106,6 +1115,28 @@ private fun WineyardImageCarousel(
                             }
                         )
                         .build(),
+                    loading = {
+                        ShimmerLoadingEffect(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Photo,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.5f),
+                                modifier = Modifier.size(64.dp)
+                            )
+                        }
+                    },
                     contentDescription = stringResource(R.string.wineyard_photo),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -1299,8 +1330,8 @@ private fun PhotoThumbnail(
                 )
             }
             
-            // Then overlay the actual image on top
-            AsyncImage(
+            // Then overlay the actual image on top with skeleton loading
+            SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(
                         when {
@@ -1324,6 +1355,29 @@ private fun PhotoThumbnail(
                         }
                     )
                     .build(),
+                loading = {
+                    ShimmerLoadingEffect(
+                        modifier = Modifier.fillMaxSize()
+                    )
+                },
+                error = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                                RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Photo,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                },
                 contentDescription = stringResource(R.string.wineyard_photo),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -1384,6 +1438,39 @@ private fun ImagePickerDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ShimmerLoadingEffect(
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val alpha = infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+    
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha.value),
+                RoundedCornerShape(12.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Photo,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+            modifier = Modifier.size(48.dp)
+        )
+    }
 }
 
 @Composable
@@ -1491,9 +1578,9 @@ private fun UnifiedPhotosSection(
                                 )
                             }
                             
-                            // Actual image
+                            // Actual image with skeleton loading
                             val imageUrl = photos[page]
-                            AsyncImage(
+                            SubcomposeAsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(
                                         when {
@@ -1506,11 +1593,34 @@ private fun UnifiedPhotosSection(
                                     .memoryCachePolicy(CachePolicy.ENABLED)
                                     .diskCachePolicy(CachePolicy.ENABLED)
                                     .build(),
+                                loading = {
+                                    ShimmerLoadingEffect(
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                },
+                                error = {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(
+                                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                                                RoundedCornerShape(12.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Photo,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(48.dp)
+                                        )
+                                    }
+                                },
                                 contentDescription = stringResource(R.string.wineyard_photo),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(
-                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        Color.Transparent,
                                         RoundedCornerShape(12.dp)
                                     ),
                                 contentScale = ContentScale.Crop

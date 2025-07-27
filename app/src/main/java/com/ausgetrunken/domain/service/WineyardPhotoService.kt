@@ -20,6 +20,7 @@ import io.ktor.http.append
 import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
+import java.time.Instant
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
@@ -288,7 +289,7 @@ class WineyardPhotoService(
             }
             Log.d(TAG, "Successfully uploaded photo to Supabase: $remoteUrl")
             
-            // LOCAL SECOND: Save reference to database AFTER successful upload
+            // CREATE PHOTO ENTITY
             val photoEntity = WineyardPhotoEntity(
                 id = photoId,
                 wineyardId = wineyardId,
@@ -300,8 +301,31 @@ class WineyardPhotoService(
             )
             Log.d(TAG, "Created photo entity with remote URL: $photoEntity")
             
-            // Save to database
-            Log.d(TAG, "Saving photo reference to database...")
+            // SAVE TO SUPABASE wineyard_photos TABLE
+            Log.d(TAG, "Inserting photo record into Supabase wineyard_photos table...")
+            try {
+                val supabasePhoto = SupabaseWineyardPhoto(
+                    id = photoEntity.id,
+                    wineyardId = photoEntity.wineyardId,
+                    remoteUrl = photoEntity.remoteUrl ?: "",
+                    localPath = photoEntity.localPath,
+                    displayOrder = photoEntity.displayOrder,
+                    uploadStatus = photoEntity.uploadStatus.name,
+                    fileSize = photoEntity.fileSize,
+                    createdAt = Instant.now().toString(),
+                    updatedAt = Instant.now().toString()
+                )
+                
+                postgrest.from("wineyard_photos").insert(supabasePhoto)
+                Log.d(TAG, "✅ Successfully inserted photo record into Supabase table")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to insert photo record into Supabase table: ${e.message}")
+                // Don't fail the entire operation - local database is still updated
+                Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
+            }
+            
+            // SAVE TO LOCAL DATABASE
+            Log.d(TAG, "Saving photo reference to local database...")
             val saveSuccess = savePhotoToDatabase(photoEntity)
             if (!saveSuccess) {
                 Log.e(TAG, "DATABASE SAVE FAILED - photo uploaded but not saved locally")
@@ -360,7 +384,7 @@ class WineyardPhotoService(
             }
             Log.d(TAG, "Successfully uploaded photo file to Supabase: $remoteUrl")
             
-            // LOCAL SECOND: Save reference to database AFTER successful upload
+            // CREATE PHOTO ENTITY
             val photoEntity = WineyardPhotoEntity(
                 id = photoId,
                 wineyardId = wineyardId,
@@ -371,7 +395,30 @@ class WineyardPhotoService(
                 fileSize = finalFile.length()
             )
             
-            // Save to database
+            // SAVE TO SUPABASE wineyard_photos TABLE
+            Log.d(TAG, "Inserting photo record into Supabase wineyard_photos table (file path)...")
+            try {
+                val supabasePhoto = SupabaseWineyardPhoto(
+                    id = photoEntity.id,
+                    wineyardId = photoEntity.wineyardId,
+                    remoteUrl = photoEntity.remoteUrl ?: "",
+                    localPath = photoEntity.localPath,
+                    displayOrder = photoEntity.displayOrder,
+                    uploadStatus = photoEntity.uploadStatus.name,
+                    fileSize = photoEntity.fileSize,
+                    createdAt = Instant.now().toString(),
+                    updatedAt = Instant.now().toString()
+                )
+                
+                postgrest.from("wineyard_photos").insert(supabasePhoto)
+                Log.d(TAG, "✅ Successfully inserted photo record into Supabase table (file path)")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to insert photo record into Supabase table (file path): ${e.message}")
+                // Don't fail the entire operation - local database is still updated
+                Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
+            }
+            
+            // SAVE TO LOCAL DATABASE
             val saveSuccess = savePhotoToDatabase(photoEntity)
             if (!saveSuccess) {
                 Log.e(TAG, "DATABASE SAVE FAILED - photo uploaded but not saved locally")
