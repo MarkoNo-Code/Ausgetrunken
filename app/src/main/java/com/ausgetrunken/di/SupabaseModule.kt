@@ -16,4 +16,14 @@ val supabaseModule = module {
     single<Storage> { get<SupabaseClient>().pluginManager.getPluginOrNull(Storage) ?: error("Storage plugin not installed") }
     single<Realtime> { get<SupabaseClient>().pluginManager.getPluginOrNull(Realtime) ?: error("Realtime plugin not installed") }
     single<Functions> { get<SupabaseClient>().pluginManager.getPluginOrNull(Functions) ?: error("Functions plugin not installed") }
+    
+    // Service role storage for uploads (bypasses RLS)
+    single<Storage>(qualifier = org.koin.core.qualifier.named("serviceRole")) { 
+        SupabaseConfig.serviceRoleClient.pluginManager.getPluginOrNull(Storage) ?: error("Service role Storage plugin not installed") 
+    }
+    
+    // Service role postgrest for session restoration queries (bypasses RLS)
+    single<Postgrest>(qualifier = org.koin.core.qualifier.named("serviceRole")) { 
+        SupabaseConfig.serviceRoleClient.pluginManager.getPluginOrNull(Postgrest) ?: error("Service role Postgrest plugin not installed") 
+    }
 }

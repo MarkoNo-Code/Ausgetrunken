@@ -16,6 +16,10 @@ class WineyardService(
         return wineyardRepository.getWineyardsByOwner(ownerId)
     }
 
+    suspend fun getWineyardsByOwnerRemoteFirst(ownerId: String): List<WineyardEntity> {
+        return wineyardRepository.getWineyardsByOwnerRemoteFirst(ownerId)
+    }
+
     fun getWineyardById(wineyardId: String): Flow<WineyardEntity?> {
         return wineyardRepository.getWineyardById(wineyardId)
     }

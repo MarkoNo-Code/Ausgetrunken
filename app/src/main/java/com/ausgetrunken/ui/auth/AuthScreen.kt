@@ -89,12 +89,24 @@ fun AuthScreen(
     val context = LocalContext.current
     
     LaunchedEffect(uiState.isLoginSuccessful, uiState.userType) {
+        println("🔍 AuthScreen: LaunchedEffect triggered - isLoginSuccessful: ${uiState.isLoginSuccessful}, userType: ${uiState.userType}")
         if (uiState.isLoginSuccessful && uiState.userType != null) {
+            println("🚀 AuthScreen: Navigating based on user type: ${uiState.userType}")
             when (uiState.userType) {
-                UserType.CUSTOMER -> onNavigateToWineyardList()
-                UserType.WINEYARD_OWNER -> onNavigateToProfile()
-                null -> {} // Handle null case
+                UserType.CUSTOMER -> {
+                    println("🚀 AuthScreen: Navigating to WineyardList (CUSTOMER)")
+                    onNavigateToWineyardList()
+                }
+                UserType.WINEYARD_OWNER -> {
+                    println("🚀 AuthScreen: Navigating to Profile (WINEYARD_OWNER)")
+                    onNavigateToProfile()
+                }
+                null -> {
+                    println("⚠️ AuthScreen: Null user type, no navigation")
+                } // Handle null case
             }
+        } else {
+            println("⚠️ AuthScreen: No navigation - isLoginSuccessful: ${uiState.isLoginSuccessful}, userType: ${uiState.userType}")
         }
     }
     

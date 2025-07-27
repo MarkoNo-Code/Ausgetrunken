@@ -18,7 +18,8 @@ import java.time.Instant
 class SupabaseAuthRepository(
     private val auth: Auth,
     private val postgrest: Postgrest,
-    private val tokenStorage: TokenStorage
+    private val tokenStorage: TokenStorage,
+    private val serviceRolePostgrest: Postgrest? = null
 ) {
     
     val currentUser: UserInfo?
@@ -301,7 +302,9 @@ class SupabaseAuthRepository(
             
             // Step 2: Check remote database for matching session ID
             try {
-                val userProfile = postgrest.from("user_profiles")
+                // Use service role postgrest to bypass RLS policies during session restoration
+                val profileQuery = (serviceRolePostgrest ?: postgrest)
+                val userProfile = profileQuery.from("user_profiles")
                     .select {
                         filter {
                             eq("id", sessionInfo.userId)

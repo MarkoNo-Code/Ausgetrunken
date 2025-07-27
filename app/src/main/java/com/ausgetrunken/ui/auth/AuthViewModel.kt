@@ -265,7 +265,16 @@ class AuthViewModel(
         }
         
         viewModelScope.launch {
-            _uiState.value = currentState.copy(isLoading = true, errorMessage = null, successMessage = null)
+            // CRITICAL: Reset login success state before attempting new login
+            // This prevents login loop issues after app cache clear
+            println("🔄 AuthViewModel.login: Resetting login state before new attempt")
+            _uiState.value = currentState.copy(
+                isLoading = true, 
+                errorMessage = null, 
+                successMessage = null,
+                isLoginSuccessful = false, // Reset this flag
+                userType = null // Reset user type as well
+            )
             
             authService.signIn(currentState.email, currentState.password)
                 .onSuccess { user ->

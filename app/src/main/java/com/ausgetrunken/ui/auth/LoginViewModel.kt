@@ -47,8 +47,16 @@ class LoginViewModel(
         }
         
         viewModelScope.launch {
-            _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+            // CRITICAL: Reset login success state before attempting new login
+            println("🔄 LoginViewModel: Resetting login state before new attempt")
+            _uiState.value = currentState.copy(
+                isLoading = true, 
+                errorMessage = null,
+                isLoginSuccessful = false, // Reset this flag
+                userType = null // Reset user type as well
+            )
             
+            println("🔍 LoginViewModel: Starting login for email: ${currentState.email}")
             authService.signIn(currentState.email, currentState.password)
                 .onSuccess { user ->
                     println("✅ LoginViewModel: Login successful for user: ${user.id}")
@@ -62,11 +70,13 @@ class LoginViewModel(
                             println("🔧 LoginViewModel: Triggering FCM token update for user: ${user.id}")
                             fcmTokenManager.updateTokenForUser(user.id)
                             
+                            println("🚀 LoginViewModel: Setting login success state - navigating to: $userType")
                             _uiState.value = currentState.copy(
                                 isLoading = false,
                                 isLoginSuccessful = true,
                                 userType = userType
                             )
+                            println("✅ LoginViewModel: Login state updated successfully")
                         }
                         .onFailure { error ->
                             _uiState.value = currentState.copy(

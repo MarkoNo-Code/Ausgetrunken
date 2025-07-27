@@ -119,7 +119,9 @@
       "Bash(/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe -s 46211FDAP008MF shell am start -n com.example.photosavetryout/.MainActivity)",
       "Bash(/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe -s 46211FDAP008MF logcat -d -s \"MainActivity\" -s \"PhotoViewModel\" -v time)",
       "Bash(compgen:*)",
-      "Bash(mcp list-tools:*)"
+      "Bash(mcp list-tools:*)",
+      "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s emulator-5554 logcat -v time)",
+      "Bash(\"C:\\Users\\marko\\Documents\\Claude-Projects\\Ausgetrunken\\gradlew.bat\" assembleDebug)"
     ],
     "deny": []
   }

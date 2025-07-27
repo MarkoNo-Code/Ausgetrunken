@@ -139,50 +139,22 @@ class OwnerProfileViewModel(
                     isLoading = true // Keep loading true while fetching wineyards
                 )
                 
-                // Load wineyards from local database (fast) - no remote calls on navigation
+                // Load wineyards using remote-first approach
                 try {
-                    println("🔄 ProfileViewModel: Loading wineyards from local database...")
+                    println("🔄 ProfileViewModel: Loading wineyards using remote-first approach for user $userId...")
                     
-                    // Check if we have local data first
-                    var hasLoadedWineyards = false
+                    // Use remote-first approach to ensure we get the latest data from Supabase
+                    val wineyards = wineyardService.getWineyardsByOwnerRemoteFirst(userId)
+                    println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner $userId")
                     
-                    // Load from local database without timeout - local queries should be fast and reliable
-                    wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
-                        println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards locally for owner $userId")
-                        hasLoadedWineyards = true
-                        
-                        _uiState.value = _uiState.value.copy(
-                            wineyards = wineyards,
-                            canAddMoreWineyards = wineyards.size < 5,
-                            isLoading = false
-                        )
-                        return@collect // Exit after first emission
-                    }
+                    _uiState.value = _uiState.value.copy(
+                        wineyards = wineyards,
+                        canAddMoreWineyards = wineyards.size < 5,
+                        isLoading = false
+                    )
                     
-                    // Only sync from remote if we have no local data AND it's been a while since last sync
-                    val timeSinceLastLoad = System.currentTimeMillis() - lastLoadTime
-                    val shouldSync = !hasLoadedWineyards || (isInitialLoad && timeSinceLastLoad > CACHE_DURATION_MS)
-                    
-                    if (shouldSync) {
-                        viewModelScope.launch {
-                            try {
-                                println("🔄 ProfileViewModel: Syncing wineyards from remote (${if (!hasLoadedWineyards) "no local data" else "cache expired"})...")
-                                wineyardService.syncWineyards()
-                                println("✅ ProfileViewModel: Remote sync completed")
-                                lastLoadTime = System.currentTimeMillis()
-                            } catch (e: Exception) {
-                                println("⚠️ ProfileViewModel: Remote sync failed: ${e.message}")
-                                // Only show error if we have no local data
-                                if (!hasLoadedWineyards) {
-                                    _uiState.value = _uiState.value.copy(
-                                        errorMessage = "Failed to load wineyards: ${e.message}"
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        println("✅ ProfileViewModel: Using local wineyards, skipping remote sync")
-                    }
+                    lastLoadTime = System.currentTimeMillis()
+                    println("✅ ProfileViewModel: Successfully loaded wineyards using remote-first approach")
                     
                 } catch (e: Exception) {
                     println("❌ ProfileViewModel: Error loading wineyards: ${e.message}")

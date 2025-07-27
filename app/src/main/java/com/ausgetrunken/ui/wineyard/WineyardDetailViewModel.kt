@@ -79,6 +79,12 @@ class WineyardDetailViewModel(
                 
                 // Load related data
                 loadWines(wineyard.id)
+                
+                // FIRST: Sync photos from Supabase to local database
+                viewModelScope.launch {
+                    wineyardPhotoService.syncPhotosFromSupabase(wineyard.id)
+                }
+                
                 loadPhotos(wineyard.id)
                 
                 // Load subscription status for customers
@@ -459,6 +465,14 @@ class WineyardDetailViewModel(
                 wineService.syncWines()
                 val wines = wineService.getWinesByWineyard(wineyardId).first()
                 _uiState.value = _uiState.value.copy(wines = wines)
+                
+                // Force refresh photos from Supabase (for pull-to-refresh)
+                Log.d("WineyardDetailViewModel", "🔄 Syncing photos from Supabase...")
+                wineyardPhotoService.syncPhotosFromSupabase(wineyardId)
+                
+                Log.d("WineyardDetailViewModel", "🔄 Force refreshing photos from Supabase...")
+                wineyardPhotoService.refreshPhotosFromSupabase(wineyardId)
+                
                 wines
             }
         }

@@ -23,10 +23,10 @@ val serviceModule = module {
     factory { WineyardService(get()) }
     factory { WineyardSubscriptionService(get()) }
     factory { NotificationService(get()) }
-    factory { ImageUploadService(get()) }
+    factory { ImageUploadService(get(org.koin.core.qualifier.named("serviceRole"))) }
     
     // Legacy photo service (keep for now during transition)
-    factory { WineyardPhotoService(get(), get(), androidContext(), get()) }
+    factory { WineyardPhotoService(get(), get(), androidContext(), get(), get()) }
     factory { DatabaseInspectionService(get(), get()) }
     
     // New simplified photo services

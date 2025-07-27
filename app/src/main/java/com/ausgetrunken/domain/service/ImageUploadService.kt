@@ -10,10 +10,10 @@ class ImageUploadService(
     private val storage: Storage
 ) {
     
-    // Feature flag to control cloud uploads - TEMPORARILY DISABLED FOR DEBUGGING
-    private val ENABLE_CLOUD_UPLOAD = false
+    // Feature flag to control cloud uploads - ENABLED for remote-first strategy
+    private val ENABLE_CLOUD_UPLOAD = true
     companion object {
-        private const val BUCKET_NAME = "images" // Use default bucket that likely exists
+        private const val BUCKET_NAME = "wineyard-photos" // Updated bucket name for better organization
         private const val TAG = "ImageUploadService"
     }
 
@@ -31,17 +31,34 @@ class ImageUploadService(
         
         return try {
             Log.d(TAG, "=== STARTING CLOUD UPLOAD ===")
+            Log.d(TAG, "UPLOAD: Cloud upload enabled: $ENABLE_CLOUD_UPLOAD")
+            Log.d(TAG, "UPLOAD: Target bucket: $BUCKET_NAME")
             Log.d(TAG, "UPLOAD: Uploading image for wineyard: $wineyardId")
-            Log.d(TAG, "UPLOAD: Image file: ${imageFile.absolutePath}, size: ${imageFile.length()}")
+            Log.d(TAG, "UPLOAD: Image file: ${imageFile.absolutePath}")
+            Log.d(TAG, "UPLOAD: File exists: ${imageFile.exists()}")
+            Log.d(TAG, "UPLOAD: File size: ${imageFile.length()} bytes")
+            
+            if (!imageFile.exists()) {
+                Log.e(TAG, "ERROR: Image file does not exist!")
+                return Result.failure(Exception("Image file does not exist: ${imageFile.absolutePath}"))
+            }
+            
+            if (imageFile.length() == 0L) {
+                Log.e(TAG, "ERROR: Image file is empty!")
+                return Result.failure(Exception("Image file is empty"))
+            }
             
             val fileName = "wineyard_${wineyardId}_${UUID.randomUUID()}.jpg"
             val filePath = "wineyards/$fileName"
             Log.d(TAG, "UPLOAD: Target path: $filePath")
             
             // Upload file to Supabase Storage
+            Log.d(TAG, "UPLOAD: Starting upload to Supabase...")
             storage.from(BUCKET_NAME).upload(filePath, imageFile.readBytes(), upsert = false)
+            Log.d(TAG, "UPLOAD: Upload to Supabase completed successfully")
             
             // Get public URL
+            Log.d(TAG, "UPLOAD: Getting public URL...")
             val publicUrl = storage.from(BUCKET_NAME).publicUrl(filePath)
             
             Log.d(TAG, "UPLOAD: Image uploaded successfully: $publicUrl")
@@ -49,9 +66,9 @@ class ImageUploadService(
             Result.success(publicUrl)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to upload image: ${e.message}, falling back to local path", e)
-            // Always fallback to local path
-            Result.success(imageFile.absolutePath)
+            Log.e(TAG, "Failed to upload image: ${e.message}", e)
+            // Don't silently fallback - this causes photos to be marked as uploaded with wrong URLs
+            Result.failure(e)
         }
     }
 
@@ -89,9 +106,9 @@ class ImageUploadService(
             Result.success(publicUrl)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to upload image from URI: ${e.message}, falling back to URI", e)
-            // Always fallback to original URI
-            Result.success(imageUri.toString())
+            Log.e(TAG, "Failed to upload image from URI: ${e.message}", e)
+            // Don't silently fallback - this causes photos to be marked as uploaded with wrong URLs
+            Result.failure(e)
         }
     }
 

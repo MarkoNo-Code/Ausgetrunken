@@ -63,12 +63,24 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     
     LaunchedEffect(uiState.isLoginSuccessful, uiState.userType) {
+        println("🔍 LoginScreen: LaunchedEffect triggered - isLoginSuccessful: ${uiState.isLoginSuccessful}, userType: ${uiState.userType}")
         if (uiState.isLoginSuccessful && uiState.userType != null) {
+            println("🚀 LoginScreen: Navigating based on user type: ${uiState.userType}")
             when (uiState.userType) {
-                UserType.CUSTOMER -> onNavigateToWineyardList()
-                UserType.WINEYARD_OWNER -> onNavigateToProfile()
-                null -> {} // Handle null case
+                UserType.CUSTOMER -> {
+                    println("🚀 LoginScreen: Navigating to WineyardList (CUSTOMER)")
+                    onNavigateToWineyardList()
+                }
+                UserType.WINEYARD_OWNER -> {
+                    println("🚀 LoginScreen: Navigating to Profile (WINEYARD_OWNER)")
+                    onNavigateToProfile()
+                }
+                null -> {
+                    println("⚠️ LoginScreen: Null user type, no navigation")
+                } // Handle null case
             }
+        } else {
+            println("⚠️ LoginScreen: No navigation - isLoginSuccessful: ${uiState.isLoginSuccessful}, userType: ${uiState.userType}")
         }
     }
     

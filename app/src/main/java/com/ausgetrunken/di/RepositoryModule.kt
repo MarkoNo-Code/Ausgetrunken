@@ -22,7 +22,7 @@ import org.koin.dsl.module
 val repositoryModule = module {
     single { TokenStorage(androidContext()) }
     single { NetworkConnectivityManager(androidContext()) }
-    single { SupabaseAuthRepository(get(), get(), get()) }
+    single { SupabaseAuthRepository(get(), get(), get(), get(org.koin.core.qualifier.named("serviceRole"))) }
     single { UserRepository(get(), get(), get()) }
     single { WineRepository(get(), get(), get(), get()) }
     single { WineyardRepository(get(), get(), get(), get()) }

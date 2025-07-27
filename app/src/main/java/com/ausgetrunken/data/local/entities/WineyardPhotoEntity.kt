@@ -4,7 +4,9 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.ColumnInfo
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "wineyard_photos",
     foreignKeys = [
@@ -28,6 +30,7 @@ data class WineyardPhotoEntity(
     @ColumnInfo(name = "updated_at") val updatedAt: Long = System.currentTimeMillis()
 )
 
+@Serializable
 enum class PhotoUploadStatus {
     LOCAL_ONLY,      // Photo exists only locally
     UPLOADING,       // Photo is being uploaded to Supabase
