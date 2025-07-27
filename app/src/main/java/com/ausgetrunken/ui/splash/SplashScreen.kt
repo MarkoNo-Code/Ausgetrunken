@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.UserType
+import com.ausgetrunken.ui.navigation.Screen
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 

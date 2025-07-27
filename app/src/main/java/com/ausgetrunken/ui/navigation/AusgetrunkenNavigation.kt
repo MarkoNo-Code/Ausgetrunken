@@ -4,9 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,7 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ausgetrunken.ui.auth.AuthScreen
 import com.ausgetrunken.ui.auth.LoginScreen
 import com.ausgetrunken.ui.auth.RegisterScreen
-import com.ausgetrunken.ui.profile.ProfileScreen
+import com.ausgetrunken.ui.profile.OwnerProfileScreen
 import com.ausgetrunken.ui.splash.SplashScreen
 import com.ausgetrunken.ui.wineyard.AddWineyardScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
@@ -25,19 +28,20 @@ import com.ausgetrunken.ui.customer.CustomerLandingScreen
 import com.ausgetrunken.ui.customer.CustomerProfileScreen
 import com.ausgetrunken.ui.customer.CustomerWineyardDetailScreen
 import com.ausgetrunken.ui.notifications.NotificationManagementScreen
-import kotlinx.coroutines.launch
+import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
+import androidx.compose.runtime.remember
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AusgetrunkenNavigation(
+    modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Splash.route, // Start with Splash screen for proper loading
-    modifier: Modifier = Modifier
+    startDestination: String = Screen.Splash.route // Start with Splash screen for proper loading
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        route = Screen.GRAPH,
         modifier = modifier
     ) {
         composable(Screen.Splash.route) {
@@ -56,12 +60,12 @@ fun AusgetrunkenNavigation(
                     }
                 },
                 onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route) {
+                    navController.navigate(Screen.OwnerProfile.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
                 onNavigateToWineyardList = {
-                    navController.navigate(Screen.WineyardList.route) {
+                    navController.navigate(Screen.CustomerLanding.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
@@ -74,12 +78,12 @@ fun AusgetrunkenNavigation(
             backStackEntry.savedStateHandle.remove<String>("emailFromRegister")
             LoginScreen(
                 onNavigateToWineyardList = {
-                    navController.navigate(Screen.WineyardList.route) {
+                    navController.navigate(Screen.CustomerLanding.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route) {
+                    navController.navigate(Screen.OwnerProfile.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
@@ -108,37 +112,14 @@ fun AusgetrunkenNavigation(
         composable(Screen.Auth.route) {
             AuthScreen(
                 onNavigateToWineyardList = {
-                    navController.navigate(Screen.WineyardList.route) {
+                    navController.navigate(Screen.CustomerLanding.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 },
                 onNavigateToProfile = {
-                    navController.navigate(Screen.Profile.route) {
+                    navController.navigate(Screen.OwnerProfile.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
-                }
-            )
-        }
-        
-        composable(Screen.Home.route) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Home Screen - To be implemented")
-            }
-        }
-        
-        composable(Screen.WineyardList.route) {
-            CustomerLandingScreen(
-                onWineyardClick = { wineyardId ->
-                    navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
-                },
-                onWineClick = { wineId ->
-                    navController.navigate(Screen.WineDetail.createRoute(wineId))
-                },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.CustomerProfile.route)
                 }
             )
         }
@@ -215,8 +196,8 @@ fun AusgetrunkenNavigation(
             )
         }
         
-        composable(Screen.Profile.route) { backStackEntry ->
-            ProfileScreen(
+        composable(Screen.OwnerProfile.route) { backStackEntry ->
+            OwnerProfileScreen(
                 onNavigateToWineyardDetail = { wineyardId ->
                     navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
                 },
@@ -232,7 +213,8 @@ fun AusgetrunkenNavigation(
                     }
                 },
                 newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId"),
-                updatedWineyardId = backStackEntry.savedStateHandle.get<String>("updatedWineyardId")
+                updatedWineyardId = backStackEntry.savedStateHandle.get<String>("updatedWineyardId"),
+                navController = navController
             )
         }
         

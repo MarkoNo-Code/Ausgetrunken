@@ -9,12 +9,13 @@ plugins {
 
 android {
     namespace = "com.ausgetrunken"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ausgetrunken"
         minSdk = 31
-        targetSdk = 34
+        //noinspection EditedTargetSdkVersion
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 

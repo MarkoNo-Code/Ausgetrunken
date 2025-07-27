@@ -263,8 +263,9 @@ class WineyardDetailViewModel(
                     onSuccess = {
                         _uiState.value = _uiState.value.copy(
                             isUpdating = false,
-                            isEditing = false,
-                            navigateBackAfterSave = true
+                            isEditing = false
+                            // Removed: navigateBackAfterSave = true 
+                            // Stay on wineyard detail page after editing
                         )
                         AppResult.success(Unit)
                     },

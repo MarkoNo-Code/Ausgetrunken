@@ -60,9 +60,10 @@ class WineRepository(
     suspend fun updateWine(wine: WineEntity): Result<Unit> {
         return withSessionValidation {
             try {
-                wineDao.updateWine(wine)
+                println("🔄 WineRepository: Starting remote-first wine update for ${wine.name} (${wine.id})")
                 
-                postgrest.from("wines")
+                // REMOTE-FIRST: Update Supabase FIRST
+                val supabaseResponse = postgrest.from("wines")
                     .update(
                         buildJsonObject {
                             put("name", wine.name)
@@ -79,8 +80,16 @@ class WineRepository(
                             eq("id", wine.id)
                         }
                     }
+                
+                println("✅ WineRepository: Supabase update successful for wine ${wine.id}")
+                
+                // LOCAL SECOND: Only update local database AFTER successful remote update
+                wineDao.updateWine(wine)
+                println("✅ WineRepository: Local database updated for wine ${wine.id}")
+                
                 Result.success(Unit)
             } catch (e: Exception) {
+                println("❌ WineRepository: Wine update failed: ${e.message}")
                 Result.failure(e)
             }
         }

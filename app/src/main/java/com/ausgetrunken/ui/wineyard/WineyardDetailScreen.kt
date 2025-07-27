@@ -75,7 +75,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.clipToBounds
 import com.ausgetrunken.data.local.entities.WineEntity
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import kotlinx.coroutines.delay
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -109,7 +109,7 @@ fun WineyardDetailScreen(
     onNavigateToEditWine: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
     onNavigateToCustomerView: () -> Unit = {},
-    viewModel: WineyardDetailViewModel = koinViewModel()
+    viewModel: WineyardDetailViewModel = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

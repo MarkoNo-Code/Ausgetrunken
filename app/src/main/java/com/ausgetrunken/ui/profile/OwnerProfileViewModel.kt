@@ -11,12 +11,9 @@ import com.ausgetrunken.notifications.FCMTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.TimeoutCancellationException
 
-class ProfileViewModel(
+class OwnerProfileViewModel(
     private val authRepository: SupabaseAuthRepository,
     private val wineyardService: WineyardService,
     private val authService: AuthService,
@@ -41,6 +38,20 @@ class ProfileViewModel(
             isLoading = true
         )
         loadUserProfileIfNeeded()
+    }
+    
+    // Public function to load data only when needed (e.g., on first access or manual refresh)
+    fun loadIfNeeded() {
+        // Only load if we don't have data or it's been a while
+        val timeSinceLastLoad = System.currentTimeMillis() - lastLoadTime
+        val hasData = _uiState.value.wineyards.isNotEmpty()
+        
+        if (!hasData || timeSinceLastLoad > CACHE_DURATION_MS) {
+            println("🔄 ProfileViewModel: loadIfNeeded() triggered - hasData: $hasData, timeSinceLastLoad: ${timeSinceLastLoad}ms")
+            loadUserProfile()
+        } else {
+            println("✅ ProfileViewModel: Using cached data - ${_uiState.value.wineyards.size} wineyards")
+        }
     }
     
     private fun loadUserProfileIfNeeded() {
@@ -135,19 +146,17 @@ class ProfileViewModel(
                     // Check if we have local data first
                     var hasLoadedWineyards = false
                     
-                    // Use withTimeout to prevent hanging, but keep it short since this should be local
-                    kotlinx.coroutines.withTimeout(5000L) { // 5 seconds timeout for local data
-                        wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
-                            println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards locally for owner $userId")
-                            hasLoadedWineyards = true
-                            
-                            _uiState.value = _uiState.value.copy(
-                                wineyards = wineyards,
-                                canAddMoreWineyards = wineyards.size < 5,
-                                isLoading = false
-                            )
-                            return@collect // Exit after first emission
-                        }
+                    // Load from local database without timeout - local queries should be fast and reliable
+                    wineyardService.getWineyardsByOwner(userId).collect { wineyards ->
+                        println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards locally for owner $userId")
+                        hasLoadedWineyards = true
+                        
+                        _uiState.value = _uiState.value.copy(
+                            wineyards = wineyards,
+                            canAddMoreWineyards = wineyards.size < 5,
+                            isLoading = false
+                        )
+                        return@collect // Exit after first emission
                     }
                     
                     // Only sync from remote if we have no local data AND it's been a while since last sync
@@ -175,14 +184,6 @@ class ProfileViewModel(
                         println("✅ ProfileViewModel: Using local wineyards, skipping remote sync")
                     }
                     
-                } catch (e: TimeoutCancellationException) {
-                    println("⚠️ ProfileViewModel: Wineyard loading timed out")
-                    _uiState.value = _uiState.value.copy(
-                        wineyards = emptyList(),
-                        canAddMoreWineyards = true,
-                        isLoading = false,
-                        errorMessage = "Loading wineyards took too long - please try refreshing"
-                    )
                 } catch (e: Exception) {
                     println("❌ ProfileViewModel: Error loading wineyards: ${e.message}")
                     e.printStackTrace()

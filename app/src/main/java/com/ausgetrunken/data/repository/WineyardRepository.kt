@@ -223,9 +223,11 @@ class WineyardRepository(
     suspend fun updateWineyard(wineyard: WineyardEntity): Result<Unit> {
         return withSessionValidation {
             try {
-                wineyardDao.updateWineyard(wineyard)
+                println("🔄 WineyardRepository: Starting remote-first wineyard update for ${wineyard.name} (${wineyard.id})")
                 
-                postgrest.from("wineyards")
+                // REMOTE-FIRST: Update Supabase FIRST
+                // Note: Only update fields that exist in Supabase schema
+                val supabaseResponse = postgrest.from("wineyards")
                     .update(
                         buildJsonObject {
                             put("name", wineyard.name)
@@ -233,9 +235,8 @@ class WineyardRepository(
                             put("address", wineyard.address)
                             put("latitude", wineyard.latitude)
                             put("longitude", wineyard.longitude)
-                            putJsonArray("photos") {
-                                wineyard.photos.forEach { add(it) }
-                            }
+                            // Note: 'photos' column doesn't exist in Supabase wineyards table
+                            // Photos are stored separately in wineyard_photos table
                             put("updated_at", Instant.now().toString()) // Use current time in ISO format
                         }
                     ) {
@@ -243,8 +244,16 @@ class WineyardRepository(
                             eq("id", wineyard.id)
                         }
                     }
+                
+                println("✅ WineyardRepository: Supabase update successful for wineyard ${wineyard.id}")
+                
+                // LOCAL SECOND: Only update local database AFTER successful remote update
+                wineyardDao.updateWineyard(wineyard)
+                println("✅ WineyardRepository: Local database updated for wineyard ${wineyard.id}")
+                
                 Result.success(Unit)
             } catch (e: Exception) {
+                println("❌ WineyardRepository: Wineyard update failed: ${e.message}")
                 Result.failure(e)
             }
         }

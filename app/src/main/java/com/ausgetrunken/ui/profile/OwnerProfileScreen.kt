@@ -19,12 +19,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,17 +50,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.draw.clipToBounds
-import kotlin.math.min
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -70,29 +60,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.ausgetrunken.R
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import org.koin.compose.koinInject
 import com.ausgetrunken.ui.common.DeleteAccountDialog
+import com.ausgetrunken.ui.navigation.Screen
 import com.ausgetrunken.ui.profile.components.AddWineyardCard
 import com.ausgetrunken.ui.profile.components.ProfileHeader
 import com.ausgetrunken.ui.profile.components.WineyardCard
-import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(
+fun OwnerProfileScreen(
     onNavigateToWineyardDetail: (String) -> Unit,
     onNavigateToCreateWineyard: () -> Unit,
     onNavigateToNotificationManagement: (String) -> Unit,
     onLogoutSuccess: () -> Unit,
     newWineyardId: String? = null,
     updatedWineyardId: String? = null,
-    viewModel: ProfileViewModel = koinViewModel()
+    navController: NavController
 ) {
+    // Use shared ViewModel scope to persist data across navigation
+    // Since OwnerProfileViewModel is a singleton in Koin, this will return the same instance
+    // across all navigation destinations, maintaining state and avoiding reloads
+    val viewModel: OwnerProfileViewModel = koinInject()
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
+    
+    // Load data efficiently when screen appears (only if needed)
+    LaunchedEffect(Unit) {
+        viewModel.loadIfNeeded()
+    }
     
     // Handle manual refresh trigger
     LaunchedEffect(isRefreshing) {

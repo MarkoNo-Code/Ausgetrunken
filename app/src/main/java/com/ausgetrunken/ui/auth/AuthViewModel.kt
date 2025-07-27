@@ -114,6 +114,48 @@ class AuthViewModel(
                     // Check for different types of session errors
                     val errorMessage = error.message ?: ""
                     when {
+                        // Valid session but no UserInfo - extract user data and proceed
+                        errorMessage.startsWith("VALID_SESSION_NO_USER:") -> {
+                            println("✅ AuthViewModel: Valid session without UserInfo, extracting data...")
+                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                            if (parts.size >= 2) {
+                                val userId = parts[0]
+                                val userEmail = parts[1]
+                                println("✅ AuthViewModel: Extracted userId: $userId, email: $userEmail")
+                                
+                                // Determine user type and navigate accordingly
+                                authService.checkUserType(userId)
+                                    .onSuccess { userType ->
+                                        println("✅ AuthViewModel: User type determined: $userType")
+                                        
+                                        // Update FCM token for restored session
+                                        println("🔧 AuthViewModel: Updating FCM token for valid session - user: $userId")
+                                        fcmTokenManager.updateTokenForUser(userId)
+                                        
+                                        _uiState.value = _uiState.value.copy(
+                                            isCheckingSession = false,
+                                            isAuthenticated = true,
+                                            userType = userType
+                                        )
+                                        println("✅ AuthViewModel: Authentication successful with valid session")
+                                    }
+                                    .onFailure { typeError ->
+                                        println("❌ AuthViewModel: Failed to determine user type: ${typeError.message}")
+                                        _uiState.value = _uiState.value.copy(
+                                            isCheckingSession = false,
+                                            isAuthenticated = false,
+                                            errorMessage = "Authentication failed. Please try again."
+                                        )
+                                    }
+                            } else {
+                                println("❌ AuthViewModel: Invalid VALID_SESSION_NO_USER format: $errorMessage")
+                                _uiState.value = _uiState.value.copy(
+                                    isCheckingSession = false,
+                                    isAuthenticated = false,
+                                    errorMessage = "Authentication failed. Please try again."
+                                )
+                            }
+                        }
                         // Flagged account - show dialog
                         errorMessage.startsWith("FLAGGED_ACCOUNT:") -> {
                             val flaggedMessage = errorMessage.removePrefix("FLAGGED_ACCOUNT:")
