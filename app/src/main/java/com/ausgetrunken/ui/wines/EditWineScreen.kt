@@ -22,7 +22,7 @@ import org.koin.androidx.compose.koinViewModel
 fun EditWineScreen(
     wineId: String,
     onNavigateBack: () -> Unit,
-    onNavigateBackWithSuccess: () -> Unit,
+    onNavigateBackWithSuccess: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EditWineViewModel = koinViewModel()
@@ -33,9 +33,20 @@ fun EditWineScreen(
         viewModel.loadWine(wineId)
     }
     
-    LaunchedEffect(uiState.isSuccess) {
-        if (uiState.isSuccess) {
-            onNavigateBackWithSuccess()
+    
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvents.collect { event ->
+            when (event) {
+                is NavigationEvent.NavigateBack -> {
+                    onNavigateBack()
+                }
+                is NavigationEvent.NavigateBackWithWineId -> {
+                    onNavigateBackWithSuccess(event.wineId)
+                }
+                is NavigationEvent.NavigateToWineDetail -> {
+                    onNavigateToWineDetail(event.wineId)
+                }
+            }
         }
     }
     
@@ -191,7 +202,10 @@ fun EditWineScreen(
                 
                 // Submit Button
                 Button(
-                    onClick = viewModel::updateWine,
+                    onClick = { 
+                        println("🔥 EditWineScreen: Update Wine button clicked!")
+                        viewModel.updateWine()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = uiState.canSubmit && !uiState.isLoading
                 ) {

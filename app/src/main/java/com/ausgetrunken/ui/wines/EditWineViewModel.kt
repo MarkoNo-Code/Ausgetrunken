@@ -9,10 +9,12 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardService
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -25,6 +27,9 @@ class EditWineViewModel(
     
     private val _uiState = MutableStateFlow(EditWineUiState())
     val uiState: StateFlow<EditWineUiState> = _uiState.asStateFlow()
+    
+    private val _navigationEvents = Channel<NavigationEvent>()
+    val navigationEvents = _navigationEvents.receiveAsFlow()
     
     private var originalWine: WineEntity? = null
     
@@ -174,85 +179,19 @@ class EditWineViewModel(
     }
     
     fun updateWine() {
+        println("🔄 EditWineViewModel: updateWine() called")
         val currentState = _uiState.value
         val originalWine = this.originalWine
         
-        if (!currentState.canSubmit || originalWine == null) return
+        if (!currentState.canSubmit || originalWine == null) {
+            println("❌ EditWineViewModel: Cannot submit - canSubmit=${currentState.canSubmit}, originalWine is null=${originalWine == null}")
+            return
+        }
+        
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         
         viewModelScope.launch {
-            // Check if we have a valid session first
-            if (!authService.hasValidSession()) {
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "User not authenticated"
-                    )
-                }
-                return@launch
-            }
-            
-            // Try to get current user, fallback to session restoration
-            var currentUser = authService.getCurrentUser().first()
-            var userIdFromSession: String? = null
-            
-            if (currentUser == null) {
-                println("⚠️ EditWineViewModel: No UserInfo available, attempting session restoration...")
-                authService.restoreSession()
-                    .onSuccess { user ->
-                        if (user != null) {
-                            currentUser = user
-                            println("✅ EditWineViewModel: Session restored successfully")
-                        }
-                    }
-                    .onFailure { error ->
-                        val errorMessage = error.message ?: ""
-                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                            val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
-                            if (parts.size >= 2) {
-                                userIdFromSession = parts[0]
-                                println("✅ EditWineViewModel: Extracted userId from session: $userIdFromSession")
-                            }
-                        }
-                    }
-            }
-            
-            val userId = currentUser?.id ?: userIdFromSession
-            if (userId == null) {
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "User not authenticated"
-                    )
-                }
-                return@launch
-            }
-            
-            val user = userRepository.getUserById(userId).first()
-            if (user?.userType != UserType.WINEYARD_OWNER) {
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "Only wineyard owners can edit wines"
-                    )
-                }
-                return@launch
-            }
-            
-            // Validate wineyard ownership for security
-            val isOwner = wineyardService.validateWineyardOwnership(currentUser?.id ?: "", originalWine.wineyardId)
-            if (!isOwner) {
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = "Access denied: You can only edit wines from your own wineyards"
-                    )
-                }
-                return@launch
-            }
-            
             try {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-                
                 val updatedWine = originalWine.copy(
                     name = currentState.name,
                     description = currentState.description,
@@ -265,16 +204,18 @@ class EditWineViewModel(
                     updatedAt = System.currentTimeMillis()
                 )
                 
+                println("🔄 EditWineViewModel: Updating wine: ${updatedWine.name}")
                 wineService.updateWine(updatedWine)
                     .onSuccess {
+                        println("✅ EditWineViewModel: Wine updated successfully!")
                         _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                isSuccess = true
-                            )
+                            it.copy(isLoading = false, isSuccess = true)
                         }
+                        // Simple back navigation
+                        _navigationEvents.trySend(NavigationEvent.NavigateBack)
                     }
                     .onFailure { exception ->
+                        println("❌ EditWineViewModel: Update failed: ${exception.message}")
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
@@ -283,6 +224,7 @@ class EditWineViewModel(
                         }
                     }
             } catch (e: Exception) {
+                println("❌ EditWineViewModel: Exception: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -331,3 +273,4 @@ data class EditWineUiState(
                 stockQuantityError == null &&
                 lowStockThresholdError == null
 }
+

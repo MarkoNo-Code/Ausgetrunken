@@ -9,6 +9,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonNull
 
 class WineRepository(
     private val wineDao: WineDao,
@@ -72,8 +73,10 @@ class WineRepository(
                             put("vintage", wine.vintage)
                             put("price", wine.price)
                             put("stock_quantity", wine.stockQuantity)
-                            // Only include columns that exist in the database schema
-                            // discounted_price, low_stock_threshold, photos are not in the current schema
+                            put("low_stock_threshold", wine.lowStockThreshold)
+                            put("full_stock_quantity", wine.fullStockQuantity)
+                            // Include discounted_price if it exists, otherwise null
+                            wine.discountedPrice?.let { put("discounted_price", it) } ?: put("discounted_price", JsonNull)
                         }
                     ) {
                         filter {

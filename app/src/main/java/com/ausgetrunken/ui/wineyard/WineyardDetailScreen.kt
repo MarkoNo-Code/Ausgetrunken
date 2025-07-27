@@ -100,8 +100,10 @@ import android.util.Log
 import androidx.compose.material3.AlertDialog
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -118,6 +120,8 @@ fun WineyardDetailScreen(
     onNavigateToEditWine: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
     onNavigateToCustomerView: () -> Unit = {},
+    addedWineId: String? = null,
+    editedWineId: String? = null,
     viewModel: WineyardDetailViewModel = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -286,6 +290,16 @@ fun WineyardDetailScreen(
     
     LaunchedEffect(wineyardId) {
         viewModel.loadWineyard(wineyardId)
+    }
+    
+    
+    // Refresh wines when returning from add/edit
+    LaunchedEffect(addedWineId, editedWineId) {
+        val shouldRefresh = addedWineId != null || editedWineId != null
+        if (shouldRefresh) {
+            println("WineyardDetailScreen: Refreshing wines after add/edit")
+            viewModel.loadWineyard(wineyardId)
+        }
     }
     
     LaunchedEffect(uiState.errorMessage) {
