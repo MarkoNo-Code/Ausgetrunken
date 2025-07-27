@@ -143,10 +143,12 @@ fun OwnerProfileScreen(
         }
     }
     
-    // Clear the newWineyardId after animation completes
+    // Handle new wineyard creation - add to UI and trigger animation
     LaunchedEffect(newWineyardId) {
         newWineyardId?.let {
             println("ProfileScreen: Received newWineyardId: $it")
+            // Add the new wineyard to UI state directly (no refetch needed)
+            viewModel.addNewWineyardToUI(it)
             // Wait for animation to complete then clear the saved state
             kotlinx.coroutines.delay(2000) // 2 seconds
         }

@@ -169,7 +169,9 @@ fun AusgetrunkenNavigation(
                 },
                 onNavigateToCustomerView = {
                     navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
-                }
+                },
+                addedWineId = backStackEntry.savedStateHandle.get<String>("addedWineId"),
+                editedWineId = backStackEntry.savedStateHandle.get<String>("editedWineId")
             )
         }
         
@@ -247,8 +249,10 @@ fun AusgetrunkenNavigation(
             AddWineScreen(
                 wineyardId = wineyardId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateBackWithSuccess = {
-                    println("🔥 AddWine SUCCESS CALLBACK TRIGGERED!")
+                onNavigateBackWithSuccess = { addedWineId ->
+                    println("🔥 AddWine SUCCESS CALLBACK TRIGGERED with wineId: $addedWineId")
+                    // Set the added wine ID for highlighting
+                    navController.previousBackStackEntry?.savedStateHandle?.set("addedWineId", addedWineId)
                     navController.popBackStack()
                     println("🔥 AddWine popBackStack() called")
                 },
@@ -264,8 +268,9 @@ fun AusgetrunkenNavigation(
             EditWineScreen(
                 wineId = wineId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateBackWithSuccess = {
-                    // Navigate back to the wine detail screen
+                onNavigateBackWithSuccess = { editedWineId ->
+                    // Set the edited wine ID for highlighting
+                    navController.previousBackStackEntry?.savedStateHandle?.set("editedWineId", editedWineId)
                     navController.popBackStack()
                 },
                 onNavigateToWineDetail = { wineId ->

@@ -310,4 +310,42 @@ class OwnerProfileViewModel(
         }
     }
     
+    /**
+     * Add a newly created wineyard directly to the UI state without refetching all data
+     */
+    fun addNewWineyardToUI(wineyardId: String) {
+        viewModelScope.launch {
+            try {
+                println("🏭 ProfileViewModel: Adding new wineyard $wineyardId to UI state...")
+                
+                // Fetch the specific wineyard that was just created
+                val newWineyard = wineyardService.getWineyardByIdRemoteFirst(wineyardId)
+                
+                if (newWineyard != null) {
+                    println("✅ ProfileViewModel: Found new wineyard: ${newWineyard.name}")
+                    
+                    // Add to existing list and update UI state
+                    val updatedWineyards = _uiState.value.wineyards.toMutableList().apply {
+                        add(newWineyard)
+                    }
+                    
+                    _uiState.value = _uiState.value.copy(
+                        wineyards = updatedWineyards,
+                        canAddMoreWineyards = updatedWineyards.size < 5
+                    )
+                    
+                    println("✅ ProfileViewModel: Added wineyard to UI state. Total: ${updatedWineyards.size}")
+                } else {
+                    println("❌ ProfileViewModel: Could not find wineyard $wineyardId")
+                    // Fall back to full refresh if we can't find the specific wineyard
+                    refreshProfile()
+                }
+            } catch (e: Exception) {
+                println("❌ ProfileViewModel: Error adding new wineyard to UI: ${e.message}")
+                // Fall back to full refresh on error
+                refreshProfile()
+            }
+        }
+    }
+    
 }

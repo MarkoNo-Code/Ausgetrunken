@@ -121,7 +121,9 @@
       "Bash(compgen:*)",
       "Bash(mcp list-tools:*)",
       "Bash(\"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s emulator-5554 logcat -v time)",
-      "Bash(\"C:\\Users\\marko\\Documents\\Claude-Projects\\Ausgetrunken\\gradlew.bat\" assembleDebug)"
+      "Bash(\"C:\\Users\\marko\\Documents\\Claude-Projects\\Ausgetrunken\\gradlew.bat\" assembleDebug)",
+      "Bash(C:UsersmarkoAppDataLocalAndroidSdkplatform-toolsadb install -r \"C:\\Users\\marko\\Documents\\Claude-Projects\\Ausgetrunken\\app\\build\\outputs\\apk\\debug\\app-debug.apk\")",
+      "Bash(./adb install:*)"
     ],
     "deny": []
   }

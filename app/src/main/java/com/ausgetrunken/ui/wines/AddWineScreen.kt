@@ -35,7 +35,7 @@ import org.koin.androidx.compose.koinViewModel
 fun AddWineScreen(
     wineyardId: String,
     onNavigateBack: () -> Unit,
-    onNavigateBackWithSuccess: () -> Unit,
+    onNavigateBackWithSuccess: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AddWineViewModel = koinViewModel()
@@ -55,8 +55,12 @@ fun AddWineScreen(
             .collect { event ->
                 when (event) {
                     is NavigationEvent.NavigateBack -> {
-                        println("🔥 AddWineScreen: Channel navigation event received, calling onNavigateBackWithSuccess")
-                        onNavigateBackWithSuccess()
+                        println("🔥 AddWineScreen: Channel navigation event received, calling onNavigateBack")
+                        onNavigateBack()
+                    }
+                    is NavigationEvent.NavigateBackWithWineId -> {
+                        println("🔥 AddWineScreen: Wine added successfully, calling onNavigateBackWithSuccess with wineId: ${event.wineId}")
+                        onNavigateBackWithSuccess(event.wineId)
                     }
                     is NavigationEvent.NavigateToWineDetail -> {
                         println("🔥 AddWineScreen: Navigating to wine detail for wine ID: ${event.wineId}")

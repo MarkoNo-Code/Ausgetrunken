@@ -206,9 +206,7 @@ class WineyardRepository(
                             put("address", wineyard.address)
                             put("latitude", wineyard.latitude)
                             put("longitude", wineyard.longitude)
-                            putJsonArray("photos") {
-                                wineyard.photos.forEach { add(it) }
-                            }
+                            // Note: photos are stored in separate wineyard_photos table, not here
                             put("created_at", Instant.now().toString()) // Use current time in ISO format
                             put("updated_at", Instant.now().toString()) // Use current time in ISO format
                         }

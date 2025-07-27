@@ -24,6 +24,10 @@ class WineyardService(
         return wineyardRepository.getWineyardById(wineyardId)
     }
 
+    suspend fun getWineyardByIdRemoteFirst(wineyardId: String): WineyardEntity? {
+        return wineyardRepository.getWineyardByIdRemoteFirst(wineyardId)
+    }
+
     suspend fun createWineyard(wineyard: WineyardEntity): Result<WineyardEntity> {
         return wineyardRepository.createWineyard(wineyard)
     }

@@ -229,8 +229,8 @@ class AddWineViewModel(
                                 isSuccess = true
                             )
                         }
-                        // Navigate back to wineyard detail page with success
-                        _navigationEvents.trySend(NavigationEvent.NavigateBack)
+                        // Navigate back to wineyard detail page with wine ID for highlighting
+                        _navigationEvents.trySend(NavigationEvent.NavigateBackWithWineId(wine.id))
                     }
                     .onFailure { exception ->
                         _uiState.update { 
@@ -282,7 +282,3 @@ data class AddWineUiState(
                 stockQuantityError == null
 }
 
-sealed class NavigationEvent {
-    object NavigateBack : NavigationEvent()
-    data class NavigateToWineDetail(val wineId: String) : NavigationEvent()
-}
