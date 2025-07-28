@@ -157,10 +157,6 @@ fun AusgetrunkenNavigation(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToWineDetail = { wineId ->
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
-                },
-                onNavigateToMap = { latitude, longitude ->
-                    // TODO: Implement map navigation with coordinates
-                    navController.navigate(Screen.Map.route)
                 }
             )
         }

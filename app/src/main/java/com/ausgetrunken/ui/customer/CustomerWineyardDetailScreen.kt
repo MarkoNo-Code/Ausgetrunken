@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.LocalBar
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Card
@@ -90,17 +89,18 @@ fun CustomerWineyardDetailScreen(
     wineyardId: String,
     onNavigateBack: () -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
-    onNavigateToMap: (Double, Double) -> Unit = { _, _ -> }, // TODO: Implement map navigation
     viewModel: WineyardDetailViewModel = koinViewModel()
 ) {
     LaunchedEffect(wineyardId) {
-        Log.d("CustomerWineyardDetailScreen", "🔴 CUSTOMER WineyardDetailScreen loaded for wineyardId: $wineyardId")
+        Log.d(
+            "CustomerWineyardDetailScreen",
+            "🔴 CUSTOMER WineyardDetailScreen loaded for wineyardId: $wineyardId"
+        )
         Log.d("CustomerWineyardDetailScreen", "🔴 This is the CUSTOMER view with bell icon!")
     }
-    
+
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
 
     LaunchedEffect(wineyardId) {
         viewModel.loadWineyard(wineyardId)
@@ -116,10 +116,17 @@ fun CustomerWineyardDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.wineyard?.name ?: stringResource(R.string.wineyard_details)) },
+                title = {
+                    Text(
+                        uiState.wineyard?.name ?: stringResource(R.string.wineyard_details)
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.cd_back))
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -144,18 +151,18 @@ fun CustomerWineyardDetailScreen(
                                 )
                             } else {
                                 Icon(
-                                    imageVector = if (uiState.isSubscribed) 
-                                        Icons.Filled.Notifications 
-                                    else 
+                                    imageVector = if (uiState.isSubscribed)
+                                        Icons.Filled.Notifications
+                                    else
                                         Icons.Outlined.Notifications,
-                                    contentDescription = if (uiState.isSubscribed) 
-                                        stringResource(R.string.cd_unsubscribe) 
-                                    else 
+                                    contentDescription = if (uiState.isSubscribed)
+                                        stringResource(R.string.cd_unsubscribe)
+                                    else
                                         stringResource(R.string.cd_subscribe),
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (uiState.isSubscribed) 
-                                        MaterialTheme.colorScheme.primary 
-                                    else 
+                                    tint = if (uiState.isSubscribed)
+                                        MaterialTheme.colorScheme.primary
+                                    else
                                         MaterialTheme.colorScheme.onSurface
                                 )
                             }
@@ -187,7 +194,7 @@ fun CustomerWineyardDetailScreen(
                     latitude = wineyard.latitude,
                     longitude = wineyard.longitude
                 )
-                
+
                 val winesUiData = uiState.wines.map { wine ->
                     CustomerWineUiData(
                         id = wine.id,
@@ -200,7 +207,7 @@ fun CustomerWineyardDetailScreen(
                         lowStockThreshold = wine.lowStockThreshold
                     )
                 }
-                
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -212,7 +219,7 @@ fun CustomerWineyardDetailScreen(
                             photos = uiState.photos,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(300.dp)
+                                .height(200.dp)
                         )
                     }
 
@@ -224,23 +231,11 @@ fun CustomerWineyardDetailScreen(
                         )
                     }
 
-                    // Location section with map preview
-                    item {
-                        CustomerLocationSection(
-                            wineyardData = wineyardUiData,
-                            onNavigateToMap = { onNavigateToMap(wineyardUiData.latitude, wineyardUiData.longitude) },
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    }
-
                     // Wine list section
                     item {
                         CustomerWineListSection(
                             wines = winesUiData,
-                            onWineClick = onNavigateToWineDetail,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 16.dp)
+                            onWineClick = onNavigateToWineDetail
                         )
                     }
 
@@ -282,7 +277,7 @@ private fun CustomerPhotosCarousel(
         }
     } else {
         val pagerState = rememberPagerState(pageCount = { photos.size })
-        
+
         Box(modifier = modifier) {
             HorizontalPager(
                 state = pagerState,
@@ -298,7 +293,7 @@ private fun CustomerPhotosCarousel(
                     contentScale = ContentScale.Crop
                 )
             }
-            
+
             // Page indicator
             if (photos.size > 1) {
                 Row(
@@ -313,9 +308,9 @@ private fun CustomerPhotosCarousel(
                                 .size(8.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(
-                                    if (index == pagerState.currentPage) 
-                                        Color.White 
-                                    else 
+                                    if (index == pagerState.currentPage)
+                                        Color.White
+                                    else
                                         Color.White.copy(alpha = 0.5f)
                                 )
                         )
@@ -331,209 +326,117 @@ private fun CustomerDescriptionSection(
     wineyardData: CustomerWineyardUiData,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Text(
+            text = wineyardData.name,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        if (wineyardData.description.isNotBlank()) {
             Text(
-                text = wineyardData.name,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                text = wineyardData.description,
+                style = MaterialTheme.typography.bodyLarge,
+                lineHeight = 24.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            
-            if (wineyardData.description.isNotBlank()) {
-                Text(
-                    text = wineyardData.description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    lineHeight = 24.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+        }
+
+        if (wineyardData.address.isNotBlank()) {
+
+            // Map component
+            if (wineyardData.latitude != 0.0 && wineyardData.longitude != 0.0) {
+                WineyardMapComponent(
+                    latitude = wineyardData.latitude,
+                    longitude = wineyardData.longitude,
+                    address = wineyardData.address,
+                    wineyardName = wineyardData.name,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                WineyardMapPlaceholder(
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-            
-            if (wineyardData.address.isNotBlank()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = wineyardData.address,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Map component
-                if (wineyardData.latitude != 0.0 && wineyardData.longitude != 0.0) {
-                    WineyardMapComponent(
-                        latitude = wineyardData.latitude,
-                        longitude = wineyardData.longitude,
-                        address = wineyardData.address,
-                        wineyardName = wineyardData.name,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    WineyardMapPlaceholder(
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-    }
-}
 
-@Composable
-private fun CustomerLocationSection(
-    wineyardData: CustomerWineyardUiData,
-    onNavigateToMap: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Location",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                IconButton(
-                    onClick = onNavigateToMap,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Map,
-                        contentDescription = "Open in map",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            
-            // Map placeholder - could be replaced with actual map view later
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onNavigateToMap() },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Map,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "View on Map",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-            
-            Text(
-                text = stringResource(R.string.coordinates, "${wineyardData.latitude}, ${wineyardData.longitude}"),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun CustomerWineListSection(
-    wines: List<CustomerWineUiData>,
-    onWineClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    Icons.Default.LocalBar,
+                    Icons.Default.LocationOn,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = stringResource(R.string.wines_count, wines.size),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = wineyardData.address,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
-            if (wines.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.no_wines_available),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+        }
+    }
+}
+
+
+@Composable
+private fun CustomerWineListSection(
+    wines: List<CustomerWineUiData>,
+    onWineClick: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                Icons.Default.LocalBar,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = stringResource(R.string.wines_count, wines.size),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        if (wines.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.no_wines_available),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                wines.forEach { wine ->
+                    CustomerWineCard(
+                        wine = wine,
+                        onClick = { onWineClick(wine.id) }
                     )
-                }
-            } else {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    wines.forEach { wine ->
-                        CustomerWineCard(
-                            wine = wine,
-                            onClick = { onWineClick(wine.id) }
-                        )
-                    }
                 }
             }
         }
@@ -570,13 +473,13 @@ private fun CustomerWineCard(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Text(
                     text = "${wine.wineType} • ${wine.vintage}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -587,7 +490,7 @@ private fun CustomerWineCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    
+
                     wine.discountedPrice?.let { discountedPrice ->
                         Text(
                             text = "€${discountedPrice}",
@@ -597,7 +500,7 @@ private fun CustomerWineCard(
                     }
                 }
             }
-            
+
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -607,7 +510,7 @@ private fun CustomerWineCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 if (wine.stockQuantity <= wine.lowStockThreshold) {
                     Text(
                         text = "Low Stock",

@@ -4,26 +4,44 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.android.gms.maps.CameraUpdateFactory
+import com.ausgetrunken.R
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.*
-import com.ausgetrunken.R
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
+import androidx.core.net.toUri
 
 @Composable
 fun WineyardMapComponent(
@@ -41,28 +59,29 @@ fun WineyardMapComponent(
         position = CameraPosition.fromLatLngZoom(location, 14f)
     }
     
+    // Function to open Google Maps
+    val openGoogleMaps = {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            "geo:$latitude,$longitude?q=$latitude,$longitude($wineyardName)".toUri()
+        )
+        intent.setPackage("com.google.android.apps.maps")
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            // Fallback to web version
+            val webIntent = Intent(
+                Intent.ACTION_VIEW,
+                "https://maps.google.com/?q=$latitude,$longitude".toUri()
+            )
+            context.startActivity(webIntent)
+        }
+    }
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .clickable {
-                // Open in Google Maps when clicked
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude($wineyardName)")
-                )
-                intent.setPackage("com.google.android.apps.maps")
-                if (intent.resolveActivity(context.packageManager) != null) {
-                    context.startActivity(intent)
-                } else {
-                    // Fallback to web version
-                    val webIntent = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://maps.google.com/?q=$latitude,$longitude")
-                    )
-                    context.startActivity(webIntent)
-                }
-            },
+            .height(200.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -86,7 +105,8 @@ fun WineyardMapComponent(
                 ),
                 properties = MapProperties(
                     mapType = MapType.NORMAL
-                )
+                ),
+                onMapClick = { openGoogleMaps() }
             ) {
                 // Marker for wineyard location
                 Marker(
@@ -95,6 +115,13 @@ fun WineyardMapComponent(
                     snippet = address
                 )
             }
+            
+            // Invisible clickable overlay to ensure clicks are captured
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { openGoogleMaps() }
+            )
             
             // Overlay with address info
             Column(
