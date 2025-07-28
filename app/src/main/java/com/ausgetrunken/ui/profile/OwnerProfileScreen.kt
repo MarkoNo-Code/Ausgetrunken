@@ -176,11 +176,11 @@ fun OwnerProfileScreen(
                     if (uiState.wineyards.isNotEmpty()) {
                         IconButton(
                             onClick = { 
-                                // Find the wineyard with the most subscribers for notifications
+                                // Get the current owner ID and navigate to notification management for all wineyards
                                 coroutineScope.launch {
-                                    val preferredWineyardId = viewModel.findWineyardWithMostSubscribers()
-                                    if (preferredWineyardId != null) {
-                                        onNavigateToNotificationManagement(preferredWineyardId)
+                                    val currentOwnerId = viewModel.getCurrentOwnerId()
+                                    if (currentOwnerId != null) {
+                                        onNavigateToNotificationManagement(currentOwnerId)
                                     }
                                 }
                             }

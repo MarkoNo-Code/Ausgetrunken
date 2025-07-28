@@ -7,8 +7,10 @@ import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.domain.model.NotificationResult
 import com.ausgetrunken.domain.model.SubscriberInfo
 import com.ausgetrunken.domain.usecase.GetLowStockWinesUseCase
+import com.ausgetrunken.domain.usecase.GetLowStockWinesForOwnerUseCase
 import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
 import com.ausgetrunken.domain.usecase.SendNotificationUseCase
+import com.ausgetrunken.domain.service.WineyardService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,23 +18,27 @@ import kotlinx.coroutines.launch
 
 class NotificationManagementViewModel(
     private val getLowStockWinesUseCase: GetLowStockWinesUseCase,
+    private val getLowStockWinesForOwnerUseCase: GetLowStockWinesForOwnerUseCase,
     private val getWineyardSubscribersUseCase: GetWineyardSubscribersUseCase,
-    private val sendNotificationUseCase: SendNotificationUseCase
+    private val sendNotificationUseCase: SendNotificationUseCase,
+    private val wineyardService: WineyardService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationManagementUiState())
     val uiState: StateFlow<NotificationManagementUiState> = _uiState.asStateFlow()
 
-    private var currentWineyardId: String = ""
+    private var currentOwnerId: String = ""
 
-    fun loadWineyardData(wineyardId: String) {
-        currentWineyardId = wineyardId
+    fun loadOwnerData(ownerId: String) {
+        currentOwnerId = ownerId
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
-                // Load low stock wines
-                val lowStockWines = getLowStockWinesUseCase(wineyardId)
+                println("🔍 NotificationManagementViewModel: Loading data for owner: $ownerId")
+                
+                // Load low stock wines from all owner wineyards
+                val lowStockWines = getLowStockWinesForOwnerUseCase(ownerId)
                 
                 // Separate critical stock wines (20% or less)
                 val criticalStockWines = lowStockWines.filter { wine ->
@@ -47,19 +53,55 @@ class NotificationManagementViewModel(
                     percentage > 0.20f || wine.fullStockQuantity == 0
                 }
 
-                // Load subscriber information
-                val subscriberInfo = getWineyardSubscribersUseCase(wineyardId)
-
+                // Get subscriber information for each wineyard
+                val wineyardSubscriberInfo = mutableListOf<WineyardSubscriberInfo>()
+                
+                // Get all unique wineyards from the low stock wines
+                val wineyardIds = (regularLowStockWines + criticalStockWines)
+                    .map { it.wineyardId }
+                    .distinct()
+                
+                for (wineyardId in wineyardIds) {
+                    try {
+                        val subscriberInfo = getWineyardSubscribersUseCase(wineyardId)
+                        
+                        // Get the actual wineyard name
+                        val wineyardName = try {
+                            val wineyards = wineyardService.getWineyardsByOwnerRemoteFirst(ownerId)
+                            wineyards.find { it.id == wineyardId }?.name ?: "Unknown Wineyard"
+                        } catch (e: Exception) {
+                            println("⚠️ NotificationManagementViewModel: Could not get wineyard name for $wineyardId: ${e.message}")
+                            "Wineyard $wineyardId"
+                        }
+                        
+                        wineyardSubscriberInfo.add(
+                            WineyardSubscriberInfo(
+                                wineyardId = wineyardId,
+                                wineyardName = wineyardName,
+                                totalSubscribers = subscriberInfo.totalSubscribers,
+                                lowStockSubscribers = subscriberInfo.lowStockSubscribers,
+                                generalSubscribers = subscriberInfo.generalSubscribers
+                            )
+                        )
+                        
+                        println("✅ NotificationManagementViewModel: Wineyard '$wineyardName' has ${subscriberInfo.totalSubscribers} total subscribers")
+                    } catch (e: Exception) {
+                        println("❌ NotificationManagementViewModel: Error getting subscribers for wineyard $wineyardId: ${e.message}")
+                    }
+                }
+                
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     lowStockWines = regularLowStockWines,
                     criticalStockWines = criticalStockWines,
-                    subscriberCount = subscriberInfo.totalSubscribers,
-                    lowStockSubscribers = subscriberInfo.lowStockSubscribers,
-                    generalSubscribers = subscriberInfo.generalSubscribers
+                    wineyardSubscriberInfo = wineyardSubscriberInfo
                 )
+                
+                println("✅ NotificationManagementViewModel: Loaded ${regularLowStockWines.size} regular low stock and ${criticalStockWines.size} critical stock wines for owner")
 
             } catch (e: Exception) {
+                println("❌ NotificationManagementViewModel: Error loading owner data: ${e.message}")
+                e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     message = "Failed to load data: ${e.message}"
@@ -73,15 +115,32 @@ class NotificationManagementViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
-                val result = sendNotificationUseCase.sendLowStockNotificationsForWineyard(currentWineyardId)
+                // Send notifications for all low stock wines across all owner wineyards
+                var totalSent = 0
+                val allLowStockWines = _uiState.value.lowStockWines + _uiState.value.criticalStockWines
+                
+                // Group wines by wineyard and send notifications for each wineyard
+                val winesByWineyard = allLowStockWines.groupBy { it.wineyardId }
+                
+                for ((wineyardId, wines) in winesByWineyard) {
+                    for (wine in wines) {
+                        val result = sendNotificationUseCase.sendLowStockNotification(
+                            wineyardId = wineyardId,
+                            wine = wine
+                        )
+                        totalSent += result.sentCount
+                    }
+                }
                 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    message = "Sent ${result.sentCount} low stock notifications"
+                    message = "Sent $totalSent low stock notifications across all wineyards"
                 )
 
                 // Reload data to update UI
-                loadWineyardData(currentWineyardId)
+                if (currentOwnerId.isNotEmpty()) {
+                    loadOwnerData(currentOwnerId)
+                }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -102,7 +161,7 @@ class NotificationManagementViewModel(
 
                 for (wine in criticalWines) {
                     val result = sendNotificationUseCase.sendCriticalStockNotification(
-                        wineyardId = currentWineyardId,
+                        wineyardId = wine.wineyardId,
                         wine = wine
                     )
                     totalSent += result.sentCount
@@ -110,11 +169,13 @@ class NotificationManagementViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    message = "Sent $totalSent critical stock alerts"
+                    message = "Sent $totalSent critical stock alerts across all wineyards"
                 )
 
                 // Reload data to update UI
-                loadWineyardData(currentWineyardId)
+                if (currentOwnerId.isNotEmpty()) {
+                    loadOwnerData(currentOwnerId)
+                }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -133,7 +194,7 @@ class NotificationManagementViewModel(
                 println("🔍 NotificationViewModel: Sending notification for wine: ${wine.name}")
                 println("🔍 NotificationViewModel: Wine ID: ${wine.id}")
                 println("🔍 NotificationViewModel: Wine Wineyard ID: ${wine.wineyardId}")
-                println("🔍 NotificationViewModel: Current Wineyard ID: $currentWineyardId")
+                println("🔍 NotificationViewModel: Current Owner ID: $currentOwnerId")
                 
                 val result = sendNotificationUseCase.sendLowStockNotification(
                     wineyardId = wine.wineyardId,
@@ -187,16 +248,11 @@ class NotificationManagementViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             try {
-                val result = sendNotificationUseCase.sendCustomNotification(
-                    wineyardId = currentWineyardId,
-                    title = title,
-                    message = message,
-                    notificationType = type
-                )
-
+                // TODO: Custom notifications for owner-wide view need UI to select specific wineyard
+                // For now, disable this functionality as it doesn't work with multiple wineyards
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    message = "Sent custom notification to ${result.sentCount} subscribers"
+                    message = "Custom notifications not available in owner view. Please use individual wine notifications."
                 )
 
             } catch (e: Exception) {
@@ -213,13 +269,24 @@ class NotificationManagementViewModel(
     }
 }
 
+data class WineyardSubscriberInfo(
+    val wineyardId: String,
+    val wineyardName: String,
+    val totalSubscribers: Int,
+    val lowStockSubscribers: Int,
+    val generalSubscribers: Int
+)
+
 data class NotificationManagementUiState(
     val isLoading: Boolean = false,
     val lowStockWines: List<WineEntity> = emptyList(),
     val criticalStockWines: List<WineEntity> = emptyList(),
-    val subscriberCount: Int = 0,
-    val lowStockSubscribers: Int = 0,
-    val generalSubscribers: Int = 0,
+    val wineyardSubscriberInfo: List<WineyardSubscriberInfo> = emptyList(),
     val message: String? = null
-)
+) {
+    // Computed properties for backward compatibility and aggregate stats
+    val subscriberCount: Int get() = wineyardSubscriberInfo.sumOf { it.totalSubscribers }
+    val lowStockSubscribers: Int get() = wineyardSubscriberInfo.sumOf { it.lowStockSubscribers }
+    val generalSubscribers: Int get() = wineyardSubscriberInfo.sumOf { it.generalSubscribers }
+}
 

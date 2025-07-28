@@ -33,7 +33,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationManagementScreen(
-    wineyardId: String,
+    ownerId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: NotificationManagementViewModel = koinViewModel()
@@ -43,8 +43,8 @@ fun NotificationManagementScreen(
     var showCustomNotificationDialog by remember { mutableStateOf(false) }
     var selectedNotificationType by remember { mutableStateOf(NotificationType.GENERAL) }
 
-    LaunchedEffect(wineyardId) {
-        viewModel.loadWineyardData(wineyardId)
+    LaunchedEffect(ownerId) {
+        viewModel.loadOwnerData(ownerId)
     }
 
     // Show success/error messages
@@ -137,9 +137,10 @@ fun NotificationManagementScreen(
             // Subscriber Info Section
             item {
                 SubscriberInfoCard(
-                    subscriberCount = uiState.subscriberCount,
-                    lowStockSubscribers = uiState.lowStockSubscribers,
-                    generalSubscribers = uiState.generalSubscribers
+                    wineyardSubscriberInfo = uiState.wineyardSubscriberInfo,
+                    totalSubscribers = uiState.subscriberCount,
+                    totalLowStockSubscribers = uiState.lowStockSubscribers,
+                    totalGeneralSubscribers = uiState.generalSubscribers
                 )
             }
         }
@@ -339,9 +340,10 @@ private fun CriticalStockWineCard(
 
 @Composable
 private fun SubscriberInfoCard(
-    subscriberCount: Int,
-    lowStockSubscribers: Int,
-    generalSubscribers: Int
+    wineyardSubscriberInfo: List<WineyardSubscriberInfo>,
+    totalSubscribers: Int,
+    totalLowStockSubscribers: Int,
+    totalGeneralSubscribers: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -351,44 +353,126 @@ private fun SubscriberInfoCard(
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = stringResource(R.string.subscriber_information),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(stringResource(R.string.total_subscribers))
+            
+            // Per-wineyard breakdown
+            if (wineyardSubscriberInfo.isNotEmpty()) {
                 Text(
-                    text = subscriberCount.toString(),
-                    fontWeight = FontWeight.Bold
+                    text = "Subscribers by Wineyard:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                 )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(stringResource(R.string.low_stock_notifications))
+                
+                wineyardSubscriberInfo.forEach { wineyard ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = wineyard.wineyardName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Total", style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    text = "${wineyard.totalSubscribers}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Low Stock", style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    text = "${wineyard.lowStockSubscribers}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("General", style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    text = "${wineyard.generalSubscribers}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Total summary (only show if owner has multiple wineyards)
+                if (wineyardSubscriberInfo.size > 1) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Total Across All Wineyards:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Total Subscribers")
+                        Text(
+                            text = totalSubscribers.toString(),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Low Stock Notifications")
+                        Text(
+                            text = totalLowStockSubscribers.toString(),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("General Notifications")
+                        Text(
+                            text = totalGeneralSubscribers.toString(),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            } else {
+                // No wineyards with low stock wines
                 Text(
-                    text = lowStockSubscribers.toString(),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(stringResource(R.string.general_notifications))
-                Text(
-                    text = generalSubscribers.toString(),
-                    fontWeight = FontWeight.Bold
+                    text = "No low stock wines found, so no subscriber information to display.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
             }
         }

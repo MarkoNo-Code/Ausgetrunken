@@ -28,8 +28,11 @@ sealed class Screen(val route: String) {
     data object EditWine : Screen("edit_wine/{wineId}") {
         fun createRoute(wineId: String) = "edit_wine/$wineId"
     }
-    data object NotificationManagement : Screen("notification_management/{wineyardId}") {
-        fun createRoute(wineyardId: String) = "notification_management/$wineyardId"
+    data object NotificationManagement : Screen("notification_management/{ownerId}") {
+        fun createRoute(ownerId: String) = "notification_management/$ownerId"
+    }
+    data object LocationPicker : Screen("location_picker/{wineyardId}") {
+        fun createRoute(wineyardId: String) = "location_picker/$wineyardId"
     }
     data object Map : Screen("map")
 }

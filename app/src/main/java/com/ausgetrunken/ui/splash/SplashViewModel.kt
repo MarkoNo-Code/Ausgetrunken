@@ -2,6 +2,7 @@ package com.ausgetrunken.ui.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.notifications.FCMTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,9 +50,22 @@ class SplashViewModel(
                         if (user != null) {
                             println("✅ SplashViewModel: User authenticated, getting user type...")
                             // User is authenticated, get their type
+                            println("🔍 SplashViewModel: About to call checkUserType for user: ${user.id}")
+                            println("🔍 SplashViewModel: User email: ${user.email}")
                             authService.checkUserType(user.id)
                                 .onSuccess { userType ->
-                                    println("✅ SplashViewModel: User type = $userType")
+                                    println("✅ SplashViewModel: ========== USER TYPE DETECTION RESULT ==========")
+                                    println("✅ SplashViewModel: User ID: ${user.id}")
+                                    println("✅ SplashViewModel: User Email: ${user.email}")
+                                    println("✅ SplashViewModel: Detected User Type: $userType")
+                                    println("✅ SplashViewModel: User type class: ${userType.javaClass.simpleName}")
+                                    println("✅ SplashViewModel: Expected navigation target:")
+                                    if (userType == UserType.WINEYARD_OWNER) {
+                                        println("   -> OwnerProfile (WINEYARD_OWNER) ✅ CORRECT FOR OWNER")
+                                    } else if (userType == UserType.CUSTOMER) {
+                                        println("   -> CustomerLanding (CUSTOMER) ❌ WRONG IF USER IS OWNER!")
+                                    }
+                                    println("✅ SplashViewModel: =============================================")
                                     
                                     // Update FCM token for restored session to ensure notifications work
                                     println("🔧 SplashViewModel: Updating FCM token for restored session - user: ${user.id}")
@@ -63,6 +77,7 @@ class SplashViewModel(
                                         userType = userType
                                     )
                                     println("✅ SplashViewModel: Navigation to profile should happen now")
+                                    println("✅ SplashViewModel: Final UI state: isAuthenticated=${_uiState.value.isAuthenticated}, userType=${_uiState.value.userType}")
                                 }
                                 .onFailure { error ->
                                     println("❌ SplashViewModel: Failed to get user type: ${error.message}")
@@ -100,9 +115,22 @@ class SplashViewModel(
                                 println("✅ SplashViewModel: Extracted userId: $userId, email: $email")
                                 
                                 // Get user type for valid session
+                                println("🔍 SplashViewModel: About to call checkUserType for valid session - user: $userId")
+                                println("🔍 SplashViewModel: Valid session user email: $email")
                                 authService.checkUserType(userId)
                                     .onSuccess { userType ->
-                                        println("✅ SplashViewModel: User type = $userType (from valid session)")
+                                        println("✅ SplashViewModel: ======= VALID SESSION USER TYPE RESULT =======")
+                                        println("✅ SplashViewModel: User ID: $userId")
+                                        println("✅ SplashViewModel: User Email: $email")
+                                        println("✅ SplashViewModel: Detected User Type: $userType")
+                                        println("✅ SplashViewModel: User type class: ${userType.javaClass.simpleName}")
+                                        println("✅ SplashViewModel: Expected navigation target (valid session):")
+                                        if (userType == UserType.WINEYARD_OWNER) {
+                                            println("   -> OwnerProfile (WINEYARD_OWNER) ✅ CORRECT FOR OWNER")
+                                        } else if (userType == UserType.CUSTOMER) {
+                                            println("   -> CustomerLanding (CUSTOMER) ❌ WRONG IF USER IS OWNER!")
+                                        }
+                                        println("✅ SplashViewModel: ==========================================")
                                         
                                         // Update FCM token for restored session
                                         println("🔧 SplashViewModel: Updating FCM token for valid session - user: $userId")
@@ -114,6 +142,7 @@ class SplashViewModel(
                                             userType = userType
                                         )
                                         println("✅ SplashViewModel: Navigation should happen now (valid session path)")
+                                        println("✅ SplashViewModel: Final UI state (valid session): isAuthenticated=${_uiState.value.isAuthenticated}, userType=${_uiState.value.userType}")
                                     }
                                     .onFailure { typeError ->
                                         println("❌ SplashViewModel: Failed to get user type for valid session: ${typeError.message}")

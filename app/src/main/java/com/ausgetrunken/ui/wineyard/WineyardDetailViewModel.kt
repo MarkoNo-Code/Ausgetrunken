@@ -14,6 +14,7 @@ import com.ausgetrunken.domain.service.ImageUploadService
 import com.ausgetrunken.domain.service.WineyardPhotoService
 import com.ausgetrunken.domain.service.NewWineyardPhotoService
 import com.ausgetrunken.domain.service.DatabaseInspectionService
+import com.ausgetrunken.data.local.TokenStorage
 import android.content.Context
 import android.net.Uri
 import java.io.File
@@ -36,6 +37,7 @@ class WineyardDetailViewModel(
     private val wineyardPhotoService: WineyardPhotoService,
     private val newWineyardPhotoService: NewWineyardPhotoService,
     private val databaseInspectionService: DatabaseInspectionService,
+    private val tokenStorage: TokenStorage,
     private val context: Context
 ) : BaseViewModel() {
     
@@ -58,12 +60,37 @@ class WineyardDetailViewModel(
                 }
                 
                 // Get current user details for permission checking
-                // This doesn't trigger session restoration like AuthenticatedRepository does
+                // Use TokenStorage directly to get userId - more reliable than getCurrentUser after session restoration
+                val currentUserId = tokenStorage.getUserId()
+                val canEdit = if (currentUserId != null) {
+                    // Use checkUserType like SplashViewModel does - this works reliably  
+                    authService.checkUserType(currentUserId)
+                        .onSuccess { userType ->
+                            println("🔍 WineyardDetailViewModel: Successfully got userType: $userType")
+                        }
+                        .onFailure { error ->
+                            println("❌ WineyardDetailViewModel: Failed to get userType: ${error.message}")
+                        }
+                        .getOrNull() == UserType.WINEYARD_OWNER
+                } else {
+                    println("❌ WineyardDetailViewModel: currentUserId is null from TokenStorage, cannot check permissions")
+                    false
+                }
+                
+                // Get currentUserEntity for other uses if needed (keeping for compatibility)
                 val currentAuthUser = authService.getCurrentUser().first()
-                val currentUserEntity = if (currentAuthUser != null) {
-                    userRepository.getUserById(currentAuthUser.id).first()
+                val currentUserEntity = if (currentUserId != null) {
+                    userRepository.getUserById(currentUserId).first()
                 } else null
-                val canEdit = currentUserEntity?.userType == UserType.WINEYARD_OWNER
+                
+                // DEBUG: Check canEdit logic
+                println("🔍 WineyardDetailViewModel DEBUG:")
+                println("🔍 currentUserId from TokenStorage: $currentUserId")  
+                println("🔍 currentAuthUser from getCurrentUser: ${currentAuthUser?.id}")
+                println("🔍 currentUserEntity: ${currentUserEntity?.id}")
+                println("🔍 currentUserEntity.userType: ${currentUserEntity?.userType}")
+                println("🔍 canEdit calculated: $canEdit")
+                println("🔍 Expected for owner: should be TRUE")
                 
                 // Update UI state (preserve existing photos)
                 _uiState.value = _uiState.value.copy(
@@ -136,11 +163,15 @@ class WineyardDetailViewModel(
     }
     
     fun updateWineyardLocation(latitude: Double, longitude: Double) {
+        Log.d("WineyardDetailViewModel", "📍 Updating wineyard location: lat=$latitude, lng=$longitude")
+        Log.d("WineyardDetailViewModel", "📍 Current UI state wineyard: ${_uiState.value.wineyard?.name} (id: ${_uiState.value.wineyard?.id})")
+        
         _uiState.value.wineyard?.let { wineyard ->
-            _uiState.value = _uiState.value.copy(
-                wineyard = wineyard.copy(latitude = latitude, longitude = longitude)
-            )
-        }
+            Log.d("WineyardDetailViewModel", "📍 Original wineyard coordinates: lat=${wineyard.latitude}, lng=${wineyard.longitude}")
+            val updatedWineyard = wineyard.copy(latitude = latitude, longitude = longitude)
+            _uiState.value = _uiState.value.copy(wineyard = updatedWineyard)
+            Log.d("WineyardDetailViewModel", "✅ Wineyard updated in UI state: ${updatedWineyard.name} at $latitude, $longitude")
+        } ?: Log.e("WineyardDetailViewModel", "❌ No wineyard in state to update!")
     }
     
     fun addPhoto(photoPath: String) {
@@ -238,9 +269,17 @@ class WineyardDetailViewModel(
     }
     
     fun saveWineyard() {
-        val wineyard = _uiState.value.wineyard ?: return
-        if (!_uiState.value.canEdit) return
+        Log.d("WineyardDetailViewModel", "💾 saveWineyard() called")
+        val wineyard = _uiState.value.wineyard ?: run {
+            Log.e("WineyardDetailViewModel", "❌ No wineyard to save!")
+            return
+        }
+        if (!_uiState.value.canEdit) {
+            Log.e("WineyardDetailViewModel", "❌ Cannot edit - user has no permission!")
+            return
+        }
         
+        Log.d("WineyardDetailViewModel", "🚀 Saving wineyard: ${wineyard.name} at ${wineyard.latitude}, ${wineyard.longitude}")
         execute("saveWineyard") {
             AppResult.catchingSuspend {
                 // Set updating state

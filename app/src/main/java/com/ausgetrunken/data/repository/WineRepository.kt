@@ -43,8 +43,11 @@ class WineRepository(
                             put("vintage", wine.vintage)
                             put("price", wine.price)
                             put("stock_quantity", wine.stockQuantity)
-                            // Only include columns that exist in the database schema
-                            // discounted_price, low_stock_threshold, photos are not in the current schema
+                            put("low_stock_threshold", wine.lowStockThreshold)
+                            put("full_stock_quantity", wine.fullStockQuantity)
+                            // Include discounted_price if it exists, otherwise null
+                            wine.discountedPrice?.let { put("discounted_price", it) } ?: put("discounted_price", JsonNull)
+                            // Note: photos are not stored in the database schema yet
                         }
                     )
                 
@@ -142,10 +145,10 @@ class WineRepository(
                     wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
                     vintage = wineData.vintage,
                     price = wineData.price,
-                    discountedPrice = null, // Not in current database schema
+                    discountedPrice = wineData.discountedPrice,
                     stockQuantity = wineData.stockQuantity,
-                    fullStockQuantity = wineData.stockQuantity, // Use current stock as full stock
-                    lowStockThreshold = 20, // Default value since not in database schema
+                    fullStockQuantity = wineData.fullStockQuantity ?: wineData.stockQuantity, // Use current stock as fallback
+                    lowStockThreshold = wineData.lowStockThreshold ?: 20, // Use database value or default to 20
                     photos = emptyList(), // Not in current database schema
                     createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
                     updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
@@ -181,10 +184,10 @@ class WineRepository(
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
                         vintage = wineData.vintage,
                         price = wineData.price,
-                        discountedPrice = null, // Not in current database schema
+                        discountedPrice = wineData.discountedPrice,
                         stockQuantity = wineData.stockQuantity,
-                        fullStockQuantity = wineData.stockQuantity, // Use current stock as full stock
-                        lowStockThreshold = 20, // Default value since not in database schema
+                        fullStockQuantity = wineData.fullStockQuantity ?: wineData.stockQuantity, // Use current stock as fallback
+                        lowStockThreshold = wineData.lowStockThreshold ?: 20, // Use database value or default to 20
                         photos = emptyList(), // Not in current database schema
                         createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
                         updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
@@ -224,10 +227,10 @@ class WineRepository(
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
                         vintage = wineData.vintage,
                         price = wineData.price,
-                        discountedPrice = null,
+                        discountedPrice = wineData.discountedPrice,
                         stockQuantity = wineData.stockQuantity,
-                        fullStockQuantity = wineData.stockQuantity,
-                        lowStockThreshold = 20,
+                        fullStockQuantity = wineData.fullStockQuantity ?: wineData.stockQuantity,
+                        lowStockThreshold = wineData.lowStockThreshold ?: 20,
                         photos = emptyList(),
                         createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
                         updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
@@ -266,10 +269,10 @@ class WineRepository(
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
                         vintage = wineData.vintage,
                         price = wineData.price,
-                        discountedPrice = null,
+                        discountedPrice = wineData.discountedPrice,
                         stockQuantity = wineData.stockQuantity,
-                        fullStockQuantity = wineData.stockQuantity,
-                        lowStockThreshold = 20,
+                        fullStockQuantity = wineData.fullStockQuantity ?: wineData.stockQuantity,
+                        lowStockThreshold = wineData.lowStockThreshold ?: 20,
                         photos = emptyList(),
                         createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
                         updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()
@@ -304,10 +307,10 @@ class WineRepository(
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
                         vintage = wineData.vintage,
                         price = wineData.price,
-                        discountedPrice = null,
+                        discountedPrice = wineData.discountedPrice,
                         stockQuantity = wineData.stockQuantity,
-                        fullStockQuantity = wineData.stockQuantity,
-                        lowStockThreshold = 20,
+                        fullStockQuantity = wineData.fullStockQuantity ?: wineData.stockQuantity,
+                        lowStockThreshold = wineData.lowStockThreshold ?: 20,
                         photos = emptyList(),
                         createdAt = wineData.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
                         updatedAt = wineData.updatedAt?.toLongOrNull() ?: System.currentTimeMillis()

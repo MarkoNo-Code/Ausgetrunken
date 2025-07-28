@@ -311,6 +311,41 @@ class OwnerProfileViewModel(
     }
     
     /**
+     * Get the current owner's user ID for navigation purposes
+     */
+    suspend fun getCurrentOwnerId(): String? {
+        return try {
+            // Try to get current user first
+            val currentUser = authRepository.currentUser
+            if (currentUser != null) {
+                return currentUser.id
+            }
+            
+            // If no current user, try session restoration
+            authService.restoreSession()
+                .onSuccess { user ->
+                    if (user != null) {
+                        return user.id
+                    }
+                }
+                .onFailure { error ->
+                    val errorMessage = error.message ?: ""
+                    if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                        val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                        if (parts.isNotEmpty()) {
+                            return parts[0] // userId from session
+                        }
+                    }
+                }
+            
+            null
+        } catch (e: Exception) {
+            println("❌ ProfileViewModel: Error getting current owner ID: ${e.message}")
+            null
+        }
+    }
+    
+    /**
      * Add a newly created wineyard directly to the UI state without refetching all data
      */
     fun addNewWineyardToUI(wineyardId: String) {

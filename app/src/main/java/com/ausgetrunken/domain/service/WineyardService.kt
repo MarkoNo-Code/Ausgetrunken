@@ -2,6 +2,7 @@ package com.ausgetrunken.domain.service
 
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.repository.WineyardRepository
+import com.ausgetrunken.domain.common.AppResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
@@ -58,6 +59,29 @@ class WineyardService(
             wineyard?.ownerId == userId
         } catch (e: Exception) {
             false
+        }
+    }
+    
+    suspend fun updateWineyardLocation(
+        wineyardId: String,
+        latitude: Double,
+        longitude: Double,
+        address: String
+    ): AppResult<Unit> {
+        return AppResult.catchingSuspend {
+            val wineyard = getWineyardById(wineyardId).first()
+                ?: throw Exception("Wineyard not found")
+            
+            val updatedWineyard = wineyard.copy(
+                latitude = latitude,
+                longitude = longitude,
+                address = address
+            )
+            
+            val result = updateWineyard(updatedWineyard)
+            if (result.isFailure) {
+                throw result.exceptionOrNull() ?: Exception("Failed to update wineyard location")
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ import com.ausgetrunken.domain.service.NotificationService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardSubscriptionService
 import com.ausgetrunken.domain.usecase.GetLowStockWinesUseCase
+import com.ausgetrunken.domain.usecase.GetLowStockWinesForOwnerUseCase
 import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
 import com.ausgetrunken.domain.usecase.SendNotificationUseCase
 import com.ausgetrunken.domain.util.NetworkConnectivityManager
@@ -32,6 +33,7 @@ val repositoryModule = module {
     
     // Use Cases
     factory { GetLowStockWinesUseCase(get<WineService>()) }
+    factory { GetLowStockWinesForOwnerUseCase(get<WineService>(), get()) }
     factory { GetWineyardSubscribersUseCase(get<WineyardSubscriptionService>()) }
     factory { SendNotificationUseCase(get<NotificationService>()) }
     

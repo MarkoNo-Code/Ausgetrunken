@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import android.util.Log
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +58,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.ausgetrunken.R
+import com.ausgetrunken.ui.components.WineyardMapComponent
+import com.ausgetrunken.ui.components.WineyardMapPlaceholder
 import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -90,6 +93,11 @@ fun CustomerWineyardDetailScreen(
     onNavigateToMap: (Double, Double) -> Unit = { _, _ -> }, // TODO: Implement map navigation
     viewModel: WineyardDetailViewModel = koinViewModel()
 ) {
+    LaunchedEffect(wineyardId) {
+        Log.d("CustomerWineyardDetailScreen", "🔴 CUSTOMER WineyardDetailScreen loaded for wineyardId: $wineyardId")
+        Log.d("CustomerWineyardDetailScreen", "🔴 This is the CUSTOMER view with bell icon!")
+    }
+    
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -365,6 +373,23 @@ private fun CustomerDescriptionSection(
                         text = wineyardData.address,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Map component
+                if (wineyardData.latitude != 0.0 && wineyardData.longitude != 0.0) {
+                    WineyardMapComponent(
+                        latitude = wineyardData.latitude,
+                        longitude = wineyardData.longitude,
+                        address = wineyardData.address,
+                        wineyardName = wineyardData.name,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    WineyardMapPlaceholder(
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

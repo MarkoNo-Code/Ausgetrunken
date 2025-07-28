@@ -109,6 +109,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import coil.compose.SubcomposeAsyncImage
+import com.ausgetrunken.ui.components.WineyardMapComponent
+import com.ausgetrunken.ui.components.WineyardMapPlaceholder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,8 +122,11 @@ fun WineyardDetailScreen(
     onNavigateToEditWine: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
     onNavigateToCustomerView: () -> Unit = {},
+    onNavigateToLocationPicker: (Double, Double) -> Unit = { _, _ -> },
+    onLocationProcessed: () -> Unit = {},
     addedWineId: String? = null,
     editedWineId: String? = null,
+    locationResult: Triple<Double, Double, String?>? = null,
     viewModel: WineyardDetailViewModel = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -289,7 +294,35 @@ fun WineyardDetailScreen(
     }
     
     LaunchedEffect(wineyardId) {
+        Log.d("WineyardDetailScreen", "🏭 OWNER WineyardDetailScreen loaded for wineyardId: $wineyardId")
+        Log.d("WineyardDetailScreen", "🏭 This is the OWNER view, not customer view!")
         viewModel.loadWineyard(wineyardId)
+    }
+    
+    // Handle location selection result from savedStateHandle (PROPER PATTERN)
+    // Wait for wineyard to be loaded before updating location
+    LaunchedEffect(locationResult, uiState.wineyard) {
+        Log.d("WineyardDetailScreen", "🔍 Location update check: locationResult=$locationResult, wineyard=${uiState.wineyard?.name}")
+        
+        if (locationResult != null && uiState.wineyard != null) {
+            val (latitude, longitude, address) = locationResult
+            val wineyard = uiState.wineyard
+            Log.d("WineyardDetailScreen", "🎯 Processing location result from savedStateHandle: lat=$latitude, lng=$longitude, address=$address")
+            Log.d("WineyardDetailScreen", "🎯 Wineyard loaded: ${wineyard?.name} (id: ${wineyard?.id})")
+            
+            // Update location now that wineyard is loaded
+            viewModel.updateWineyardLocation(latitude, longitude)
+            if (address != null) {
+                viewModel.updateWineyardAddress(address)
+            }
+            
+            // PROPER CLEANUP: Remove result after successful processing
+            onLocationProcessed()
+            
+            Log.d("WineyardDetailScreen", "✅ Location updated and result cleaned up")
+        } else if (locationResult != null) {
+            Log.d("WineyardDetailScreen", "⏳ Location data available but waiting for wineyard to load...")
+        }
     }
     
     
@@ -458,8 +491,11 @@ fun WineyardDetailScreen(
                                     viewModel.updateWineyardAddress(address)
                                     viewModel.saveWineyard()
                                 },
-                                onLocationClick = { viewModel.showLocationPicker() },
+                                onLocationClick = { 
+                                    onNavigateToLocationPicker(wineyard.latitude, wineyard.longitude)
+                                },
                                 isUpdating = uiState.isUpdating,
+                                shouldStartEditing = locationResult != null,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -660,20 +696,47 @@ private fun WineyardInfoCard(
     onSaveWineyard: (String, String, String) -> Unit,
     onLocationClick: () -> Unit,
     isUpdating: Boolean,
+    shouldStartEditing: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    // Local editing state
-    var isEditing by remember { mutableStateOf(false) }
+    // Local editing state - preserve across location updates by using wineyard ID as key
+    var isEditing by remember(wineyard.id) { mutableStateOf(false) }
     var editName by remember { mutableStateOf(wineyard.name) }
     var editDescription by remember { mutableStateOf(wineyard.description) }
     var editAddress by remember { mutableStateOf(wineyard.address) }
     
-    // Reset local state when wineyard changes
-    LaunchedEffect(wineyard) {
+    // Reset local state when wineyard changes (but preserve edit mode during location updates)
+    LaunchedEffect(wineyard.id) {
         editName = wineyard.name
         editDescription = wineyard.description
         editAddress = wineyard.address
-        isEditing = false
+        // Only reset edit mode on initial load, not during location updates
+        if (!isEditing) {
+            isEditing = false
+        }
+    }
+    
+    // Update edit fields when wineyard data changes but preserve edit mode
+    LaunchedEffect(wineyard.name, wineyard.description, wineyard.address) {
+        if (!isEditing) {
+            editName = wineyard.name
+            editDescription = wineyard.description
+            editAddress = wineyard.address
+        } else {
+            // In edit mode, only update address if it changed (likely from location selection)
+            // but preserve user's manual edits to name and description
+            if (editAddress != wineyard.address && wineyard.address.isNotBlank()) {
+                Log.d("WineyardDetailScreen", "📍 Updating address field in edit mode: ${wineyard.address}")
+                editAddress = wineyard.address
+            }
+        }
+    }
+    
+    // Enter edit mode when location is selected
+    LaunchedEffect(shouldStartEditing) {
+        if (shouldStartEditing && canEdit) {
+            isEditing = true
+        }
     }
     
     Card(
@@ -775,6 +838,17 @@ private fun WineyardInfoCard(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
+                // Show coordinates below address field when available
+                if (wineyard.latitude != 0.0 && wineyard.longitude != 0.0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.coordinates, "${String.format("%.4f", wineyard.latitude)}, ${String.format("%.4f", wineyard.longitude)}"),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Button(
@@ -832,6 +906,23 @@ private fun WineyardInfoCard(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Map component
+                if (wineyard.latitude != 0.0 && wineyard.longitude != 0.0) {
+                    WineyardMapComponent(
+                        latitude = wineyard.latitude,
+                        longitude = wineyard.longitude,
+                        address = wineyard.address,
+                        wineyardName = wineyard.name,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    WineyardMapPlaceholder(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }

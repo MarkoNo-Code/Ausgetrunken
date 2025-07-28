@@ -79,6 +79,19 @@
     <string name="cd_remove_photo">Remove Photo</string>
     <string name="cd_location">Location</string>
     <string name="cd_stock">Stock</string>
+    
+    <!-- Location Picker -->
+    <string name="select_location">Select Location</string>
+    <string name="current_location">Current Location</string>
+    <string name="confirm_location">Confirm Location</string>
+    <string name="selected_location">Selected Location</string>
+    <string name="loading_address">Loading address…</string>
+    <string name="address_not_available">Address not available</string>
+    <string name="coordinates_format" formatted="false">%.6f, %.6f</string>
+    <string name="location_updated_successfully">Location updated successfully</string>
+    <string name="failed_to_update_location">Failed to update location</string>
+    <string name="tap_to_open_maps">Tap to open in Maps</string>
+    <string name="location_not_set">Location not set</string>
     <string name="cd_subscribe">Subscribe to notifications</string>
     <string name="cd_unsubscribe">Unsubscribe from notifications</string>
     <string name="cd_notification_settings">Notification settings</string>

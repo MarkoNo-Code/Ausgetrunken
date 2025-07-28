@@ -66,6 +66,7 @@ class SupabaseAuthRepository(
                     
                     if (existingProfile == null) {
                         // Create user profile in database only if it doesn't exist
+                        println("📝 SupabaseAuthRepository.signUp: Creating user profile with type: ${userType.name}")
                         postgrest.from("user_profiles").insert(
                             buildJsonObject {
                                 put("id", user.id)
@@ -74,11 +75,16 @@ class SupabaseAuthRepository(
                                 put("profile_completed", false)
                             }
                         )
+                        println("✅ SupabaseAuthRepository.signUp: User profile created successfully with type: ${userType.name}")
+                    } else {
+                        println("ℹ️ SupabaseAuthRepository.signUp: User profile already exists with type: ${existingProfile.userType}")
                     }
-                    // If profile already exists, that's fine - user was already registered
                 } catch (dbError: Exception) {
-                    // Log error but don't fail registration if profile creation/check fails
-                    println("Warning: Could not create/check user profile during registration: ${dbError.message}")
+                    // Profile creation is critical - if it fails, we should know about it
+                    println("❌ SupabaseAuthRepository.signUp: CRITICAL - Failed to create/check user profile: ${dbError.message}")
+                    println("❌ SupabaseAuthRepository.signUp: This may cause authentication issues later!")
+                    dbError.printStackTrace()
+                    // Still don't fail registration completely, but make it very obvious something went wrong
                 }
             } else {
                 // User needs email confirmation, profile will be created on first login
@@ -193,12 +199,18 @@ class SupabaseAuthRepository(
                         }
                     }
                 } else {
+                    // This should rarely happen - user signed in but no profile exists
+                    // This could occur if registration profile creation failed but user was created in auth
+                    println("⚠️ SupabaseAuthRepository: User signed in but no profile exists - creating default profile")
+                    println("⚠️ SupabaseAuthRepository: This may indicate registration profile creation failed")
+                    
                     // Create profile for confirmed user with session tracking
+                    // NOTE: We default to CUSTOMER here, but user can update later via profile settings
                     postgrest.from("user_profiles").insert(
                         buildJsonObject {
                             put("id", user.id)
                             put("email", user.email ?: email)
-                            put("user_type", "CUSTOMER") // Default to customer, user can change later
+                            put("user_type", "CUSTOMER") // Safe default - user can change this in profile settings
                             put("profile_completed", false)
                             put("flagged_for_deletion", false)
                             put("current_session_id", newSessionId)
@@ -206,7 +218,8 @@ class SupabaseAuthRepository(
                             put("last_session_activity", Instant.now().toString())
                         }
                     )
-                    println("✅ SupabaseAuthRepository: New user profile created with session tracking")
+                    println("✅ SupabaseAuthRepository: Default user profile created with CUSTOMER type")
+                    println("📝 SupabaseAuthRepository: User can change their type later in profile settings")
                 }
             } catch (dbError: Exception) {
                 // If it's a flagged account error, re-throw it
@@ -504,11 +517,40 @@ class SupabaseAuthRepository(
                 }
                 .decodeSingle<UserProfile>()
             
-            println("🔍 SupabaseAuthRepository.getUserType: Found user type: ${response.userType}, flagged: ${response.flaggedForDeletion}")
+            println("🔍 SupabaseAuthRepository.getUserType: Database response:")
+            println("  - User ID: ${response.id}")
+            println("  - Email: ${response.email}")
+            println("  - User Type (raw): '${response.userType}'")
+            println("  - Flagged for deletion: ${response.flaggedForDeletion}")
             
-            val userType = UserType.valueOf(response.userType)
+            val userType = try {
+                UserType.valueOf(response.userType)
+            } catch (enumException: IllegalArgumentException) {
+                println("❌ SupabaseAuthRepository.getUserType: Failed to parse UserType enum from '${response.userType}'")
+                println("❌ SupabaseAuthRepository.getUserType: Available values: ${UserType.values().joinToString(", ")}")
+                
+                // Handle common mismatches - fallback logic
+                when (response.userType.uppercase()) {
+                    "WINEYARD_OWNER", "OWNER", "WINE_OWNER" -> {
+                        println("🔧 SupabaseAuthRepository.getUserType: Mapping '${response.userType}' to WINEYARD_OWNER")
+                        UserType.WINEYARD_OWNER
+                    }
+                    "CUSTOMER", "USER" -> {
+                        println("🔧 SupabaseAuthRepository.getUserType: Mapping '${response.userType}' to CUSTOMER")
+                        UserType.CUSTOMER
+                    }
+                    else -> {
+                        println("❌ SupabaseAuthRepository.getUserType: No fallback mapping for '${response.userType}', defaulting to CUSTOMER")
+                        UserType.CUSTOMER // Default fallback
+                    }
+                }
+            }
+            println("🔍 SupabaseAuthRepository.getUserType: Final UserType: $userType")
             Result.success(userType)
         } catch (e: Exception) {
+            println("❌ SupabaseAuthRepository.getUserType: Error getting user type: ${e.message}")
+            println("❌ SupabaseAuthRepository.getUserType: Error class: ${e.javaClass.simpleName}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

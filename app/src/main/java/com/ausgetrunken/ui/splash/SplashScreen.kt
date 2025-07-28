@@ -84,13 +84,17 @@ fun SplashScreen(
             delay(500) // Small delay to complete animation
             
             if (uiState.isAuthenticated) {
+                println("🔍 SplashScreen: User is authenticated, userType = ${uiState.userType}")
+                println("🔍 SplashScreen: UserType class = ${uiState.userType?.javaClass?.simpleName}")
                 when (uiState.userType) {
                     UserType.CUSTOMER -> {
                         println("🔍 SplashScreen: Navigating to WineyardList for CUSTOMER")
+                        println("🔍 SplashScreen: ❌ OWNER LOGGED IN AS CUSTOMER - CHECK USER TYPE DETECTION!")
                         onNavigateToWineyardList()
                     }
                     UserType.WINEYARD_OWNER -> {
                         println("🔍 SplashScreen: Navigating to Profile for WINEYARD_OWNER")
+                        println("🔍 SplashScreen: ✅ Owner correctly detected")
                         onNavigateToProfile()
                     }
                     null -> {

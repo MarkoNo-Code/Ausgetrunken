@@ -26,6 +26,7 @@ import com.ausgetrunken.ui.customer.CustomerLandingScreen
 import com.ausgetrunken.ui.customer.CustomerProfileScreen
 import com.ausgetrunken.ui.customer.CustomerWineyardDetailScreen
 import com.ausgetrunken.ui.notifications.NotificationManagementScreen
+import com.ausgetrunken.ui.location.LocationPickerScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
 import androidx.compose.runtime.remember
 import org.koin.androidx.compose.koinViewModel
@@ -133,8 +134,19 @@ fun AusgetrunkenNavigation(
                 onNavigateToCustomerView = {
                     navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
                 },
+                onNavigateToLocationPicker = { currentLat, currentLng ->
+                    // Store current coordinates for the location picker
+                    backStackEntry.savedStateHandle.set("current_lat", currentLat)
+                    backStackEntry.savedStateHandle.set("current_lng", currentLng)
+                    navController.navigate(Screen.LocationPicker.createRoute(wineyardId))
+                },
+                onLocationProcessed = {
+                    // PROPER CLEANUP: Remove result after successful processing
+                    backStackEntry.savedStateHandle.remove<Triple<Double, Double, String?>>("location_result")
+                },
                 addedWineId = backStackEntry.savedStateHandle.get<String>("addedWineId"),
-                editedWineId = backStackEntry.savedStateHandle.get<String>("editedWineId")
+                editedWineId = backStackEntry.savedStateHandle.get<String>("editedWineId"),
+                locationResult = backStackEntry.savedStateHandle.get<Triple<Double, Double, String?>>("location_result")
             )
         }
         
@@ -169,8 +181,8 @@ fun AusgetrunkenNavigation(
                 onNavigateToCreateWineyard = {
                     navController.navigate(Screen.AddWineyard.route)
                 },
-                onNavigateToNotificationManagement = { wineyardId ->
-                    navController.navigate(Screen.NotificationManagement.createRoute(wineyardId))
+                onNavigateToNotificationManagement = { ownerId ->
+                    navController.navigate(Screen.NotificationManagement.createRoute(ownerId))
                 },
                 onLogoutSuccess = {
                     navController.navigate(Screen.Auth.route) {
@@ -243,9 +255,32 @@ fun AusgetrunkenNavigation(
         }
         
         composable(Screen.NotificationManagement.route) { backStackEntry ->
-            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            val ownerId = backStackEntry.arguments?.getString("ownerId") ?: ""
             NotificationManagementScreen(
+                ownerId = ownerId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(Screen.LocationPicker.route) { backStackEntry ->
+            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            // Get current coordinates from previous backstack entry if available
+            val currentLat = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lat") ?: 0.0
+            val currentLng = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lng") ?: 0.0
+            android.util.Log.d("Navigation", "🗺️ LocationPicker starting with: wineyardId=$wineyardId, lat=$currentLat, lng=$currentLng")
+            
+            LocationPickerScreen(
                 wineyardId = wineyardId,
+                initialLatitude = currentLat,
+                initialLongitude = currentLng,
+                onLocationSelected = { latitude, longitude, address ->
+                    // CORRECT PATTERN: Set result in savedStateHandle and popBackStack()
+                    android.util.Log.d("Navigation", "🎯 Setting location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("location_result", Triple(latitude, longitude, address))
+                    navController.popBackStack()
+                },
                 onNavigateBack = { navController.popBackStack() }
             )
         }

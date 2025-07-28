@@ -96,6 +96,10 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.play.services.maps)
     
+    // Google Maps Compose
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     
