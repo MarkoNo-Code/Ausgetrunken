@@ -19,16 +19,18 @@ class AuthViewModel(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
     
-    init {
-        checkAuthState()
-    }
+    // REMOVED: Automatic session check in init was causing infinite loops
+    // AuthScreen should only handle login/register, not session restoration
+    // Session restoration is handled by SplashScreen
+    
+    // Remove automatic auth check from init - only check when explicitly called
+    // This prevents infinite loops when AuthViewModel is recreated during navigation
     
     private fun checkAuthState() {
         viewModelScope.launch {
             println("🚀 AuthViewModel: Starting authentication check")
             
-            // Ensure splash screen shows for at least 2 seconds for the animation
-            val startTime = System.currentTimeMillis()
+            // REMOVED: No more animation timing needed in AuthViewModel
             
             authService.restoreSession()
                 .onSuccess { user ->
@@ -40,18 +42,8 @@ class AuthViewModel(
                             .onSuccess { userType ->
                                 println("✅ AuthViewModel: User type = $userType")
                                 
-                                // Update FCM token for the restored session user
-                                fcmTokenManager.updateTokenForUser(user.id)
-                                
-                                // Ensure minimum display time for animation
-                                val elapsedTime = System.currentTimeMillis() - startTime
-                                val minDisplayTime = 2500L // 2.5 seconds to see the full wine filling animation
-                                val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
-                                
-                                if (remainingTime > 0) {
-                                    println("⏱️ AuthViewModel: Delaying for ${remainingTime}ms to show animation")
-                                    kotlinx.coroutines.delay(remainingTime)
-                                }
+                                // REMOVED: Animation delays don't belong in AuthViewModel
+                                // These delays were causing 5-second flashing cycles
                                 
                                 _uiState.value = _uiState.value.copy(
                                     isCheckingSession = false,
@@ -60,18 +52,18 @@ class AuthViewModel(
                                     userType = userType
                                 )
                                 println("✅ AuthViewModel: Navigation should happen now")
+                                
+                                // Update FCM token AFTER setting success state
+                                try {
+                                    fcmTokenManager.updateTokenForUser(user.id)
+                                } catch (fcmError: Exception) {
+                                    println("⚠️ AuthViewModel: FCM token update failed during session restore: ${fcmError.message}")
+                                }
                             }
                             .onFailure { error ->
                                 println("❌ AuthViewModel: Failed to get user type: ${error.message}")
                                 
-                                // Ensure minimum display time for animation
-                                val elapsedTime = System.currentTimeMillis() - startTime
-                                val minDisplayTime = 2500L
-                                val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
-                                
-                                if (remainingTime > 0) {
-                                    kotlinx.coroutines.delay(remainingTime)
-                                }
+                                // REMOVED: Animation delays
                                 
                                 // Failed to get user type, show login screen
                                 _uiState.value = _uiState.value.copy(
@@ -83,14 +75,7 @@ class AuthViewModel(
                     } else {
                         println("❌ AuthViewModel: No valid session found, showing login")
                         
-                        // Ensure minimum display time for animation
-                        val elapsedTime = System.currentTimeMillis() - startTime
-                        val minDisplayTime = 2500L
-                        val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
-                        
-                        if (remainingTime > 0) {
-                            kotlinx.coroutines.delay(remainingTime)
-                        }
+                        // REMOVED: Animation delays
                         
                         // No valid session found
                         _uiState.value = _uiState.value.copy(
@@ -102,14 +87,7 @@ class AuthViewModel(
                 .onFailure { error ->
                     println("❌ AuthViewModel: Session restoration failed: ${error.message}")
                     
-                    // Ensure minimum display time for animation
-                    val elapsedTime = System.currentTimeMillis() - startTime
-                    val minDisplayTime = 2500L
-                    val remainingTime = maxOf(0, minDisplayTime - elapsedTime)
-                    
-                    if (remainingTime > 0) {
-                        kotlinx.coroutines.delay(remainingTime)
-                    }
+                    // REMOVED: Animation delays
                     
                     // Check for different types of session errors
                     val errorMessage = error.message ?: ""
@@ -128,16 +106,20 @@ class AuthViewModel(
                                     .onSuccess { userType ->
                                         println("✅ AuthViewModel: User type determined: $userType")
                                         
-                                        // Update FCM token for restored session
-                                        println("🔧 AuthViewModel: Updating FCM token for valid session - user: $userId")
-                                        fcmTokenManager.updateTokenForUser(userId)
-                                        
                                         _uiState.value = _uiState.value.copy(
                                             isCheckingSession = false,
                                             isAuthenticated = true,
+                                            isLoginSuccessful = true,
                                             userType = userType
                                         )
                                         println("✅ AuthViewModel: Authentication successful with valid session")
+                                        
+                                        // Update FCM token AFTER setting success state
+                                        try {
+                                            fcmTokenManager.updateTokenForUser(userId)
+                                        } catch (fcmError: Exception) {
+                                            println("⚠️ AuthViewModel: FCM token update failed for valid session: ${fcmError.message}")
+                                        }
                                     }
                                     .onFailure { typeError ->
                                         println("❌ AuthViewModel: Failed to determine user type: ${typeError.message}")
@@ -280,14 +262,22 @@ class AuthViewModel(
                 .onSuccess { user ->
                     authService.checkUserType(user.id)
                         .onSuccess { userType ->
-                            // Update FCM token for the logged-in user
-                            fcmTokenManager.updateTokenForUser(user.id)
-                            
+                            println("🎉 AuthViewModel.login: LOGIN SUCCESS - Setting isLoginSuccessful=true, userType=$userType")
                             _uiState.value = currentState.copy(
                                 isLoading = false,
                                 isLoginSuccessful = true,
                                 userType = userType
                             )
+                            println("🎉 AuthViewModel.login: LOGIN SUCCESS - State updated, navigation should happen now")
+                            
+                            // Update FCM token AFTER setting login success (don't block login completion)
+                            try {
+                                fcmTokenManager.updateTokenForUser(user.id)
+                                println("✅ AuthViewModel.login: FCM token update initiated")
+                            } catch (fcmError: Exception) {
+                                println("⚠️ AuthViewModel.login: FCM token update failed: ${fcmError.message}")
+                                // Don't fail login if FCM update fails
+                            }
                         }
                         .onFailure { error ->
                             _uiState.value = currentState.copy(

@@ -241,14 +241,21 @@ class SupabaseAuthRepository(
     
     suspend fun signOut(): Result<Unit> {
         return try {
-            println("🗑️ SupabaseAuthRepository: Starting simple logout")
+            println("🗑️ SupabaseAuthRepository: Starting logout process")
             
             // Get user info before clearing everything
             val sessionInfo = tokenStorage.getSessionInfo()
             
+            // ALWAYS clear local session first to ensure logout succeeds locally
+            println("🗑️ SupabaseAuthRepository: Clearing local session first")
+            auth.signOut()
+            tokenStorage.clearSession()
+            println("✅ SupabaseAuthRepository: Local session cleared successfully")
+            
+            // Then try to clear remote session (don't fail logout if this fails)
             if (sessionInfo != null) {
                 try {
-                    println("🗑️ SupabaseAuthRepository: Clearing session token remotely for user: ${sessionInfo.userId}")
+                    println("🗑️ SupabaseAuthRepository: Clearing remote session for user: ${sessionInfo.userId}")
                     // Clear the session ID and FCM token from remote database
                     postgrest.from("user_profiles")
                         .update(
@@ -262,21 +269,30 @@ class SupabaseAuthRepository(
                                 eq("id", sessionInfo.userId)
                             }
                         }
-                    println("✅ SupabaseAuthRepository: Remote session cleared")
+                    println("✅ SupabaseAuthRepository: Remote session cleared successfully")
                 } catch (remoteError: Exception) {
                     println("⚠️ SupabaseAuthRepository: Failed to clear remote session: ${remoteError.message}")
+                    println("⚠️ SupabaseAuthRepository: This is not critical - user is logged out locally")
                     // Don't fail logout if remote cleanup fails
                 }
+            } else {
+                println("⚠️ SupabaseAuthRepository: No session info found for remote cleanup")
             }
             
-            // Clear local session
-            auth.signOut()
-            tokenStorage.clearSession()
-            println("✅ SupabaseAuthRepository: Local session cleared")
-            
+            println("✅ SupabaseAuthRepository: Logout completed successfully")
             Result.success(Unit)
         } catch (e: Exception) {
             println("❌ SupabaseAuthRepository: Logout failed: ${e.message}")
+            
+            // Even if logout fails, try to clear local session as fallback
+            try {
+                auth.signOut()
+                tokenStorage.clearSession()
+                println("✅ SupabaseAuthRepository: Fallback local session clear completed")
+            } catch (fallbackError: Exception) {
+                println("❌ SupabaseAuthRepository: Even fallback session clear failed: ${fallbackError.message}")
+            }
+            
             Result.failure(e)
         }
     }
@@ -335,11 +351,24 @@ class SupabaseAuthRepository(
                 
                 println("🔐 SupabaseAuthRepository: Local session: $localSessionId, Remote session: $remoteSessionId")
                 
-                // If session IDs don't match, user logged in elsewhere
-                if (localSessionId != null && remoteSessionId != null && localSessionId != remoteSessionId) {
-                    println("❌ SupabaseAuthRepository: Session mismatch - logged in elsewhere")
-                    tokenStorage.clearSession()
-                    return Result.failure(Exception("SESSION_INVALIDATED:You logged in from another device."))
+                // Handle session ID comparison logic
+                when {
+                    // Both sessions exist and don't match - user logged in elsewhere
+                    localSessionId != null && remoteSessionId != null && localSessionId != remoteSessionId -> {
+                        println("❌ SupabaseAuthRepository: Session mismatch - logged in elsewhere")
+                        tokenStorage.clearSession()
+                        return Result.failure(Exception("SESSION_INVALIDATED:You logged in from another device."))
+                    }
+                    // Remote session is null but we have local session - likely after logout, allow restoration
+                    localSessionId != null && remoteSessionId == null -> {
+                        println("⚠️ SupabaseAuthRepository: Remote session is null, local session exists - allowing restoration (post-logout case)")
+                        // This is normal after logout - the remote session was cleared but local tokens are still valid
+                        // We'll restore the session and update the remote session ID below
+                    }
+                    // Both are null or match - proceed normally
+                    else -> {
+                        println("✅ SupabaseAuthRepository: Session comparison passed")
+                    }
                 }
                 
                 // Step 4: Restore Supabase session
@@ -362,6 +391,30 @@ class SupabaseAuthRepository(
                 val currentUser = auth.currentUserOrNull()
                 if (currentUser != null) {
                     println("✅ SupabaseAuthRepository: Session restored successfully for: ${currentUser.email}")
+                    
+                    // If remote session was null, update it with our local session ID
+                    if (localSessionId != null && remoteSessionId == null) {
+                        try {
+                            println("🔄 SupabaseAuthRepository: Updating remote session ID after successful restoration")
+                            postgrest.from("user_profiles")
+                                .update(
+                                    buildJsonObject {
+                                        put("current_session_id", localSessionId)
+                                        put("last_session_activity", Instant.now().toString())
+                                        put("updated_at", Instant.now().toString())
+                                    }
+                                ) {
+                                    filter {
+                                        eq("id", sessionInfo.userId)
+                                    }
+                                }
+                            println("✅ SupabaseAuthRepository: Remote session ID updated successfully")
+                        } catch (updateError: Exception) {
+                            println("⚠️ SupabaseAuthRepository: Failed to update remote session ID: ${updateError.message}")
+                            // Don't fail restoration if this update fails
+                        }
+                    }
+                    
                     return Result.success(currentUser)
                 } else {
                     println("⚠️ SupabaseAuthRepository: Supabase session import failed, but tokens are valid")

@@ -87,7 +87,8 @@ fun CustomerProfileScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
             } else {
-                uiState.user?.let { user ->
+                if (uiState.user != null) {
+                    val user = uiState.user!!
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -163,6 +164,62 @@ fun CustomerProfileScreen(
                                 contentColor = MaterialTheme.colorScheme.onError
                             ),
                             shape = RoundedCornerShape(16.dp)
+                        ) {
+                            if (uiState.isLoggingOut) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onError
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                    contentDescription = "Logout",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Logout",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Show fallback content when user is null but we're authenticated
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // Fallback Profile Header
+                        CustomerProfileHeader(
+                            userEmail = "Customer",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        // Basic info
+                        CustomerInfoCard(
+                            userEmail = "Authenticated User",
+                            userType = "Customer",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        
+                        // Logout Button
+                        Button(
+                            onClick = { viewModel.logout() },
+                            enabled = !uiState.isLoggingOut,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
                         ) {
                             if (uiState.isLoggingOut) {
                                 CircularProgressIndicator(

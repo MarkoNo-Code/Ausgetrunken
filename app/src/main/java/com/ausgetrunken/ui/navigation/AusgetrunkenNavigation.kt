@@ -15,8 +15,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ausgetrunken.ui.auth.AuthScreen
-import com.ausgetrunken.ui.auth.LoginScreen
-import com.ausgetrunken.ui.auth.RegisterScreen
 import com.ausgetrunken.ui.profile.OwnerProfileScreen
 import com.ausgetrunken.ui.splash.SplashScreen
 import com.ausgetrunken.ui.wineyard.AddWineyardScreen
@@ -72,53 +70,18 @@ fun AusgetrunkenNavigation(
             )
         }
         
-        composable(Screen.Login.route) { backStackEntry ->
-            val emailFromRegister = backStackEntry.savedStateHandle.get<String>("emailFromRegister")
-            // Clear the saved state after reading it
-            backStackEntry.savedStateHandle.remove<String>("emailFromRegister")
-            LoginScreen(
-                onNavigateToWineyardList = {
-                    navController.navigate(Screen.CustomerLanding.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
-                },
-                onNavigateToProfile = {
-                    navController.navigate(Screen.OwnerProfile.route) {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
-                },
-                onNavigateToRegister = { email ->
-                    navController.currentBackStackEntry?.savedStateHandle?.set("emailForRegister", email)
-                    navController.navigate(Screen.Register.route)
-                },
-                initialEmail = emailFromRegister
-            )
-        }
-        
-        composable(Screen.Register.route) { backStackEntry ->
-            val emailFromLogin = navController.previousBackStackEntry?.savedStateHandle?.get<String>("emailForRegister")
-            RegisterScreen(
-                onNavigateToLogin = { emailFromRegister ->
-                    // Pass the email back to login screen
-                    emailFromRegister?.let { email ->
-                        navController.previousBackStackEntry?.savedStateHandle?.set("emailFromRegister", email)
-                    }
-                    navController.popBackStack()
-                },
-                initialEmail = emailFromLogin
-            )
-        }
+        // REMOVED: Consolidated LoginScreen and RegisterScreen into AuthScreen
         
         composable(Screen.Auth.route) {
             AuthScreen(
                 onNavigateToWineyardList = {
                     navController.navigate(Screen.CustomerLanding.route) {
-                        popUpTo(Screen.Auth.route) { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     }
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.OwnerProfile.route) {
-                        popUpTo(Screen.Auth.route) { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     }
                 }
             )

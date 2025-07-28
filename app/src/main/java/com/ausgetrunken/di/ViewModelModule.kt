@@ -1,8 +1,6 @@
 package com.ausgetrunken.di
 
 import com.ausgetrunken.ui.auth.AuthViewModel
-import com.ausgetrunken.ui.auth.LoginViewModel
-import com.ausgetrunken.ui.auth.RegisterViewModel
 import com.ausgetrunken.ui.profile.OwnerProfileViewModel
 import com.ausgetrunken.ui.splash.SplashViewModel
 import com.ausgetrunken.ui.wineyard.AddWineyardViewModel
@@ -21,8 +19,6 @@ import org.koin.dsl.module
 val viewModelModule = module {
     // Standard ViewModels - recreated on each navigation
     viewModel { AuthViewModel(get(), get()) }
-    viewModel { LoginViewModel(get(), get()) }
-    viewModel { RegisterViewModel(get()) }
     viewModel { SplashViewModel(get(), get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
     viewModel { AddWineViewModel(get(), get(), get(), get()) }
@@ -33,8 +29,8 @@ val viewModelModule = module {
     viewModel { NotificationManagementViewModel(get(), get(), get()) }
     viewModel { WineDetailViewModel(get()) }
     
-    // Session-scoped ViewModels - retained across navigation within user session
-    single { OwnerProfileViewModel(get(), get(), get(), get(), get(), get()) }
+    // FIXED: Changed from singleton to regular viewModel to prevent stale logout state
+    viewModel { OwnerProfileViewModel(get(), get(), get(), get(), get(), get()) }
     
     // WineyardDetailViewModel should create new instance per navigation (not singleton)
     // because it needs to load different wineyards based on wineyardId parameter

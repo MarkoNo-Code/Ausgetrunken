@@ -24,6 +24,12 @@ class SplashViewModel(
         checkAuthState()
     }
     
+    // Add method to manually trigger auth check (for navigation resets)
+    fun recheckAuthState() {
+        println("🔄 SplashViewModel: Manual auth recheck requested")
+        checkAuthState()
+    }
+    
     private fun checkAuthState() {
         if (authCheckInProgress) {
             println("⚠️ SplashViewModel: Auth check already in progress, skipping")

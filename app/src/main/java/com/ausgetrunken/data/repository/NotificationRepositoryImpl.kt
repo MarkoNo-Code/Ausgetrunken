@@ -28,7 +28,7 @@ class NotificationRepositoryImpl(
         message: String,
         wineId: String?
     ): NotificationSendResult {
-        return withSessionValidation {
+        return execute {
             Result.success(try {
                 println("🔍 NotificationRepository: Sending notification")
                 println("🔍 NotificationRepository: Wineyard ID: $wineyardId")
@@ -111,7 +111,7 @@ class NotificationRepositoryImpl(
     }
 
     override suspend fun clearUserFcmToken(userId: String) {
-        withSessionValidation {
+        execute {
             try {
                 println("🗑️ NotificationRepositoryImpl: Clearing FCM token for user: $userId")
             
@@ -139,7 +139,7 @@ class NotificationRepositoryImpl(
     }
 
     override suspend fun updateUserFcmToken(userId: String, fcmToken: String) {
-        withSessionValidation {
+        execute {
             Result.success(try {
                 println("🔧 NotificationRepository: Updating FCM token for user: $userId")
                 println("🔧 NotificationRepository: Token: ${fcmToken.take(20)}...")
@@ -218,7 +218,7 @@ class NotificationRepositoryImpl(
     }
 
     override suspend fun getUserFcmToken(userId: String): String? {
-        return withSessionValidation {
+        return execute {
             Result.success(try {
                 val userProfile = supabaseClient.postgrest.from("user_profiles")
                 .select(columns = Columns.list("fcm_token")) {

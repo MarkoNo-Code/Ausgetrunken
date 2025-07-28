@@ -132,11 +132,12 @@ fun AuthScreen(
         }
     }
     
-    // Show splash loading screen while checking session
-    if (uiState.isCheckingSession) {
-        SplashLoadingScreen()
-        return
-    }
+    // REMOVED: Don't show splash loading screen in AuthScreen anymore
+    // Session checking is done in SplashScreen - AuthScreen should always show login form
+    // if (uiState.isCheckingSession) {
+    //     SplashLoadingScreen()
+    //     return
+    // }
     
     // Flagged Account Dialog
     if (uiState.showFlaggedAccountDialog && uiState.flaggedAccountMessage != null) {

@@ -39,7 +39,7 @@ class WineyardSubscriptionRepository(
         wineyardSubscriptionDao.getWineyardSubscriptions(wineyardId)
     
     suspend fun subscribeToWineyard(userId: String, wineyardId: String): Result<WineyardSubscriptionEntity> {
-        return withSessionValidation {
+        return execute {
             println("🔄 WineyardSubscriptionRepository: Starting subscription process for user: $userId, wineyard: $wineyardId")
             
             // CRITICAL FIX: Check Supabase directly for ANY existing subscription (active or inactive)
@@ -68,7 +68,7 @@ class WineyardSubscriptionRepository(
                 
                 if (existingSubscription.isActive) {
                     println("⚠️ WineyardSubscriptionRepository: Subscription is already active")
-                    return@withSessionValidation Result.failure(Exception("Already subscribed to this wineyard"))
+                    return@execute Result.failure(Exception("Already subscribed to this wineyard"))
                 }
                 
                 // Reactivate existing subscription in Supabase
@@ -102,7 +102,7 @@ class WineyardSubscriptionRepository(
                 wineyardSubscriptionDao.insertSubscription(localSubscription)
                 
                 println("✅ WineyardSubscriptionRepository: Successfully reactivated existing subscription")
-                return@withSessionValidation Result.success(localSubscription)
+                return@execute Result.success(localSubscription)
             }
             
             // Create new subscription

@@ -88,6 +88,7 @@ class TokenStorage(context: Context) {
     }
     
     fun clearSession() {
+        println("🗑️ TokenStorage: CLEARING all session data from SharedPreferences")
         preferences.edit().apply {
             remove(KEY_ACCESS_TOKEN)
             remove(KEY_REFRESH_TOKEN)
@@ -99,6 +100,15 @@ class TokenStorage(context: Context) {
         }
         
         _isLoggedIn.value = false
+        println("✅ TokenStorage: All session data cleared")
+    }
+    
+    // DEBUG FUNCTION: Force clear all app data for testing
+    fun debugClearAllData() {
+        println("🚨 TokenStorage: DEBUG - Clearing ALL SharedPreferences data")
+        preferences.edit().clear().apply()
+        _isLoggedIn.value = false
+        println("✅ TokenStorage: ALL app data cleared for testing")
     }
     
     fun getSessionInfo(): SessionInfo? {

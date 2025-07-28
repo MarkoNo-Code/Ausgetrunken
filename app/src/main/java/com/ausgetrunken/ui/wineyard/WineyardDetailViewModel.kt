@@ -6,7 +6,7 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.common.AppResult
 import com.ausgetrunken.domain.error.AppError
 import com.ausgetrunken.domain.error.toAppError
-import com.ausgetrunken.domain.repository.AuthenticatedRepository
+import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardService
 import com.ausgetrunken.domain.service.WineyardSubscriptionService
@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 class WineyardDetailViewModel(
     private val wineyardService: WineyardService,
     private val wineService: WineService,
-    private val authenticatedRepository: AuthenticatedRepository,
+    private val authService: AuthService,
     private val userRepository: UserRepository,
     private val subscriptionService: WineyardSubscriptionService,
     private val imageUploadService: ImageUploadService,
@@ -49,20 +49,21 @@ class WineyardDetailViewModel(
     
     fun loadWineyard(wineyardId: String) {
         execute("loadWineyard") {
-            authenticatedRepository.executeAuthenticated { user ->
-                
-                // Get user details for permission checking
-                val userEntity = userRepository.getUserById(user.id).first()
+            AppResult.catchingSuspend {
+                // Get wineyard details directly from service (uses BaseRepository session validation)
                 val wineyard = wineyardService.getWineyardById(wineyardId).first()
                 
                 if (wineyard == null) {
-                    return@executeAuthenticated AppResult.failure(
-                        AppError.DataError.NotFound("Wineyard", wineyardId)
-                    )
+                    throw Exception("Wineyard not found: $wineyardId")
                 }
                 
-                // Determine permissions
-                val canEdit = userEntity?.userType == UserType.WINEYARD_OWNER
+                // Get current user details for permission checking
+                // This doesn't trigger session restoration like AuthenticatedRepository does
+                val currentAuthUser = authService.getCurrentUser().first()
+                val currentUserEntity = if (currentAuthUser != null) {
+                    userRepository.getUserById(currentAuthUser.id).first()
+                } else null
+                val canEdit = currentUserEntity?.userType == UserType.WINEYARD_OWNER
                 
                 // Update UI state (preserve existing photos)
                 _uiState.value = _uiState.value.copy(
@@ -88,8 +89,8 @@ class WineyardDetailViewModel(
                 loadPhotos(wineyard.id)
                 
                 // Load subscription status for customers
-                if (userEntity?.userType == UserType.CUSTOMER) {
-                    loadSubscriptionStatus(user.id, wineyard.id)
+                if (currentUserEntity?.userType == UserType.CUSTOMER && currentAuthUser != null) {
+                    loadSubscriptionStatus(currentAuthUser.id, wineyard.id)
                 }
                 
                 // CRITICAL DEBUG: Temporarily disable Supabase sync to test if it's clearing database
@@ -99,7 +100,7 @@ class WineyardDetailViewModel(
                 // }
                 Log.d("WineyardDetailViewModel", "DISABLED Supabase sync to test database persistence")
                 
-                AppResult.success(wineyard)
+                wineyard
             }
         }
     }
@@ -157,56 +158,50 @@ class WineyardDetailViewModel(
         _uiState.value = _uiState.value.copy(isUpdating = true)
 
         execute("addPhoto") {
-            authenticatedRepository.executeAuthenticated { user ->
-                try {
-                    Log.d("WineyardDetailViewModel", "Starting photo add process for: $photoPath")
-                    
-                    val result = when {
-                        photoPath.startsWith("content://") -> {
-                            wineyardPhotoService.addPhoto(wineyard.id, Uri.parse(photoPath))
-                        }
-                        photoPath.startsWith("/") -> {
-                            wineyardPhotoService.addPhoto(wineyard.id, photoPath)
-                        }
-                        else -> {
-                            // Fallback for existing URLs or other formats
-                            Log.w("WineyardDetailViewModel", "Unsupported photo path format: $photoPath")
-                            Result.failure(Exception("Unsupported photo path format"))
-                        }
+            AppResult.catchingSuspend {
+                Log.d("WineyardDetailViewModel", "Starting photo add process for: $photoPath")
+                
+                val result = when {
+                    photoPath.startsWith("content://") -> {
+                        wineyardPhotoService.addPhoto(wineyard.id, Uri.parse(photoPath))
                     }
-                    
-                    result.fold(
-                        onSuccess = { localPath ->
-                            Log.d("WineyardDetailViewModel", "Photo added successfully: $localPath")
-                            
-                            // DEBUG: Inspect database after photo add
-                            viewModelScope.launch {
-                                databaseInspectionService.inspectDatabase()
-                                databaseInspectionService.inspectWineyardPhotos(wineyard.id)
-                            }
-                            
-                            // Immediately add photo to UI state while Flow processes
-                            val currentPhotos = _uiState.value.photos.toMutableList()
-                            if (!currentPhotos.contains(localPath)) {
-                                currentPhotos.add(localPath)
-                                _uiState.value = _uiState.value.copy(photos = currentPhotos)
-                                Log.d("WineyardDetailViewModel", "Immediately updated UI state with new photo: $localPath")
-                            }
-                            
-                            _uiState.value = _uiState.value.copy(isUpdating = false)
-                            AppResult.success(Unit)
-                        },
-                        onFailure = { error ->
-                            Log.e("WineyardDetailViewModel", "Failed to add photo: $error")
-                            _uiState.value = _uiState.value.copy(isUpdating = false)
-                            AppResult.failure(error.toAppError("photo add"))
-                        }
-                    )
-                } catch (e: Exception) {
-                    Log.e("WineyardDetailViewModel", "Exception in photo add process", e)
-                    _uiState.value = _uiState.value.copy(isUpdating = false)
-                    AppResult.failure(e.toAppError("photo add"))
+                    photoPath.startsWith("/") -> {
+                        wineyardPhotoService.addPhoto(wineyard.id, photoPath)
+                    }
+                    else -> {
+                        // Fallback for existing URLs or other formats
+                        Log.w("WineyardDetailViewModel", "Unsupported photo path format: $photoPath")
+                        Result.failure(Exception("Unsupported photo path format"))
+                    }
                 }
+                
+                result.fold(
+                    onSuccess = { localPath ->
+                        Log.d("WineyardDetailViewModel", "Photo added successfully: $localPath")
+                        
+                        // DEBUG: Inspect database after photo add
+                        viewModelScope.launch {
+                            databaseInspectionService.inspectDatabase()
+                            databaseInspectionService.inspectWineyardPhotos(wineyard.id)
+                        }
+                        
+                        // Immediately add photo to UI state while Flow processes
+                        val currentPhotos = _uiState.value.photos.toMutableList()
+                        if (!currentPhotos.contains(localPath)) {
+                            currentPhotos.add(localPath)
+                            _uiState.value = _uiState.value.copy(photos = currentPhotos)
+                            Log.d("WineyardDetailViewModel", "Immediately updated UI state with new photo: $localPath")
+                        }
+                        
+                        _uiState.value = _uiState.value.copy(isUpdating = false)
+                        Unit
+                    },
+                    onFailure = { error ->
+                        Log.e("WineyardDetailViewModel", "Failed to add photo: $error")
+                        _uiState.value = _uiState.value.copy(isUpdating = false)
+                        throw error
+                    }
+                )
             }
         }
     }
@@ -221,29 +216,23 @@ class WineyardDetailViewModel(
         _uiState.value = _uiState.value.copy(isUpdating = true)
 
         execute("removePhoto") {
-            authenticatedRepository.executeAuthenticated { user ->
-                try {
-                    Log.d("WineyardDetailViewModel", "Starting photo removal process for: $photoUrl")
-                    
-                    val result = wineyardPhotoService.removePhoto(photoUrl)
-                    
-                    result.fold(
-                        onSuccess = {
-                            Log.d("WineyardDetailViewModel", "Photo removed successfully: $photoUrl")
-                            _uiState.value = _uiState.value.copy(isUpdating = false)
-                            AppResult.success(Unit)
-                        },
-                        onFailure = { error ->
-                            Log.e("WineyardDetailViewModel", "Failed to remove photo: $error")
-                            _uiState.value = _uiState.value.copy(isUpdating = false)
-                            AppResult.failure(error.toAppError("photo removal"))
-                        }
-                    )
-                } catch (e: Exception) {
-                    Log.e("WineyardDetailViewModel", "Exception in photo removal process", e)
-                    _uiState.value = _uiState.value.copy(isUpdating = false)
-                    AppResult.failure(e.toAppError("photo removal"))
-                }
+            AppResult.catchingSuspend {
+                Log.d("WineyardDetailViewModel", "Starting photo removal process for: $photoUrl")
+                
+                val result = wineyardPhotoService.removePhoto(photoUrl)
+                
+                result.fold(
+                    onSuccess = {
+                        Log.d("WineyardDetailViewModel", "Photo removed successfully: $photoUrl")
+                        _uiState.value = _uiState.value.copy(isUpdating = false)
+                        Unit
+                    },
+                    onFailure = { error ->
+                        Log.e("WineyardDetailViewModel", "Failed to remove photo: $error")
+                        _uiState.value = _uiState.value.copy(isUpdating = false)
+                        throw error
+                    }
+                )
             }
         }
     }
@@ -253,19 +242,16 @@ class WineyardDetailViewModel(
         if (!_uiState.value.canEdit) return
         
         execute("saveWineyard") {
-            authenticatedRepository.executeAuthenticated { user ->
-                
+            AppResult.catchingSuspend {
                 // Set updating state
                 _uiState.value = _uiState.value.copy(isUpdating = true)
                 
                 // Business rule: Only owner can save
                 if (!_uiState.value.canEdit) {
-                    return@executeAuthenticated AppResult.failure(
-                        AppError.AuthError.PermissionDenied("update wineyard", "WINEYARD_OWNER")
-                    )
+                    throw Exception("Permission denied: Only wineyard owners can update wineyards")
                 }
                 
-                return@executeAuthenticated wineyardService.updateWineyard(wineyard).fold(
+                wineyardService.updateWineyard(wineyard).fold(
                     onSuccess = {
                         _uiState.value = _uiState.value.copy(
                             isUpdating = false,
@@ -273,11 +259,11 @@ class WineyardDetailViewModel(
                             // Removed: navigateBackAfterSave = true 
                             // Stay on wineyard detail page after editing
                         )
-                        AppResult.success(Unit)
+                        Unit
                     },
                     onFailure = { error ->
                         _uiState.value = _uiState.value.copy(isUpdating = false)
-                        AppResult.failure(error.toAppError("wineyard update"))
+                        throw error
                     }
                 )
             }
@@ -289,24 +275,21 @@ class WineyardDetailViewModel(
         if (!_uiState.value.canEdit) return
         
         execute("deleteWineyard") {
-            authenticatedRepository.executeAuthenticated { user ->
-                
+            AppResult.catchingSuspend {
                 // Business rule: Only owner can delete
                 if (!_uiState.value.canEdit) {
-                    return@executeAuthenticated AppResult.failure(
-                        AppError.AuthError.PermissionDenied("delete wineyard", "WINEYARD_OWNER")
-                    )
+                    throw Exception("Permission denied: Only wineyard owners can delete wineyards")
                 }
                 
-                return@executeAuthenticated wineyardService.deleteWineyard(wineyard.id).fold(
+                wineyardService.deleteWineyard(wineyard.id).fold(
                     onSuccess = {
                         _uiState.value = _uiState.value.copy(
                             navigateBackAfterDelete = true
                         )
-                        AppResult.success(Unit)
+                        Unit
                     },
                     onFailure = { error ->
-                        AppResult.failure(error.toAppError("wineyard deletion"))
+                        throw error
                     }
                 )
             }
@@ -393,22 +376,19 @@ class WineyardDetailViewModel(
         if (!_uiState.value.canEdit) return
         
         execute("deleteWine") {
-            authenticatedRepository.executeAuthenticated { user ->
-                
+            AppResult.catchingSuspend {
                 // Business rule: Only owner can delete wines
                 if (!_uiState.value.canEdit) {
-                    return@executeAuthenticated AppResult.failure(
-                        AppError.AuthError.PermissionDenied("delete wine", "WINEYARD_OWNER")
-                    )
+                    throw Exception("Permission denied: Only wineyard owners can delete wines")
                 }
                 
-                return@executeAuthenticated wineService.deleteWine(wineId).fold(
+                wineService.deleteWine(wineId).fold(
                     onSuccess = {
                         // Wines will be automatically updated through the flow
-                        AppResult.success(Unit)
+                        Unit
                     },
                     onFailure = { error ->
-                        AppResult.failure(error.toAppError("wine deletion"))
+                        throw error
                     }
                 )
             }
@@ -419,24 +399,29 @@ class WineyardDetailViewModel(
         val wineyard = _uiState.value.wineyard ?: return
         
         execute("toggleSubscription") {
-            authenticatedRepository.executeAuthenticated { user ->
+            AppResult.catchingSuspend {
+                // Get current user from auth service (not AuthenticatedRepository)
+                val currentAuthUser = authService.getCurrentUser().first()
+                if (currentAuthUser == null) {
+                    throw Exception("User not authenticated")
+                }
                 
                 // CRITICAL: Check real-time subscription status from database, not UI state
                 // UI state might be out of sync with actual database state
-                val isCurrentlySubscribed = subscriptionService.isSubscribed(user.id, wineyard.id)
+                val isCurrentlySubscribed = subscriptionService.isSubscribed(currentAuthUser.id, wineyard.id)
                 
                 val result = if (isCurrentlySubscribed) {
-                    subscriptionService.unsubscribeFromWineyard(user.id, wineyard.id)
+                    subscriptionService.unsubscribeFromWineyard(currentAuthUser.id, wineyard.id)
                 } else {
-                    subscriptionService.subscribeToWineyard(user.id, wineyard.id)
+                    subscriptionService.subscribeToWineyard(currentAuthUser.id, wineyard.id)
                 }
                 
-                return@executeAuthenticated result.fold(
+                result.fold(
                     onSuccess = {
                         _uiState.value = _uiState.value.copy(
                             isSubscribed = !isCurrentlySubscribed
                         )
-                        AppResult.success(Unit)
+                        Unit
                     },
                     onFailure = { error ->
                         // Provide user-friendly error messages for subscription conflicts
@@ -450,7 +435,7 @@ class WineyardDetailViewModel(
                             }
                             else -> error.message ?: "Failed to update subscription"
                         }
-                        AppResult.failure(Exception(userFriendlyMessage).toAppError("subscription toggle"))
+                        throw Exception(userFriendlyMessage)
                     }
                 )
             }

@@ -29,7 +29,7 @@ class WineRepository(
         wineDao.getWinesPaginated(limit, offset)
 
     suspend fun createWine(wine: WineEntity): Result<WineEntity> {
-        return withSessionValidation {
+        return execute {
             try {
                 // Insert to Supabase first
                 postgrest.from("wines")
@@ -59,7 +59,7 @@ class WineRepository(
     }
 
     suspend fun updateWine(wine: WineEntity): Result<Unit> {
-        return withSessionValidation {
+        return execute {
             try {
                 println("🔄 WineRepository: Starting remote-first wine update for ${wine.name} (${wine.id})")
                 
@@ -99,7 +99,7 @@ class WineRepository(
     }
 
     suspend fun deleteWine(wineId: String): Result<Unit> {
-        return withSessionValidation {
+        return execute {
             try {
                 wineDao.deleteWine(wineId)
                 
@@ -163,7 +163,7 @@ class WineRepository(
     }
 
     suspend fun syncWinesFromSupabase(): Result<Unit> {
-        return withoutSessionValidation {
+        return execute {
             try {
                 println("🍷 WineRepository: Starting sync of wines from Supabase...")
                 val response = postgrest.from("wines")

@@ -16,6 +16,8 @@ class CustomerProfileViewModel(
     val uiState: StateFlow<CustomerProfileUiState> = _uiState.asStateFlow()
     
     init {
+        // Immediately set loading state so screen isn't empty
+        _uiState.value = _uiState.value.copy(isLoading = true)
         loadUserProfile()
     }
     
@@ -24,12 +26,31 @@ class CustomerProfileViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                 
-                authService.getCurrentUser().collect { user ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        user = user
-                    )
-                }
+                // Try to restore session to get current user info
+                authService.restoreSession()
+                    .onSuccess { user ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            user = user
+                        )
+                    }
+                    .onFailure { error ->
+                        val errorMessage = error.message ?: ""
+                        if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                            // For VALID_SESSION_NO_USER case, we don't have full UserInfo
+                            // but we can still show the screen as "authenticated" with basic info
+                            println("✅ CustomerProfileViewModel: Valid session without UserInfo, showing minimal profile")
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                user = null // We'll handle null user gracefully in the UI
+                            )
+                        } else {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                errorMessage = "Failed to load user profile: ${error.message}"
+                            )
+                        }
+                    }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

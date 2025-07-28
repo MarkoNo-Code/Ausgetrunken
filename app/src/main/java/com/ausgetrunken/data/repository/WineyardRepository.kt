@@ -192,7 +192,7 @@ class WineyardRepository(
     }
 
     suspend fun createWineyard(wineyard: WineyardEntity): Result<WineyardEntity> {
-        return withSessionValidation {
+        return execute {
             try {
                 wineyardDao.insertWineyard(wineyard)
                 
@@ -219,7 +219,7 @@ class WineyardRepository(
     }
 
     suspend fun updateWineyard(wineyard: WineyardEntity): Result<Unit> {
-        return withSessionValidation {
+        return execute {
             try {
                 println("🔄 WineyardRepository: Starting remote-first wineyard update for ${wineyard.name} (${wineyard.id})")
                 
@@ -258,7 +258,7 @@ class WineyardRepository(
     }
 
     suspend fun deleteWineyard(wineyardId: String): Result<Unit> {
-        return withSessionValidation {
+        return execute {
             try {
                 wineyardDao.deleteWineyard(wineyardId)
                 
@@ -281,7 +281,7 @@ class WineyardRepository(
     }
 
     suspend fun syncWineyardsFromFirestore(): Result<Unit> {
-        return withSessionValidation {
+        return execute {
             try {
                 println("🔄 WineyardRepository: Starting sync from Supabase...")
                 

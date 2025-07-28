@@ -19,8 +19,9 @@ data class AuthUiState(
     val userType: UserType? = null,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    // Session restoration state
-    val isCheckingSession: Boolean = true, // Start checking session on init
+    // Session restoration state - CHANGED: Don't check session by default
+    // Session checking is done in SplashScreen, AuthScreen just shows login form
+    val isCheckingSession: Boolean = false,
     val isAuthenticated: Boolean = false,
     // Flagged account state
     val showFlaggedAccountDialog: Boolean = false,
