@@ -371,9 +371,6 @@ fun OwnerProfileScreen(
                         )
                     }
                     
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
                     
                     // Wineyard Cards
                     items(uiState.wineyards) { wineyard ->
