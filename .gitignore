@@ -49,10 +49,18 @@ captures/
 # Comment next line if keeping position of elements in Navigation Editor is relevant for you
 .idea/navEditor.xml
 
-# Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+# Keystore files - SECURITY: Never commit these!
+*.jks
+*.keystore
+keystore.properties
+# Any file containing passwords or signing keys
+*key.properties
+*signing*.properties
+
+# Google Play Console API - SECURITY: Never commit these!
+play-config.properties
+play-service-account.json
+*service-account*.json
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

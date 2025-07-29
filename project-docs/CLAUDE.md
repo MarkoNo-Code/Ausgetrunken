@@ -348,6 +348,63 @@ git pull origin master
 - **Private Key Location**: `~/.ssh/id_ed25519`
 - **Current Public Key**: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGK9m0x574tq5Qh98WPtS02+y83GuA3s/ek5TxOPOTtp marko.nonninger@gmail.com`
 
+## Google Play Store Deployment
+
+### 🚀 Automated Publishing Setup ✅
+**Status: ✅ Complete - 2025-07-29**
+
+**BREAKTHROUGH**: Google Play Store publishing is now fully automated using Gradle Play Publisher plugin (better than Fastlane for Android)!
+
+**Publishing System:**
+- **Gradle Play Publisher Plugin**: Official Google solution for Android app publishing
+- **Secure Configuration**: Service account keys and signing credentials never committed to git
+- **Multiple Release Tracks**: Internal testing, beta, and production releases
+- **Automated Deployment**: One-command publishing to Google Play Console
+
+**Key Features Implemented:**
+- ✅ **Secure Signing**: Keystore passwords in protected `keystore.properties` file
+- ✅ **API Authentication**: Google Play Console API via service account JSON
+- ✅ **Release Automation**: Direct publishing to Internal Testing track
+- ✅ **Bundle Publishing**: Optimized App Bundle format (preferred by Google Play)
+- ✅ **Multi-track Support**: Internal, beta, and production deployment options
+
+**Publishing Commands:**
+```bash
+# Quick internal testing deployment
+./gradlew publishBundle
+
+# Specific release tracks
+./gradlew publishBundle --track=internal
+./gradlew publishBundle --track=beta
+./gradlew publishBundle --track=production
+
+# One-command deploy scripts
+source project-docs/deploy-internal.sh      # Unix/Git Bash
+project-docs\deploy-internal.bat            # Windows
+```
+
+**Security Configuration:**
+- **Service Account**: `play-service-account.json` (download from Google Cloud Console)
+- **Play Config**: `play-config.properties` (points to service account file)
+- **Git Protection**: All sensitive files in `.gitignore`
+- **Environment Fallback**: Support for CI/CD via environment variables
+
+**Files Created:**
+- `project-docs/play-console-setup-guide.md` - Complete setup instructions
+- `project-docs/release-commands.md` - Publishing command reference
+- `project-docs/deploy-internal.sh/.bat` - One-command deployment scripts
+- `play-config.properties` - Secure configuration (not committed)
+- Updated `.gitignore` - Protects all sensitive publishing files
+
+**Manual Setup Required (One-time):**
+1. Create Google Play Console app listing
+2. Enable Google Play Android Developer API in Google Cloud Console
+3. Create service account with JSON key
+4. Link service account to Play Console with publish permissions
+5. Download `play-service-account.json` to project root
+
+**Production Ready**: App can be published to Google Play Store immediately after manual setup!
+
 ## Recent Development History
 
 ### Data Synchronization Architecture Fix ✅
