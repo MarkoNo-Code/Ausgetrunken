@@ -33,6 +33,20 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.ui.theme.WineyardPlaceholderImage
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+
+/**
+ * Creates an optimized Supabase image URL with transformations for better performance
+ */
+private fun getOptimizedImageUrl(originalUrl: String, width: Int = 400, height: Int = 120): String {
+    return if (originalUrl.contains("supabase")) {
+        "$originalUrl?resize=cover&width=$width&height=$height&quality=75&format=webp"
+    } else {
+        originalUrl
+    }
+}
 
 @Composable
 fun WineyardCard(
@@ -116,11 +130,30 @@ fun WineyardCard(
                 .fillMaxSize()
                 .clip(RoundedCornerShape(16.dp))
         ) {
-            // Sophisticated wineyard scene placeholder
-            WineyardPlaceholderImage(
-                modifier = Modifier.fillMaxSize(),
-                aspectRatio = 16f / 9f
-            )
+            // Wineyard background image or placeholder
+            if (wineyard.photos.isNotEmpty()) {
+                AsyncImage(
+                    model = getOptimizedImageUrl(wineyard.photos.first()),
+                    contentDescription = "Wineyard ${wineyard.name}",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onState = { state ->
+                        // Optional: Handle loading states if needed
+                        when (state) {
+                            is AsyncImagePainter.State.Error -> {
+                                // Fall back to placeholder on error
+                            }
+                            else -> { /* Handle other states if needed */ }
+                        }
+                    }
+                )
+            } else {
+                // Fallback to placeholder when no photos available
+                WineyardPlaceholderImage(
+                    modifier = Modifier.fillMaxSize(),
+                    aspectRatio = 16f / 9f
+                )
+            }
             // Overlay gradient for text readability
             Box(
                 modifier = Modifier
