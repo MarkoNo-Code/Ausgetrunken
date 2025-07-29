@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Circular background -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M24,24m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0"/>
+    
+    <group
+        android:translateX="24"
+        android:translateY="24"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+        
+        <!-- Wine fill -->
+        <path
+            android:pathData="M-10,-4 Q-12,8 -8,12 L-3,14 L3,14 L8,12 Q12,8 10,-4 Z"
+            android:fillColor="#DC143C"/>
+        
+        <!-- Wine glass outline -->
+        <path
+            android:pathData="M-13,-8 Q-16,6 -10,14 L-3,16 L-3,22 L-8,22 L8,22 L3,22 L3,16 L10,14 Q16,6 13,-8 Q0,-12 -13,-8 Z"
+            android:strokeColor="#E6E6E6"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="@android:color/transparent"/>
+        
+        <!-- Glass shine effect -->
+        <path
+            android:pathData="M-8,-6 Q-5,0 -6,10"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round"
+            android:strokeAlpha="0.4"
+            android:fillColor="@android:color/transparent"/>
+        
+    </group>
+</vector>

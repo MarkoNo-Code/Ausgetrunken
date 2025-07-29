@@ -194,15 +194,6 @@ fun AuthScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -215,7 +206,8 @@ fun AuthScreen(
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    lineHeight = 36.sp
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))

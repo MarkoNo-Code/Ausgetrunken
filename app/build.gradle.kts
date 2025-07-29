@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
@@ -5,6 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.playPublisher)
 }
 
 android {
@@ -17,11 +21,34 @@ android {
         //noinspection EditedTargetSdkVersion
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            // Load keystore properties from secure file (not committed to git)
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            val keystoreProperties = Properties()
+            
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            } else {
+                // Fallback to environment variables (useful for CI/CD)
+                storeFile = file(System.getenv("KEYSTORE_FILE") ?: "../ausgetrunken-release.jks")
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: throw GradleException("Keystore password not found. Create keystore.properties or set KEYSTORE_PASSWORD environment variable.")
+                keyAlias = System.getenv("KEY_ALIAS") ?: "ausgetrunken-key"
+                keyPassword = System.getenv("KEY_PASSWORD") ?: throw GradleException("Key password not found. Create keystore.properties or set KEY_PASSWORD environment variable.")
+            }
         }
     }
 
@@ -36,6 +63,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -54,6 +82,27 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+// Google Play Console publishing configuration
+play {
+    // Load service account key from secure file (not committed to git)
+    val playConfigFile = rootProject.file("play-config.properties")
+    val playConfig = Properties()
+    
+    if (playConfigFile.exists()) {
+        playConfig.load(FileInputStream(playConfigFile))
+        serviceAccountCredentials.set(file(playConfig["serviceAccountJsonFile"] as String))
+    } else {
+        // Fallback to environment variable (useful for CI/CD)
+        val serviceAccountJson = System.getenv("PLAY_SERVICE_ACCOUNT_JSON")
+        if (serviceAccountJson != null) {
+            serviceAccountCredentials.set(file(serviceAccountJson))
+        }
+    }
+    
+    defaultToAppBundles.set(true)
+    track.set("beta") // Beta testing track
 }
 
 dependencies {
