@@ -36,7 +36,7 @@ fun AddWineyardCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(vertical = 4.dp),
         onClick = onAddWineyardClick,
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent

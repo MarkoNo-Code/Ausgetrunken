@@ -357,7 +357,7 @@ fun OwnerProfileScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                     item {
                         ProfileHeader(
@@ -371,7 +371,7 @@ fun OwnerProfileScreen(
                     }
                     
                     item {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                     
                     // Wineyard Cards

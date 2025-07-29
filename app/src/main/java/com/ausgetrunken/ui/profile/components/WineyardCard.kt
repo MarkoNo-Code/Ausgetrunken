@@ -91,7 +91,7 @@ fun WineyardCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(vertical = 4.dp)
             .scale(scale.value)
             .then(
                 if (glowAlpha.value > 0f) {
