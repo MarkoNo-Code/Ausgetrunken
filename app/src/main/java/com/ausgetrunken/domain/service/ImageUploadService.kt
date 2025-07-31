@@ -117,15 +117,47 @@ class ImageUploadService(
      */
     suspend fun deleteWineyardImage(imageUrl: String): Result<Unit> {
         return try {
+            Log.d(TAG, "=== DELETING IMAGE FROM SUPABASE ===")
+            Log.d(TAG, "Image URL to delete: ${imageUrl.replace("\n", "\\n")}")
+            
             // Extract file path from public URL
             val filePath = extractFilePathFromUrl(imageUrl)
+            Log.d(TAG, "Extracted file path: '${filePath.replace("\n", "\\n")}'")
+            
             if (filePath.isNotEmpty()) {
-                storage.from(BUCKET_NAME).delete(filePath)
-                Log.d(TAG, "Image deleted successfully: $imageUrl")
+                Log.d(TAG, "Attempting to delete from bucket '$BUCKET_NAME' with path: $filePath")
+                val deleteResult = storage.from(BUCKET_NAME).delete(filePath)
+                Log.d(TAG, "Delete operation result: $deleteResult")
+                Log.d(TAG, "Image deleted successfully from Supabase: $imageUrl")
+                
+                // Verify deletion by trying to check if file still exists
+                try {
+                    val folderPath = filePath.substringBeforeLast("/")
+                    val fileName = filePath.substringAfterLast("/")
+                    Log.d(TAG, "Verification: Checking folder '$folderPath' for file '$fileName'")
+                    
+                    val listResult = storage.from(BUCKET_NAME).list(folderPath)
+                    Log.d(TAG, "Verification: Found ${listResult.size} files in folder")
+                    
+                    val fileStillExists = listResult.any { it.name == fileName }
+                    Log.d(TAG, "Verification: File '$fileName' still exists in storage: $fileStillExists")
+                    
+                    if (fileStillExists) {
+                        Log.w(TAG, "⚠️ WARNING: File was not deleted from storage despite delete operation!")
+                        Log.w(TAG, "⚠️ File that still exists: $fileName")
+                    } else {
+                        Log.d(TAG, "✅ CONFIRMED: File was successfully deleted from storage")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not verify deletion: ${e.message}")
+                }
+            } else {
+                Log.w(TAG, "Empty file path extracted from URL, cannot delete: $imageUrl")
+                return Result.failure(Exception("Could not extract file path from URL: $imageUrl"))
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to delete image: $imageUrl", e)
+            Log.e(TAG, "Failed to delete image from Supabase: $imageUrl", e)
             Result.failure(e)
         }
     }

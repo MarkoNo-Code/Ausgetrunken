@@ -41,6 +41,7 @@ data class SupabaseWineyardPhoto(
 class WineyardPhotoService(
     private val wineyardPhotoDao: WineyardPhotoDao,
     private val imageUploadService: ImageUploadService,
+    private val imageCompressionService: ImageCompressionService,
     private val context: Context,
     private val httpClient: HttpClient,
     private val postgrest: Postgrest
@@ -439,20 +440,35 @@ class WineyardPhotoService(
      */
     suspend fun removePhoto(photoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Removing photo: $photoPath")
+            Log.d(TAG, "=== REMOVING PHOTO START ===")
+            Log.d(TAG, "Photo path to remove: $photoPath")
             
             // Find photo entity by local path or remote URL
             val photoEntity = wineyardPhotoDao.getPhotoByLocalPath(photoPath) 
                 ?: wineyardPhotoDao.getPhotoByRemoteUrl(photoPath)
             
+            Log.d(TAG, "Found photo entity: ${photoEntity?.id}")
+            Log.d(TAG, "Photo entity local path: ${photoEntity?.localPath}")
+            Log.d(TAG, "Photo entity remote URL: ${photoEntity?.remoteUrl?.replace("\n", "\\n")}")
+            
             if (photoEntity != null) {
                 // Delete from Supabase if it has a remote URL
                 photoEntity.remoteUrl?.let { remoteUrl ->
                     try {
-                        imageUploadService.deleteWineyardImage(remoteUrl)
-                        Log.d(TAG, "Deleted photo from Supabase: $remoteUrl")
+                        Log.d(TAG, "Attempting to delete from Supabase: $remoteUrl")
+                        val supabaseResult = imageUploadService.deleteWineyardImage(remoteUrl)
+                        supabaseResult.fold(
+                            onSuccess = {
+                                Log.d(TAG, "✅ Successfully deleted photo from Supabase: $remoteUrl")
+                            },
+                            onFailure = { error ->
+                                Log.e(TAG, "❌ Failed to delete photo from Supabase: $remoteUrl", error)
+                                // Continue with local deletion even if Supabase deletion fails
+                            }
+                        )
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to delete photo from Supabase: $remoteUrl", e)
+                        Log.w(TAG, "Exception while deleting from Supabase: $remoteUrl", e)
+                        // Continue with local deletion even if Supabase deletion fails
                     }
                 }
                 
@@ -460,17 +476,43 @@ class WineyardPhotoService(
                 photoEntity.localPath?.let { localPath ->
                     val localFile = File(localPath)
                     if (localFile.exists()) {
-                        localFile.delete()
-                        Log.d(TAG, "Deleted local photo file: $localPath")
+                        val deleted = localFile.delete()
+                        Log.d(TAG, "Local file deletion result: $deleted for path: $localPath")
+                    } else {
+                        Log.d(TAG, "Local file does not exist: $localPath")
                     }
                 }
                 
-                // Remove from database
+                // Remove from local database
+                Log.d(TAG, "Deleting photo entity from local database: ${photoEntity.id}")
                 wineyardPhotoDao.deletePhoto(photoEntity)
-                Log.d(TAG, "Removed photo entity from database: ${photoEntity.id}")
+                Log.d(TAG, "✅ Successfully removed photo entity from local database: ${photoEntity.id}")
                 
+                // Remove from Supabase database
+                try {
+                    Log.d(TAG, "Deleting photo entity from Supabase database: ${photoEntity.id}")
+                    Log.d(TAG, "Supabase delete query: DELETE FROM wineyard_photos WHERE id = '${photoEntity.id}'")
+                    
+                    val deleteResult = postgrest.from("wineyard_photos").delete {
+                        filter {
+                            eq("id", photoEntity.id)
+                        }
+                    }
+                    
+                    Log.d(TAG, "Supabase delete result: $deleteResult")
+                    Log.d(TAG, "✅ Successfully removed photo entity from Supabase database: ${photoEntity.id}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to delete photo from Supabase database: ${photoEntity.id}", e)
+                    Log.e(TAG, "❌ Exception details: ${e.message}")
+                    Log.e(TAG, "❌ Exception class: ${e.javaClass.simpleName}")
+                    // Continue - local deletion was successful, Supabase deletion failed but won't affect app functionality
+                }
+                
+                Log.d(TAG, "=== PHOTO REMOVAL COMPLETED SUCCESSFULLY ===")
                 Result.success(Unit)
             } else {
+                Log.w(TAG, "Photo entity not found for path: $photoPath")
+                
                 // Fallback: try to delete by path directly
                 val file = File(photoPath)
                 if (file.exists()) {
@@ -480,12 +522,14 @@ class WineyardPhotoService(
                 
                 // Try to delete from database by local path
                 wineyardPhotoDao.deletePhotoByLocalPath(photoPath)
+                Log.d(TAG, "Attempted database cleanup by local path: $photoPath")
                 
+                Log.d(TAG, "=== PHOTO REMOVAL COMPLETED (FALLBACK) ===")
                 Result.success(Unit)
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to remove photo", e)
+            Log.e(TAG, "=== PHOTO REMOVAL FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -642,24 +686,45 @@ class WineyardPhotoService(
 
     private suspend fun copyUriToLocalStorage(uri: Uri, wineyardId: String): File? {
         return try {
+            Log.d(TAG, "=== STARTING IMAGE COMPRESSION AND COPY ===")
+            
             // Create deterministic filename based on URI content hash and timestamp
             val contentHash = generateContentHash(uri)
             val fileName = "wineyard_${wineyardId}_${contentHash}.jpg"
             val destFile = File(photosDirectory, fileName)
             
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                FileOutputStream(destFile).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
+            Log.d(TAG, "Target file: ${destFile.absolutePath}")
             
-            if (destFile.exists() && destFile.length() > 0) {
-                Log.d(TAG, "Successfully copied URI to local storage: ${destFile.absolutePath}")
-                destFile
-            } else {
-                Log.e(TAG, "Failed to copy URI - file is empty or doesn't exist")
-                null
-            }
+            // Compress image from URI directly to destination file
+            val compressionResult = imageCompressionService.compressImage(uri, destFile)
+            
+            compressionResult.fold(
+                onSuccess = { finalSize ->
+                    Log.d(TAG, "✅ Image compressed successfully")
+                    Log.d(TAG, "Final compressed size: ${finalSize / 1024}KB")
+                    Log.d(TAG, "Compressed file path: ${destFile.absolutePath}")
+                    destFile
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "❌ Image compression failed: ${error.message}")
+                    // Fallback to original copy method for compatibility
+                    Log.d(TAG, "Falling back to original copy without compression...")
+                    
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        FileOutputStream(destFile).use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                    
+                    if (destFile.exists() && destFile.length() > 0) {
+                        Log.d(TAG, "Fallback copy successful: ${destFile.absolutePath}")
+                        destFile
+                    } else {
+                        Log.e(TAG, "Fallback copy failed - file is empty or doesn't exist")
+                        null
+                    }
+                }
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Failed to copy URI to local storage", e)
             null
@@ -668,16 +733,35 @@ class WineyardPhotoService(
 
     private suspend fun copyFileToLocalStorage(sourceFile: File, wineyardId: String): File? {
         return try {
+            Log.d(TAG, "=== STARTING FILE COMPRESSION AND COPY ===")
+            
             // Create deterministic filename based on file content hash
             val contentHash = generateFileHash(sourceFile)
             val fileName = "wineyard_${wineyardId}_${contentHash}.jpg"
             val destFile = File(photosDirectory, fileName)
             
+            Log.d(TAG, "Source file: ${sourceFile.absolutePath} (${sourceFile.length() / 1024}KB)")
+            Log.d(TAG, "Target file: ${destFile.absolutePath}")
+            
+            // First copy file to destination
             sourceFile.copyTo(destFile, overwrite = true)
             
             if (destFile.exists() && destFile.length() > 0) {
-                Log.d(TAG, "Successfully copied file to local storage: ${destFile.absolutePath}")
-                destFile
+                // Then compress the copied file in-place
+                val compressionResult = imageCompressionService.compressImageFile(destFile)
+                
+                compressionResult.fold(
+                    onSuccess = { finalSize ->
+                        Log.d(TAG, "✅ File compressed successfully")
+                        Log.d(TAG, "Final compressed size: ${finalSize / 1024}KB")
+                        destFile
+                    },
+                    onFailure = { error ->
+                        Log.w(TAG, "⚠️ File compression failed, using uncompressed version: ${error.message}")
+                        // File was already copied, so we can still use it
+                        destFile
+                    }
+                )
             } else {
                 Log.e(TAG, "Failed to copy file - destination is empty or doesn't exist")
                 null

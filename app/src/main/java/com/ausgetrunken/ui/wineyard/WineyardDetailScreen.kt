@@ -476,6 +476,7 @@ fun WineyardDetailScreen(
                                 canEdit = uiState.canEdit,
                                 onAddPhoto = { viewModel.showImagePicker() },
                                 onRemovePhoto = viewModel::removePhoto,
+                                onToggleEdit = viewModel::toggleEdit,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -1585,6 +1586,7 @@ private fun UnifiedPhotosSection(
     canEdit: Boolean,
     onAddPhoto: () -> Unit,
     onRemovePhoto: (String) -> Unit,
+    onToggleEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -1595,7 +1597,7 @@ private fun UnifiedPhotosSection(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column {
-            // Header with photo count and add button
+            // Header with photo count and action buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1610,22 +1612,45 @@ private fun UnifiedPhotosSection(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                if (canEdit && photos.size < 3) {
-                    Button(
-                        onClick = onAddPhoto,
-                        modifier = Modifier.height(36.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                if (canEdit) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = stringResource(R.string.cd_add_photo),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.padding(4.dp))
-                        Text(
-                            text = stringResource(R.string.add_photo),
-                            fontSize = 14.sp
-                        )
+                        // Add photo button (when not at limit and not editing)
+                        if (photos.size < 3 && !isEditing) {
+                            Button(
+                                onClick = onAddPhoto,
+                                modifier = Modifier.height(36.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = stringResource(R.string.cd_add_photo),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.padding(4.dp))
+                                Text(
+                                    text = stringResource(R.string.add_photo),
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                        
+                        // Edit/Done button (only show if there are photos to edit)
+                        if (photos.isNotEmpty()) {
+                            IconButton(
+                                onClick = onToggleEdit,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isEditing) Icons.Default.Check else Icons.Default.Edit,
+                                    contentDescription = if (isEditing) "Done editing" else "Edit photos",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
             }

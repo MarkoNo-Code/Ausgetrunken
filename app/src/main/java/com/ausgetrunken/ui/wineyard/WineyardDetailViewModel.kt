@@ -255,7 +255,16 @@ class WineyardDetailViewModel(
                 result.fold(
                     onSuccess = {
                         Log.d("WineyardDetailViewModel", "Photo removed successfully: $photoUrl")
-                        _uiState.value = _uiState.value.copy(isUpdating = false)
+                        
+                        // Immediately remove photo from UI state
+                        val currentPhotos = _uiState.value.photos.toMutableList()
+                        currentPhotos.remove(photoUrl)
+                        _uiState.value = _uiState.value.copy(
+                            photos = currentPhotos,
+                            isUpdating = false
+                        )
+                        
+                        Log.d("WineyardDetailViewModel", "Updated UI state - removed photo: $photoUrl")
                         Unit
                     },
                     onFailure = { error ->
