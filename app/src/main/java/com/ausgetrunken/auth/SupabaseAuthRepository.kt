@@ -311,194 +311,188 @@ class SupabaseAuthRepository(
     }
     
     suspend fun restoreSession(): Result<UserInfo?> {
-        return try {
-            println("🔄 SupabaseAuthRepository: Starting simple session restoration")
-            val sessionInfo = tokenStorage.getSessionInfo()
+        println("🔄 SupabaseAuthRepository: Starting simple session restoration")
+        val sessionInfo = tokenStorage.getSessionInfo()
+        
+        // Step 1: Check if we have local tokens
+        if (sessionInfo == null) {
+            println("❌ SupabaseAuthRepository: No local session found")
+            return Result.success(null)
+        }
+        
+        if (!tokenStorage.isTokenValid()) {
+            println("❌ SupabaseAuthRepository: Local tokens expired")
+            tokenStorage.clearSession()
+            return Result.success(null)
+        }
+        
+        println("✅ SupabaseAuthRepository: Found valid local tokens for user: ${sessionInfo.userId}")
+        
+        // Step 2: Check remote database for matching session ID
+        try {
+            // Use service role postgrest to bypass RLS policies during session restoration
+            val profileQuery = (serviceRolePostgrest ?: postgrest)
+            val userProfile = profileQuery.from("user_profiles")
+                .select {
+                    filter {
+                        eq("id", sessionInfo.userId)
+                    }
+                }
+                .decodeSingleOrNull<UserProfile>()
             
-            // Step 1: Check if we have local tokens
-            if (sessionInfo == null) {
-                println("❌ SupabaseAuthRepository: No local session found")
-                return Result.success(null)
-            }
-            
-            if (!tokenStorage.isTokenValid()) {
-                println("❌ SupabaseAuthRepository: Local tokens expired")
+            if (userProfile == null) {
+                println("❌ SupabaseAuthRepository: User profile not found remotely")
                 tokenStorage.clearSession()
                 return Result.success(null)
             }
             
-            println("✅ SupabaseAuthRepository: Found valid local tokens for user: ${sessionInfo.userId}")
-            
-            // Step 2: Check remote database for matching session ID
-            try {
-                // Use service role postgrest to bypass RLS policies during session restoration
-                val profileQuery = (serviceRolePostgrest ?: postgrest)
-                val userProfile = profileQuery.from("user_profiles")
-                    .select {
-                        filter {
-                            eq("id", sessionInfo.userId)
-                        }
-                    }
-                    .decodeSingleOrNull<UserProfile>()
-                
-                if (userProfile == null) {
-                    println("❌ SupabaseAuthRepository: User profile not found remotely")
-                    tokenStorage.clearSession()
-                    return Result.success(null)
-                }
-                
-                // Check if account is flagged for deletion
-                if (userProfile.flaggedForDeletion) {
-                    println("❌ SupabaseAuthRepository: Account flagged for deletion")
-                    tokenStorage.clearSession()
-                    return if (userProfile.deletionType == "ADMIN") {
-                        Result.failure(Exception("FLAGGED_ACCOUNT:Your account has been flagged for deletion by an administrator."))
-                    } else {
-                        Result.success(null)
-                    }
-                }
-                
-                // Step 3: Compare local and remote session IDs
-                val localSessionId = sessionInfo.sessionId
-                val remoteSessionId = userProfile.currentSessionId
-                
-                println("🔐 SupabaseAuthRepository: Local session: $localSessionId, Remote session: $remoteSessionId")
-                
-                // Handle session ID comparison logic
-                when {
-                    // Both sessions exist and don't match - user logged in elsewhere
-                    localSessionId != null && remoteSessionId != null && localSessionId != remoteSessionId -> {
-                        println("❌ SupabaseAuthRepository: Session mismatch - logged in elsewhere")
-                        tokenStorage.clearSession()
-                        return Result.failure(Exception("SESSION_INVALIDATED:You logged in from another device."))
-                    }
-                    // Remote session is null but we have local session - likely after logout, allow restoration
-                    localSessionId != null && remoteSessionId == null -> {
-                        println("⚠️ SupabaseAuthRepository: Remote session is null, local session exists - allowing restoration (post-logout case)")
-                        // This is normal after logout - the remote session was cleared but local tokens are still valid
-                        // We'll restore the session and update the remote session ID below
-                    }
-                    // Both are null or match - proceed normally
-                    else -> {
-                        println("✅ SupabaseAuthRepository: Session comparison passed")
-                    }
-                }
-                
-                // Step 4: Restore Supabase session
-                println("✅ SupabaseAuthRepository: Session IDs match, restoring Supabase session...")
-                
-                // Try to import session into Supabase
-                val userSession = UserSession(
-                    accessToken = sessionInfo.accessToken,
-                    refreshToken = sessionInfo.refreshToken,
-                    expiresIn = 3600,
-                    tokenType = "Bearer",
-                    user = null
-                )
-                
-                auth.importSession(userSession)
-                
-                // Give Supabase a moment to process
-                kotlinx.coroutines.delay(500)
-                
-                val currentUser = auth.currentUserOrNull()
-                if (currentUser != null) {
-                    println("✅ SupabaseAuthRepository: Session restored successfully for: ${currentUser.email}")
-                    
-                    // If remote session was null, update it with our local session ID
-                    if (localSessionId != null && remoteSessionId == null) {
-                        try {
-                            println("🔄 SupabaseAuthRepository: Updating remote session ID after successful restoration")
-                            postgrest.from("user_profiles")
-                                .update(
-                                    buildJsonObject {
-                                        put("current_session_id", localSessionId)
-                                        put("last_session_activity", Instant.now().toString())
-                                        put("updated_at", Instant.now().toString())
-                                    }
-                                ) {
-                                    filter {
-                                        eq("id", sessionInfo.userId)
-                                    }
-                                }
-                            println("✅ SupabaseAuthRepository: Remote session ID updated successfully")
-                        } catch (updateError: Exception) {
-                            println("⚠️ SupabaseAuthRepository: Failed to update remote session ID: ${updateError.message}")
-                            // Don't fail restoration if this update fails
-                        }
-                    }
-                    
-                    return Result.success(currentUser)
+            // Check if account is flagged for deletion
+            if (userProfile.flaggedForDeletion) {
+                println("❌ SupabaseAuthRepository: Account flagged for deletion")
+                tokenStorage.clearSession()
+                return if (userProfile.deletionType == "ADMIN") {
+                    Result.failure(Exception("FLAGGED_ACCOUNT:Your account has been flagged for deletion by an administrator."))
                 } else {
-                    println("⚠️ SupabaseAuthRepository: Supabase session import failed, but tokens are valid")
-                    println("⚠️ SupabaseAuthRepository: Session is valid based on token/remote comparison, will proceed without Supabase UserInfo")
-                    // The session is valid based on token comparison, but we couldn't import into Supabase
-                    // We'll return a special result that indicates valid session with minimal user data
-                    return Result.failure(Exception("VALID_SESSION_NO_USER:${sessionInfo.userId}:${userProfile.email}"))
-                }
-                
-            } catch (e: Exception) {
-                println("❌ SupabaseAuthRepository: Database check failed: ${e.message}")
-                
-                // Check if this is a JWT expired error - attempt token refresh
-                if (e.message?.contains("JWT expired", ignoreCase = true) == true) {
-                    println("🔄 SupabaseAuthRepository: JWT expired, attempting token refresh...")
-                    
-                    try {
-                        // Try to refresh the token using Supabase
-                        val userSession = UserSession(
-                            accessToken = sessionInfo.accessToken,
-                            refreshToken = sessionInfo.refreshToken,
-                            expiresIn = 3600,
-                            tokenType = "Bearer",
-                            user = null
-                        )
-                        
-                        // Import the session first (this might trigger a refresh)
-                        auth.importSession(userSession)
-                        
-                        // Give Supabase time to process and potentially refresh
-                        kotlinx.coroutines.delay(1000)
-                        
-                        // Try to refresh the session
-                        auth.refreshCurrentSession()
-                        
-                        // Check if we now have a valid session
-                        val currentUser = auth.currentUserOrNull()
-                        val currentSession = auth.currentSessionOrNull()
-                        
-                        if (currentUser != null && currentSession != null) {
-                            println("✅ SupabaseAuthRepository: Token refresh successful!")
-                            
-                            // Update stored tokens with new ones
-                            tokenStorage.saveLoginSession(
-                                accessToken = currentSession.accessToken,
-                                refreshToken = currentSession.refreshToken ?: sessionInfo.refreshToken,
-                                userId = currentUser.id,
-                                sessionId = sessionInfo.sessionId
-                            )
-                            
-                            return Result.success(currentUser)
-                        } else {
-                            println("❌ SupabaseAuthRepository: Token refresh failed, clearing session")
-                            tokenStorage.clearSession()
-                            return Result.success(null)
-                        }
-                        
-                    } catch (refreshError: Exception) {
-                        println("❌ SupabaseAuthRepository: Token refresh failed: ${refreshError.message}")
-                        tokenStorage.clearSession()
-                        return Result.success(null)
-                    }
-                } else {
-                    // On other network errors, don't force logout - let user continue
-                    return Result.success(null)
+                    Result.success(null)
                 }
             }
             
+            // Step 3: Compare local and remote session IDs
+            val localSessionId = sessionInfo.sessionId
+            val remoteSessionId = userProfile.currentSessionId
+            
+            println("🔐 SupabaseAuthRepository: Local session: $localSessionId, Remote session: $remoteSessionId")
+            
+            // Handle session ID comparison logic
+            when {
+                // Both sessions exist and don't match - user logged in elsewhere
+                localSessionId != null && remoteSessionId != null && localSessionId != remoteSessionId -> {
+                    println("❌ SupabaseAuthRepository: Session mismatch - logged in elsewhere")
+                    tokenStorage.clearSession()
+                    return Result.failure(Exception("SESSION_INVALIDATED:You logged in from another device."))
+                }
+                // Remote session is null but we have local session - likely after logout, allow restoration
+                localSessionId != null && remoteSessionId == null -> {
+                    println("⚠️ SupabaseAuthRepository: Remote session is null, local session exists - allowing restoration (post-logout case)")
+                    // This is normal after logout - the remote session was cleared but local tokens are still valid
+                    // We'll restore the session and update the remote session ID below
+                }
+                // Both are null or match - proceed normally
+                else -> {
+                    println("✅ SupabaseAuthRepository: Session comparison passed")
+                }
+            }
+            
+            // Step 4: Restore Supabase session
+            println("✅ SupabaseAuthRepository: Session IDs match, restoring Supabase session...")
+            
+            // Try to import session into Supabase
+            val userSession = UserSession(
+                accessToken = sessionInfo.accessToken,
+                refreshToken = sessionInfo.refreshToken,
+                expiresIn = 3600,
+                tokenType = "Bearer",
+                user = null
+            )
+            
+            auth.importSession(userSession)
+            
+            // Give Supabase a moment to process
+            kotlinx.coroutines.delay(500)
+            
+            val currentUser = auth.currentUserOrNull()
+            if (currentUser != null) {
+                println("✅ SupabaseAuthRepository: Session restored successfully for: ${currentUser.email}")
+                
+                // If remote session was null, update it with our local session ID
+                if (localSessionId != null && remoteSessionId == null) {
+                    try {
+                        println("🔄 SupabaseAuthRepository: Updating remote session ID after successful restoration")
+                        postgrest.from("user_profiles")
+                            .update(
+                                buildJsonObject {
+                                    put("current_session_id", localSessionId)
+                                    put("last_session_activity", Instant.now().toString())
+                                    put("updated_at", Instant.now().toString())
+                                }
+                            ) {
+                                filter {
+                                    eq("id", sessionInfo.userId)
+                                }
+                            }
+                        println("✅ SupabaseAuthRepository: Remote session ID updated successfully")
+                    } catch (updateError: Exception) {
+                        println("⚠️ SupabaseAuthRepository: Failed to update remote session ID: ${updateError.message}")
+                        // Don't fail restoration if this update fails
+                    }
+                }
+                
+                return Result.success(currentUser)
+            } else {
+                println("⚠️ SupabaseAuthRepository: Supabase session import failed, but tokens are valid")
+                println("⚠️ SupabaseAuthRepository: Session is valid based on token/remote comparison, will proceed without Supabase UserInfo")
+                // The session is valid based on token comparison, but we couldn't import into Supabase
+                // We'll return a special result that indicates valid session with minimal user data
+                return Result.failure(Exception("VALID_SESSION_NO_USER:${sessionInfo.userId}:${userProfile.email}"))
+            }
+                
         } catch (e: Exception) {
-            println("❌ SupabaseAuthRepository: Session restoration failed: ${e.message}")
-            return Result.success(null)
+            println("❌ SupabaseAuthRepository: Database check failed: ${e.message}")
+            
+            // Check if this is a JWT expired error - attempt token refresh
+            if (e.message?.contains("JWT expired", ignoreCase = true) == true) {
+                println("🔄 SupabaseAuthRepository: JWT expired, attempting token refresh...")
+                
+                try {
+                    // Try to refresh the token using Supabase
+                    val userSession = UserSession(
+                        accessToken = sessionInfo.accessToken,
+                        refreshToken = sessionInfo.refreshToken,
+                        expiresIn = 3600,
+                        tokenType = "Bearer",
+                        user = null
+                    )
+                    
+                    // Import the session first (this might trigger a refresh)
+                    auth.importSession(userSession)
+                    
+                    // Give Supabase time to process and potentially refresh
+                    kotlinx.coroutines.delay(1000)
+                    
+                    // Try to refresh the session
+                    auth.refreshCurrentSession()
+                    
+                    // Check if we now have a valid session
+                    val currentUser = auth.currentUserOrNull()
+                    val currentSession = auth.currentSessionOrNull()
+                    
+                    if (currentUser != null && currentSession != null) {
+                        println("✅ SupabaseAuthRepository: Token refresh successful!")
+                        
+                        // Update stored tokens with new ones
+                        tokenStorage.saveLoginSession(
+                            accessToken = currentSession.accessToken,
+                            refreshToken = currentSession.refreshToken ?: sessionInfo.refreshToken,
+                            userId = currentUser.id,
+                            sessionId = sessionInfo.sessionId
+                        )
+                        
+                        return Result.success(currentUser)
+                    } else {
+                        println("❌ SupabaseAuthRepository: Token refresh failed, clearing session")
+                        tokenStorage.clearSession()
+                        return Result.success(null)
+                    }
+                    
+                } catch (refreshError: Exception) {
+                    println("❌ SupabaseAuthRepository: Token refresh failed: ${refreshError.message}")
+                    tokenStorage.clearSession()
+                    return Result.success(null)
+                }
+            } else {
+                // On other network errors, don't force logout - let user continue
+                return Result.success(null)
+            }
         }
     }
     
@@ -610,6 +604,56 @@ class SupabaseAuthRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception("Failed to flag account for deletion: ${e.message}"))
+        }
+    }
+    
+    suspend fun resetPasswordForEmail(email: String): Result<Unit> {
+        return try {
+            val cleanEmail = email.trim().lowercase()
+            
+            auth.resetPasswordForEmail(
+                email = cleanEmail,
+                redirectUrl = "ausgetrunken://reset-password"
+            )
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when {
+                e.message?.contains("Invalid email") == true -> 
+                    "Please enter a valid email address."
+                e.message?.contains("Email not confirmed") == true -> 
+                    "Please confirm your email address first."
+                else -> 
+                    "Failed to send password reset email. Please try again."
+            }
+            Result.failure(Exception(errorMessage))
+        }
+    }
+    
+    suspend fun confirmPasswordReset(accessToken: String, newPassword: String): Result<Unit> {
+        return try {
+            // First, restore the session using the recovery token
+            auth.retrieveUser(accessToken)
+            
+            // Now update the password
+            auth.updateUser {
+                password = newPassword
+            }
+            
+            // Sign out after password update so user has to log in with new password
+            auth.signOut()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when {
+                e.message?.contains("Invalid token") == true -> 
+                    "Reset link has expired. Please request a new password reset."
+                e.message?.contains("weak password") == true -> 
+                    "Password is too weak. Please choose a stronger password."
+                else -> 
+                    "Failed to update password. Please try again."
+            }
+            Result.failure(Exception(errorMessage))
         }
     }
     

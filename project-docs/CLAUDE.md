@@ -62,15 +62,17 @@ export PATH="$PATH:$ANDROID_HOME/platform-tools"
 
 ### Quick Setup Commands for Future Sessions
 
-**🚀 Option 1: One-Line Setup (Fastest)**
+**🚀 RECOMMENDED: Always Run Setup Script First**
 ```bash
-cd "Documents/Claude-Projects/Ausgetrunken" && source project-docs/setup-env.sh && ./gradlew setupCheck
+cd "Documents/Claude-Projects/Ausgetrunken" && source project-docs/setup-env.sh
 ```
 
-**🔧 Option 2: Use Setup Scripts from project-docs**
+> **✅ CRITICAL**: The setup script configures JAVA_HOME, ANDROID_HOME, and adds ADB to PATH. This prevents "adb: command not found" errors and ensures all Android tools work properly.
+
+**🔧 Alternative Setup Methods**
 ```bash
-# For Unix/Git Bash (Recommended)
-source project-docs/setup-env.sh
+# One-line with setup check
+cd "Documents/Claude-Projects/Ausgetrunken" && source project-docs/setup-env.sh && ./gradlew setupCheck
 
 # For Windows Command Prompt  
 project-docs/setup-env.bat
@@ -276,13 +278,19 @@ This project can be connected to MCP servers for enhanced functionality:
 ## Troubleshooting
 
 ### Common Issues
-1. **JAVA_HOME not set**: Always export JAVA_HOME before running Gradle commands
-2. **No devices found**: Start Android Studio and launch an emulator first
-3. **Build failures**: Run `./gradlew clean` then rebuild
-4. **Permission issues**: Ensure Android SDK tools are in PATH
-5. **Authentication Issues**: Check splash screen logs for user type detection
-6. **Database Foreign Key Errors**: Ensure wineyards exist before creating wines
-7. **Customer Registration**: Known issue - investigate error in registration flow
+
+1. **🚨 "adb: command not found"**: 
+   - **Root Cause**: Android SDK platform-tools not in PATH
+   - **Fix**: Run `source project-docs/setup-env.sh` first (this adds ADB to PATH)
+   - **Alternative**: Use full path: `"/c/Users/marko/AppData/Local/Android/Sdk/platform-tools/adb.exe" devices`
+
+2. **JAVA_HOME not set**: Always export JAVA_HOME before running Gradle commands
+3. **No devices found**: Start Android Studio and launch an emulator first
+4. **Build failures**: Run `./gradlew clean` then rebuild
+5. **Permission issues**: Ensure Android SDK tools are in PATH
+6. **Authentication Issues**: Check splash screen logs for user type detection
+7. **Database Foreign Key Errors**: Ensure wineyards exist before creating wines
+8. **Customer Registration**: Known issue - investigate error in registration flow
 
 ### Verification Commands
 ```bash
