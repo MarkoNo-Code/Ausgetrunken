@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,184 +46,205 @@ fun ProfileHeader(
     onProfilePictureClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // Profile Picture with golden border (like the screenshot)
+        Box(
+            modifier = Modifier.size(120.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Profile Picture
+            // Profile picture background with golden border
             Box(
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(
+                        width = 3.dp,
+                        color = MaterialTheme.colorScheme.primary, // Burgundy red
+                        shape = CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                // Profile picture background with gradient-like effect
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f))
-                        .border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (profilePictureUrl != null) {
-                        // TODO: Load actual image from URL
-                        UserPlaceholderIcon(
-                            modifier = Modifier.size(120.dp),
-                            size = 120.dp
-                        )
-                    } else {
-                        UserPlaceholderIcon(
-                            modifier = Modifier.size(120.dp),
-                            size = 120.dp
-                        )
-                    }
-                }
-                
-                // Camera icon for editing - more subtle design
-                IconButton(
-                    onClick = onProfilePictureClick,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
-                        .border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.surface,
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Camera,
-                        contentDescription = "Change Profile Picture",
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(18.dp)
+                if (profilePictureUrl != null) {
+                    // TODO: Load actual image from URL
+                    UserPlaceholderIcon(
+                        modifier = Modifier.size(114.dp),
+                        size = 114.dp
+                    )
+                } else {
+                    UserPlaceholderIcon(
+                        modifier = Modifier.size(114.dp),
+                        size = 114.dp
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // User Name
-            Text(
-                text = userName,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // User Email
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            // Camera button with burgundy background
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary) // Burgundy red
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = "Email",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                Text(
-                    text = userEmail,
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
+                    imageVector = Icons.Default.Camera,
+                    contentDescription = "Change Profile Picture",
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Wineyard Statistics - Modern card design
+        }
+        
+        Spacer(modifier = Modifier.height(20.dp))
+        
+        // User Name (larger and more prominent like the screenshot)
+        Text(
+            text = userName,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // User Email (simpler, no icon like the screenshot)
+        Text(
+            text = userEmail,
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Normal
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Individual stat cards aligned with wineyard cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp) // Small gap between cards
+        ) {
+            // Wineyards stat card
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp), // Same as wineyard cards
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = Color(0xFF111111) // Same dark gray as wineyard cards
                 ),
-                shape = RoundedCornerShape(16.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .fillMaxSize()
+                        .padding(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "$wineyardCount",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Wineyards",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    // Divider
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(48.dp)
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    Text(
+                        text = "📊", // Chart emoji like in screenshot
+                        fontSize = 16.sp
                     )
-                    
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "$maxWineyards",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        Text(
-                            text = "Max Allowed",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    // Divider
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(48.dp)
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "$wineyardCount",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "${maxWineyards - wineyardCount}",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                        Text(
-                            text = "Remaining",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Text(
+                        text = "Weingüter",
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // Max Allowed stat card
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp), // Same as wineyard cards
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF111111) // Same dark gray as wineyard cards
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "🟢", // Green circle like in screenshot
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "$maxWineyards",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Max erlaubt",
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            // Remaining stat card
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(90.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp), // Same as wineyard cards
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF111111) // Same dark gray as wineyard cards
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "🔗", // Link emoji like in screenshot
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${maxWineyards - wineyardCount}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Verbleibend",
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

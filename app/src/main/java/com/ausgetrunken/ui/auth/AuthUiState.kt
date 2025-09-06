@@ -4,7 +4,9 @@ import com.ausgetrunken.data.local.entities.UserType
 
 enum class AuthMode {
     LOGIN,
-    REGISTER
+    REGISTER,
+    FORGOT_PASSWORD,
+    RESET_PASSWORD_CONFIRM
 }
 
 data class AuthUiState(
@@ -25,5 +27,9 @@ data class AuthUiState(
     val isAuthenticated: Boolean = false,
     // Flagged account state
     val showFlaggedAccountDialog: Boolean = false,
-    val flaggedAccountMessage: String? = null
+    val flaggedAccountMessage: String? = null,
+    // Forgot password state
+    val isPasswordResetSent: Boolean = false,
+    // Password reset confirmation state
+    val resetToken: String? = null
 )

@@ -36,7 +36,7 @@ fun AddWineyardCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
-            .padding(vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp), // Same margin as wineyard cards
         onClick = onAddWineyardClick,
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -48,12 +48,7 @@ fun AddWineyardCard(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(16.dp)
-                )
+                .background(Color(0xFF111111)) // Same dark gray as wineyard cards
         ) {
             Column(
                 modifier = Modifier
@@ -65,7 +60,7 @@ fun AddWineyardCard(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Wineyard",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = Color.White,
                     modifier = Modifier.size(48.dp)
                 )
                 

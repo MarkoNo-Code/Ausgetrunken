@@ -275,6 +275,29 @@ This project can be connected to MCP servers for enhanced functionality:
 - **Key Components**: Customer landing with pagination, sophisticated theming, logout functionality
 - **Known Issues**: Registration error for new customers (investigate in next session)
 
+## Screenshots and Visual Documentation
+
+### Screenshot Guidelines
+**📸 IMPORTANT**: All screenshots should be stored in `project-docs/Screenshots/` directory ONLY.
+
+**Taking Screenshots:**
+1. **Preferred Method**: Use Android Studio's built-in emulator screenshot feature for optimal file size
+2. **ADB Method** (if needed):
+   ```bash
+   # Take screenshot on device
+   adb -s emulator-5554 shell "screencap /sdcard/screenshot_name.png"
+   # Pull to project Screenshots folder
+   adb -s emulator-5554 pull /sdcard/screenshot_name.png project-docs/Screenshots/screenshot_name.png
+   ```
+
+**Screenshot Organization:**
+- **Current State**: `current_screen.png`
+- **Feature Updates**: `feature_name_design.png`
+- **Bug Documentation**: `bug_description_YYYY-MM-DD.png`
+- **Before/After**: `before_change.png`, `after_change.png`
+
+**⚠️ Never save screenshots outside the project-docs/Screenshots/ directory**
+
 ## Troubleshooting
 
 ### Common Issues

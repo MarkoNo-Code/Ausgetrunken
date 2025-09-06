@@ -1,8 +1,10 @@
 package com.ausgetrunken.ui.profile
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -52,7 +57,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -74,6 +78,7 @@ fun OwnerProfileScreen(
     onNavigateToWineyardDetail: (String) -> Unit,
     onNavigateToCreateWineyard: () -> Unit,
     onNavigateToNotificationManagement: (String) -> Unit,
+    onNavigateToSettings: () -> Unit,
     onLogoutSuccess: () -> Unit,
     newWineyardId: String? = null,
     updatedWineyardId: String? = null,
@@ -163,308 +168,224 @@ fun OwnerProfileScreen(
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Profile") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                actions = {
-                    // Notification Center Button (only show if user has wineyards)
-                    if (uiState.wineyards.isNotEmpty()) {
-                        IconButton(
-                            onClick = { 
-                                // Get the current owner ID and navigate to notification management for all wineyards
-                                coroutineScope.launch {
-                                    val currentOwnerId = viewModel.getCurrentOwnerId()
-                                    if (currentOwnerId != null) {
-                                        onNavigateToNotificationManagement(currentOwnerId)
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = "Notification Center",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                    
-                    IconButton(
-                        onClick = { viewModel.logout() },
-                        enabled = !uiState.isLoggingOut
-                    ) {
-                        if (uiState.isLoggingOut) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        } else {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = "Logout",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Column(
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Burgundy gradient from very top of screen (full width)
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Custom pull-to-refresh accordion that follows finger
-            PullToRefreshAccordion(
-                pullToRefreshState = pullToRefreshState,
-                isLoading = uiState.isLoading,
-                isRefreshing = isRefreshing,
-                showingSuccess = showingSuccess,
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            // Content with pull-to-refresh (hide default indicator)
-            PullToRefreshBox(
-                state = pullToRefreshState,
-                isRefreshing = isRefreshing,
-                onRefresh = { isRefreshing = true },
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary, // Same burgundy as add card
+                            Color.Transparent // Fade to transparent
+                        )
+                    )
+                )
+        )
+        
+        // Main content without top bar
+        Scaffold(
+            containerColor = Color.Transparent, // Make scaffold transparent to show gradient
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { paddingValues ->
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .weight(1f),
-                indicator = { 
-                    // Completely suppress the built-in indicator and any default UI
-                    Box(modifier = Modifier.size(0.dp))
-                }
+                    .padding(paddingValues)
             ) {
-                if (uiState.isLoading && (uiState.userName.isEmpty() || uiState.userName == "Loading...")) {
-                    // Show loading state only when initially loading
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(24.dp),
-                            modifier = Modifier.padding(32.dp)
+                // Custom pull-to-refresh accordion that follows finger
+                PullToRefreshAccordion(
+                    pullToRefreshState = pullToRefreshState,
+                    isLoading = uiState.isLoading,
+                    isRefreshing = isRefreshing,
+                    showingSuccess = showingSuccess,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                // Content with pull-to-refresh (hide default indicator)
+                PullToRefreshBox(
+                    state = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    onRefresh = { isRefreshing = true },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    indicator = { 
+                        // Completely suppress the built-in indicator and any default UI
+                        Box(modifier = Modifier.size(0.dp))
+                    }
+                ) {
+                    if (uiState.isLoading && (uiState.userName.isEmpty() || uiState.userName == "Loading...")) {
+                        // Show loading state only when initially loading
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(64.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeWidth = 4.dp
-                            )
-                            
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(24.dp),
+                                modifier = Modifier.padding(32.dp)
                             ) {
-                                Text(
-                                    text = "Loading your profile...",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    textAlign = TextAlign.Center
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(64.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    strokeWidth = 4.dp
                                 )
-                                Text(
-                                    text = "Please wait while we fetch your data",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
                             
-                            // Emergency logout button in case loading fails
-                            OutlinedButton(
-                                onClick = { viewModel.logout() },
-                                enabled = !uiState.isLoggingOut,
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (uiState.isLoggingOut) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Signing out...")
-                                } else {
-                                    Text("Sign Out")
-                                }
-                            }
-                        }
-                    }
-                } else if (uiState.errorMessage != null && (uiState.userName.isEmpty() || uiState.userName == "Unknown User" || uiState.userName == "Error")) {
-                    // Show error state with logout option
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Text(
-                                text = "Failed to load profile",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = uiState.errorMessage ?: "Unknown error",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                            
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                Button(
-                                    onClick = { viewModel.refreshProfile() },
-                                    enabled = !uiState.isLoading
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Text("Retry")
+                                    Text(
+                                        text = "Loading your profile...",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        text = "Please wait while we fetch your data",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
                                 }
-                                
-                                Button(
+                            
+                                // Emergency logout button in case loading fails
+                                OutlinedButton(
                                     onClick = { viewModel.logout() },
                                     enabled = !uiState.isLoggingOut,
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error
-                                    )
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
                                     if (uiState.isLoggingOut) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(16.dp),
-                                            color = MaterialTheme.colorScheme.onError
-                                        )
-                                    } else {
-                                        Text("Logout")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Show profile content even if there are some errors, as long as we have user info
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                    item {
-                        ProfileHeader(
-                            userName = uiState.userName,
-                            userEmail = uiState.userEmail,
-                            profilePictureUrl = uiState.profilePictureUrl,
-                            wineyardCount = uiState.wineyards.size,
-                            maxWineyards = uiState.maxWineyards,
-                            onProfilePictureClick = { viewModel.showProfilePicturePicker() }
-                        )
-                    }
-                    
-                    
-                    // Wineyard Cards
-                    items(uiState.wineyards) { wineyard ->
-                        WineyardCard(
-                            wineyard = wineyard,
-                            onWineyardClick = onNavigateToWineyardDetail,
-                            isNewlyAdded = newWineyardId == wineyard.id,
-                            isUpdated = updatedWineyardId == wineyard.id
-                        )
-                    }
-                    
-                    // Add Wineyard Card
-                    if (uiState.canAddMoreWineyards) {
-                        item {
-                            AddWineyardCard(
-                                onAddWineyardClick = onNavigateToCreateWineyard
-                            )
-                        }
-                    }
-                    
-                    // Settings Section
-                    item {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Settings,
-                                        contentDescription = "Settings",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Settings",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                                
-                                
-                                // Delete Account Button
-                                OutlinedButton(
-                                    onClick = { viewModel.showDeleteAccountDialog() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.error
-                                    ),
-                                    enabled = !uiState.isDeletingAccount
-                                ) {
-                                    if (uiState.isDeletingAccount) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            strokeWidth = 2.dp,
                                             color = MaterialTheme.colorScheme.error
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Flagging Account...")
+                                        Text("Signing out...")
                                     } else {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "Delete Account",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Flag Account for Deletion")
+                                        Text("Sign Out")
                                     }
                                 }
                             }
                         }
-                    }
+                    } else if (uiState.errorMessage != null && (uiState.userName.isEmpty() || uiState.userName == "Unknown User" || uiState.userName == "Error")) {
+                        // Show error state with logout option
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Failed to load profile",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = uiState.errorMessage ?: "Unknown error",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center
+                                )
+                            
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Button(
+                                        onClick = { viewModel.refreshProfile() },
+                                        enabled = !uiState.isLoading
+                                    ) {
+                                        Text("Retry")
+                                    }
+                                    
+                                    Button(
+                                        onClick = { viewModel.logout() },
+                                        enabled = !uiState.isLoggingOut,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error
+                                        )
+                                    ) {
+                                        if (uiState.isLoggingOut) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                color = MaterialTheme.colorScheme.onError
+                                            )
+                                        } else {
+                                            Text("Logout")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Show profile content even if there are some errors, as long as we have user info
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            item {
+                                ProfileHeader(
+                                    userName = uiState.userName,
+                                    userEmail = uiState.userEmail,
+                                    profilePictureUrl = uiState.profilePictureUrl,
+                                    wineyardCount = uiState.wineyards.size,
+                                    maxWineyards = uiState.maxWineyards,
+                                    onProfilePictureClick = { viewModel.showProfilePicturePicker() }
+                                )
+                            }
+                    
+                            
+                            // Wineyard Cards
+                            items(uiState.wineyards) { wineyard ->
+                                WineyardCard(
+                                    wineyard = wineyard,
+                                    onWineyardClick = onNavigateToWineyardDetail,
+                                    isNewlyAdded = newWineyardId == wineyard.id,
+                                    isUpdated = updatedWineyardId == wineyard.id
+                                )
+                            }
+                    
+                            // Add Wineyard Card
+                            if (uiState.canAddMoreWineyards) {
+                                item {
+                                    AddWineyardCard(
+                                        onAddWineyardClick = onNavigateToCreateWineyard
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
+        } // End Scaffold
+        
+        // Floating settings button (top right corner)
+        IconButton(
+            onClick = onNavigateToSettings,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 56.dp, end = 16.dp) // Add top padding to avoid system bar
+                .size(48.dp)
+        ) {
+            Icon(
+                Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(24.dp)
+            )
         }
-    }
-    
-    // Delete Account Dialog
-    if (uiState.showDeleteAccountDialog) {
-        DeleteAccountDialog(
-            onDismiss = { viewModel.hideDeleteAccountDialog() },
-            onConfirm = { viewModel.deleteAccount() }
-        )
     }
 }
 

@@ -83,6 +83,7 @@ fun AuthScreen(
     onNavigateToWineyardList: () -> Unit,
     onNavigateToProfile: () -> Unit,
     initialEmail: String? = null,
+    resetToken: String? = null,
     viewModel: AuthViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -116,6 +117,16 @@ fun AuthScreen(
     LaunchedEffect(initialEmail) {
         initialEmail?.let { email ->
             viewModel.setInitialEmail(email)
+        }
+    }
+    
+    LaunchedEffect(resetToken) {
+        resetToken?.let { token ->
+            // Show a reset password form or handle the token appropriately
+            // For now, we'll show a success message that the user can set a new password
+            println("🔑 AuthScreen: Reset token received: $token")
+            // Switch to a password reset confirmation mode
+            viewModel.setResetToken(token)
         }
     }
     
@@ -216,7 +227,12 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
-                    text = if (uiState.mode == AuthMode.LOGIN) stringResource(R.string.sign_in_subtitle) else stringResource(R.string.sign_up_subtitle),
+                    text = when (uiState.mode) {
+                        AuthMode.LOGIN -> stringResource(R.string.sign_in_subtitle)
+                        AuthMode.REGISTER -> stringResource(R.string.sign_up_subtitle)
+                        AuthMode.FORGOT_PASSWORD -> stringResource(R.string.forgot_password_subtitle)
+                        AuthMode.RESET_PASSWORD_CONFIRM -> "Enter your new password"
+                    },
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
@@ -224,76 +240,81 @@ fun AuthScreen(
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
-                // Mode Toggle Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.switchMode(AuthMode.LOGIN) },
-                        modifier = Modifier.weight(1f),
-                        colors = if (uiState.mode == AuthMode.LOGIN) {
-                            androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        } else {
-                            androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
-                        }
+                // Mode Toggle Buttons - Only show for LOGIN and REGISTER modes
+                if (uiState.mode == AuthMode.LOGIN || uiState.mode == AuthMode.REGISTER) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(stringResource(R.string.sign_in))
-                    }
-                    
-                    OutlinedButton(
-                        onClick = { viewModel.switchMode(AuthMode.REGISTER) },
-                        modifier = Modifier.weight(1f),
-                        colors = if (uiState.mode == AuthMode.REGISTER) {
-                            androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        } else {
-                            androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
+                        OutlinedButton(
+                            onClick = { viewModel.switchMode(AuthMode.LOGIN) },
+                            modifier = Modifier.weight(1f),
+                            colors = if (uiState.mode == AuthMode.LOGIN) {
+                                androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            } else {
+                                androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
+                            }
+                        ) {
+                            Text(stringResource(R.string.sign_in))
                         }
-                    ) {
-                        Text(stringResource(R.string.sign_up))
+                        
+                        OutlinedButton(
+                            onClick = { viewModel.switchMode(AuthMode.REGISTER) },
+                            modifier = Modifier.weight(1f),
+                            colors = if (uiState.mode == AuthMode.REGISTER) {
+                                androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            } else {
+                                androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
+                            }
+                        ) {
+                            Text(stringResource(R.string.sign_up))
+                        }
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Email Field
-                OutlinedTextField(
-                    value = uiState.email,
-                    onValueChange = { newValue ->
-                        // Filter out newlines, tabs, and spaces for email
-                        val cleanEmail = newValue
-                            .replace("\n", "")
-                            .replace("\t", "")
-                            .replace(" ", "")
-                        viewModel.updateEmail(cleanEmail)
-                    },
-                    label = { Text(stringResource(R.string.email)) },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Email,
-                            contentDescription = stringResource(R.string.email)
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics {
-                            contentType = ContentType.EmailAddress
+                // Email Field - Only show for LOGIN, REGISTER, and FORGOT_PASSWORD modes
+                if (uiState.mode != AuthMode.RESET_PASSWORD_CONFIRM) {
+                    OutlinedTextField(
+                        value = uiState.email,
+                        onValueChange = { newValue ->
+                            // Filter out newlines, tabs, and spaces for email
+                            val cleanEmail = newValue
+                                .replace("\n", "")
+                                .replace("\t", "")
+                                .replace(" ", "")
+                            viewModel.updateEmail(cleanEmail)
                         },
-                    enabled = !uiState.isLoading,
-                    singleLine = true
-                )
+                        label = { Text(stringResource(R.string.email)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Email,
+                                contentDescription = stringResource(R.string.email)
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                contentType = ContentType.EmailAddress
+                            },
+                        enabled = !uiState.isLoading,
+                        singleLine = true
+                    )
+                }
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Password Field
-                OutlinedTextField(
+                // Password Field - Show for LOGIN, REGISTER, and RESET_PASSWORD_CONFIRM modes
+                if (uiState.mode == AuthMode.LOGIN || uiState.mode == AuthMode.REGISTER || uiState.mode == AuthMode.RESET_PASSWORD_CONFIRM) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    OutlinedTextField(
                     value = uiState.password,
                     onValueChange = { newValue ->
                         // Filter out newlines and tabs from password
@@ -333,11 +354,12 @@ fun AuthScreen(
                         },
                     enabled = !uiState.isLoading,
                     singleLine = true
-                )
+                    )
+                }
                 
-                // Confirm Password Field (only for registration)
+                // Confirm Password Field (for registration and password reset confirmation)
                 AnimatedVisibility(
-                    visible = uiState.mode == AuthMode.REGISTER,
+                    visible = uiState.mode == AuthMode.REGISTER || uiState.mode == AuthMode.RESET_PASSWORD_CONFIRM,
                     enter = slideInVertically() + fadeIn(),
                     exit = slideOutVertically() + fadeOut()
                 ) {
@@ -458,16 +480,20 @@ fun AuthScreen(
                 // Main Action Button
                 Button(
                     onClick = {
-                        if (uiState.mode == AuthMode.LOGIN) {
-                            viewModel.login()
-                        } else {
-                            viewModel.register()
+                        when (uiState.mode) {
+                            AuthMode.LOGIN -> viewModel.login()
+                            AuthMode.REGISTER -> viewModel.register()
+                            AuthMode.FORGOT_PASSWORD -> viewModel.resetPassword()
+                            AuthMode.RESET_PASSWORD_CONFIRM -> viewModel.confirmPasswordReset()
                         }
                     },
                     enabled = !uiState.isLoading && 
-                            uiState.email.isNotBlank() && 
-                            uiState.password.isNotBlank() &&
-                            (uiState.mode == AuthMode.LOGIN || uiState.confirmPassword.isNotBlank()),
+                            when (uiState.mode) {
+                                AuthMode.FORGOT_PASSWORD -> uiState.email.isNotBlank()
+                                AuthMode.RESET_PASSWORD_CONFIRM -> uiState.password.isNotBlank() && uiState.confirmPassword.isNotBlank()
+                                AuthMode.LOGIN -> uiState.email.isNotBlank() && uiState.password.isNotBlank()
+                                AuthMode.REGISTER -> uiState.email.isNotBlank() && uiState.password.isNotBlank() && uiState.confirmPassword.isNotBlank()
+                            },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
@@ -479,9 +505,42 @@ fun AuthScreen(
                         )
                     } else {
                         Text(
-                            text = if (uiState.mode == AuthMode.LOGIN) stringResource(R.string.sign_in) else stringResource(R.string.create_account),
+                            text = when (uiState.mode) {
+                                AuthMode.LOGIN -> stringResource(R.string.sign_in)
+                                AuthMode.REGISTER -> stringResource(R.string.create_account)
+                                AuthMode.FORGOT_PASSWORD -> stringResource(R.string.reset_password)
+                                AuthMode.RESET_PASSWORD_CONFIRM -> "Update Password"
+                            },
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                
+                // Forgot Password Link (only show in LOGIN mode)
+                if (uiState.mode == AuthMode.LOGIN) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    TextButton(
+                        onClick = { viewModel.switchMode(AuthMode.FORGOT_PASSWORD) }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.forgot_password),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                
+                // Back to Login Button (only show in FORGOT_PASSWORD mode)
+                if (uiState.mode == AuthMode.FORGOT_PASSWORD) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    TextButton(
+                        onClick = { viewModel.switchMode(AuthMode.LOGIN) }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.back_to_login),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }

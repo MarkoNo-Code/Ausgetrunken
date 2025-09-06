@@ -50,6 +50,14 @@ class AuthService(
         return authRepository.deleteAccount()
     }
     
+    suspend fun resetPassword(email: String): Result<Unit> {
+        return authRepository.resetPasswordForEmail(email)
+    }
+    
+    suspend fun confirmPasswordReset(accessToken: String, newPassword: String): Result<Unit> {
+        return authRepository.confirmPasswordReset(accessToken, newPassword)
+    }
+    
     fun hasValidSession(): Boolean {
         return authRepository.hasValidSession()
     }

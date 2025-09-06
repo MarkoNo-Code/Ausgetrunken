@@ -9,6 +9,7 @@
     <string name="welcome_title">Welcome to Ausgetrunken</string>
     <string name="sign_in_subtitle">Sign in to continue</string>
     <string name="sign_up_subtitle">Create your account</string>
+    <string name="forgot_password_subtitle">Enter your email to reset your password</string>
     <string name="account_flagged_title">Account Flagged</string>
     
     <!-- Form Labels -->
@@ -31,6 +32,9 @@
     <string name="sign_in">Sign In</string>
     <string name="sign_up">Sign Up</string>
     <string name="create_account">Create Account</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="back_to_login">Back to Login</string>
     <string name="contact_support">Contact Support</string>
     <string name="dismiss">Dismiss</string>
     <string name="save">Save</string>

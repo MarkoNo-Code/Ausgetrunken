@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -105,7 +106,7 @@ fun WineyardCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
-            .padding(vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp) // Add horizontal margin
             .scale(scale.value)
             .then(
                 if (glowAlpha.value > 0f) {
@@ -154,41 +155,36 @@ fun WineyardCard(
                     aspectRatio = 16f / 9f
                 )
             }
-            // Overlay gradient for text readability
+            // Even darker gray solid background overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.6f)
-                            )
-                        )
-                    )
+                    .background(Color(0xFF111111)) // Even darker solid gray, no gradient
             )
             
-            // Wineyard name
+            // Wineyard name - left aligned, max 2 lines, positioned in upper part
             Text(
                 text = wineyard.name,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
+                maxLines = 2,
+                lineHeight = 26.sp,
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 16.dp)
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp) // Reduced top padding
             )
             
-            // Location indicator
+            // Location indicator - left aligned, fixed distance from bottom
             Text(
                 text = wineyard.address,
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = 12.dp, end = 16.dp) // Reduced bottom padding
             )
         }
     }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ import com.ausgetrunken.ui.customer.CustomerProfileScreen
 import com.ausgetrunken.ui.customer.CustomerWineyardDetailScreen
 import com.ausgetrunken.ui.notifications.NotificationManagementScreen
 import com.ausgetrunken.ui.location.LocationPickerScreen
+import com.ausgetrunken.ui.settings.SettingsScreen
 import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
 import androidx.compose.runtime.remember
 import org.koin.androidx.compose.koinViewModel
@@ -35,8 +37,18 @@ import org.koin.androidx.compose.koinViewModel
 fun AusgetrunkenNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Splash.route // Start with Splash screen for proper loading
+    startDestination: String = Screen.Splash.route, // Start with Splash screen for proper loading
+    resetToken: String? = null
 ) {
+    // Navigate directly to AuthScreen when reset token is available
+    LaunchedEffect(resetToken) {
+        if (resetToken != null) {
+            navController.navigate(Screen.Auth.route) {
+                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+            }
+        }
+    }
+    
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -84,7 +96,8 @@ fun AusgetrunkenNavigation(
                     navController.navigate(Screen.OwnerProfile.route) {
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     }
-                }
+                },
+                resetToken = resetToken
             )
         }
         
@@ -179,6 +192,9 @@ fun AusgetrunkenNavigation(
                 },
                 onNavigateToNotificationManagement = { ownerId ->
                     navController.navigate(Screen.NotificationManagement.createRoute(ownerId))
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
                 },
                 onLogoutSuccess = {
                     navController.navigate(Screen.Auth.route) {
@@ -278,6 +294,21 @@ fun AusgetrunkenNavigation(
                     navController.popBackStack()
                 },
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateToNotificationManagement = { ownerId ->
+                    navController.navigate(Screen.NotificationManagement.createRoute(ownerId))
+                },
+                onNavigateBack = { navController.popBackStack() },
+                onLogoutSuccess = {
+                    navController.navigate(Screen.Auth.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                navController = navController
             )
         }
         

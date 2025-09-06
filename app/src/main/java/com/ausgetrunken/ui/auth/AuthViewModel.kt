@@ -239,6 +239,18 @@ class AuthViewModel(
         )
     }
     
+    fun setResetToken(token: String) {
+        // When a reset token is provided, switch to a password reset confirmation mode
+        _uiState.value = _uiState.value.copy(
+            mode = AuthMode.RESET_PASSWORD_CONFIRM,
+            resetToken = token,
+            successMessage = "Please enter your new password below.",
+            errorMessage = null,
+            password = "",
+            confirmPassword = ""
+        )
+    }
+    
     fun login() {
         val currentState = _uiState.value
         if (currentState.email.isBlank() || currentState.password.isBlank()) {
@@ -336,6 +348,84 @@ class AuthViewModel(
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         errorMessage = "${error.message ?: "Unknown error"}"
+                    )
+                }
+        }
+    }
+    
+    fun resetPassword() {
+        val currentState = _uiState.value
+        if (currentState.email.isBlank()) {
+            _uiState.value = currentState.copy(errorMessage = "Please enter your email address")
+            return
+        }
+        
+        if (!isValidEmail(currentState.email)) {
+            _uiState.value = currentState.copy(errorMessage = "Please enter a valid email address")
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+            
+            authService.resetPassword(currentState.email)
+                .onSuccess {
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        isPasswordResetSent = true,
+                        successMessage = "Password reset email sent! Please check your inbox.",
+                        mode = AuthMode.LOGIN // Switch back to login mode
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Failed to send password reset email"
+                    )
+                }
+        }
+    }
+    
+    fun confirmPasswordReset() {
+        val currentState = _uiState.value
+        if (currentState.password.isBlank() || currentState.confirmPassword.isBlank()) {
+            _uiState.value = currentState.copy(errorMessage = "Please fill in all password fields")
+            return
+        }
+        
+        if (currentState.password != currentState.confirmPassword) {
+            _uiState.value = currentState.copy(errorMessage = "Passwords do not match")
+            return
+        }
+        
+        if (currentState.password.length < 6) {
+            _uiState.value = currentState.copy(errorMessage = "Password must be at least 6 characters")
+            return
+        }
+        
+        if (currentState.resetToken == null) {
+            _uiState.value = currentState.copy(errorMessage = "Invalid reset token")
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+            
+            authService.confirmPasswordReset(currentState.resetToken, currentState.password)
+                .onSuccess {
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        successMessage = "Password updated successfully! You can now sign in with your new password.",
+                        mode = AuthMode.LOGIN, // Switch back to login mode
+                        resetToken = null,
+                        password = "",
+                        confirmPassword = ""
+                    )
+                }
+                .onFailure { error ->
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Failed to update password"
                     )
                 }
         }

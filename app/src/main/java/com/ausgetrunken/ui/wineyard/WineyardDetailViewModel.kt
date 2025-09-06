@@ -3,6 +3,7 @@ package com.ausgetrunken.ui.wineyard
 import android.util.Log
 import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.repository.UserRepository
+import com.ausgetrunken.data.repository.WineyardRepository
 import com.ausgetrunken.domain.common.AppResult
 import com.ausgetrunken.domain.error.AppError
 import com.ausgetrunken.domain.error.toAppError
@@ -92,7 +93,7 @@ class WineyardDetailViewModel(
                 println("🔍 canEdit calculated: $canEdit")
                 println("🔍 Expected for owner: should be TRUE")
                 
-                // Update UI state (preserve existing photos)
+                // Update UI state (preserve existing photos initially)
                 _uiState.value = _uiState.value.copy(
                     wineyard = wineyard,
                     canEdit = canEdit
@@ -119,13 +120,6 @@ class WineyardDetailViewModel(
                 if (currentUserEntity?.userType == UserType.CUSTOMER && currentAuthUser != null) {
                     loadSubscriptionStatus(currentAuthUser.id, wineyard.id)
                 }
-                
-                // CRITICAL DEBUG: Temporarily disable Supabase sync to test if it's clearing database
-                // Sync photos with Supabase in background
-                // if (wineyard.photos.isNotEmpty()) {
-                //     syncPhotosWithSupabase(wineyard.id, wineyard.photos)
-                // }
-                Log.d("WineyardDetailViewModel", "DISABLED Supabase sync to test database persistence")
                 
                 wineyard
             }
