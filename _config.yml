@@ -1,0 +1,7 @@
+# GitHub Pages configuration
+title: "Ausgetrunken Privacy Policy"
+description: "Privacy Policy for Ausgetrunken Wine Tracking App"
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
