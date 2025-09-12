@@ -251,7 +251,8 @@ fun AuthScreen(
                             modifier = Modifier.weight(1f),
                             colors = if (uiState.mode == AuthMode.LOGIN) {
                                 androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             } else {
                                 androidx.compose.material3.ButtonDefaults.outlinedButtonColors()
@@ -265,7 +266,8 @@ fun AuthScreen(
                             modifier = Modifier.weight(1f),
                             colors = if (uiState.mode == AuthMode.REGISTER) {
                                 androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             } else {
                                 androidx.compose.material3.ButtonDefaults.outlinedButtonColors()

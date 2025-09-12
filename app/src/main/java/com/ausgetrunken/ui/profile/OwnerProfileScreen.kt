@@ -345,8 +345,7 @@ fun OwnerProfileScreen(
                                     onProfilePictureClick = { viewModel.showProfilePicturePicker() }
                                 )
                             }
-                    
-                            
+
                             // Wineyard Cards
                             items(uiState.wineyards) { wineyard ->
                                 WineyardCard(
@@ -361,7 +360,9 @@ fun OwnerProfileScreen(
                             if (uiState.canAddMoreWineyards) {
                                 item {
                                     AddWineyardCard(
-                                        onAddWineyardClick = onNavigateToCreateWineyard
+                                        onAddWineyardClick = onNavigateToCreateWineyard,
+                                        currentWineyardCount = uiState.wineyards.size,
+                                        maxWineyards = uiState.maxWineyards
                                     )
                                 }
                             }

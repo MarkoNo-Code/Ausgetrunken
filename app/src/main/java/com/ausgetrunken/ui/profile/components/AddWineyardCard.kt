@@ -29,8 +29,10 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun AddWineyardCard(
+    modifier: Modifier = Modifier,
     onAddWineyardClick: () -> Unit,
-    modifier: Modifier = Modifier
+    currentWineyardCount: Int = 0,
+    maxWineyards: Int = 0
 ) {
     Card(
         modifier = modifier
@@ -50,6 +52,7 @@ fun AddWineyardCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(Color(0xFF111111)) // Same dark gray as wineyard cards
         ) {
+            // Centered content (+ icon and "Add Wineyard" text)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -61,17 +64,28 @@ fun AddWineyardCard(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Wineyard",
                     tint = Color.White,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(32.dp)
                 )
                 
                 Text(
                     text = "Add Wineyard",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color.White, // Same color as + icon
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
+            
+            // Count indicator positioned in bottom right corner
+            Text(
+                text = "($currentWineyardCount/$maxWineyards)",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White, // Same color as + icon
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+            )
         }
     }
 }

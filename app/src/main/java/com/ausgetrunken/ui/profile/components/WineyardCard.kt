@@ -165,12 +165,12 @@ fun WineyardCard(
             // Wineyard name - left aligned, max 2 lines, positioned in upper part
             Text(
                 text = wineyard.name,
-                fontSize = 24.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Start,
                 maxLines = 2,
-                lineHeight = 26.sp,
+                lineHeight = 18.sp,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp, end = 16.dp, top = 12.dp) // Reduced top padding
