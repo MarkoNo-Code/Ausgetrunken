@@ -7,11 +7,16 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -121,71 +126,77 @@ fun WineyardCard(
             ),
         onClick = { onWineyardClick(wineyard.id) },
         colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
+            containerColor = Color(0xFF111111) // Dark gray background
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF111111)) // Gray background
+                .padding(8.dp), // Margin around entire content
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Wineyard background image or placeholder
-            if (wineyard.photos.isNotEmpty()) {
-                AsyncImage(
-                    model = getOptimizedImageUrl(wineyard.photos.first()),
-                    contentDescription = "Wineyard ${wineyard.name}",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    onState = { state ->
-                        // Optional: Handle loading states if needed
-                        when (state) {
-                            is AsyncImagePainter.State.Error -> {
-                                // Fall back to placeholder on error
-                            }
-                            else -> { /* Handle other states if needed */ }
-                        }
-                    }
-                )
-            } else {
-                // Fallback to placeholder when no photos available
-                WineyardPlaceholderImage(
-                    modifier = Modifier.fillMaxSize(),
-                    aspectRatio = 16f / 9f
-                )
-            }
-            // Even darker gray solid background overlay
+            // Left side: Image with margin
             Box(
                 modifier = Modifier
+                    .size(80.dp) // Fixed square size for image
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
+                if (wineyard.photos.isNotEmpty()) {
+                    AsyncImage(
+                        model = getOptimizedImageUrl(wineyard.photos.first()),
+                        contentDescription = "Wineyard ${wineyard.name}",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        onState = { state ->
+                            // Optional: Handle loading states if needed
+                            when (state) {
+                                is AsyncImagePainter.State.Error -> {
+                                    // Fall back to placeholder on error
+                                }
+                                else -> { /* Handle other states if needed */ }
+                            }
+                        }
+                    )
+                } else {
+                    // Fallback to placeholder when no photos available
+                    WineyardPlaceholderImage(
+                        modifier = Modifier.fillMaxSize(),
+                        aspectRatio = 1f // Square aspect ratio
+                    )
+                }
+            }
+            
+            // Right side: Text content with proper spacing
+            Column(
+                modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF111111)) // Even darker solid gray, no gradient
-            )
-            
-            // Wineyard name - left aligned, max 2 lines, positioned in upper part
-            Text(
-                text = wineyard.name,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Start,
-                maxLines = 2,
-                lineHeight = 18.sp,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 16.dp, end = 16.dp, top = 12.dp) // Reduced top padding
-            )
-            
-            // Location indicator - left aligned, fixed distance from bottom
-            Text(
-                text = wineyard.address,
-                fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.9f),
-                textAlign = TextAlign.Start,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 12.dp, end = 16.dp) // Reduced bottom padding
-            )
+                    .padding(start = 12.dp), // Space between image and text
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Wineyard name
+                Text(
+                    text = wineyard.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    lineHeight = 18.sp
+                )
+                
+                // Small gap between name and location
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Location/address
+                Text(
+                    text = wineyard.address,
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.9f),
+                    maxLines = 1
+                )
+            }
         }
     }
 }
