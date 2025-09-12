@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -39,9 +40,23 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.ui.theme.WineyardPlaceholderImage
+import android.util.Log
 import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
+import coil.request.CachePolicy
+import java.io.File
+import android.net.Uri
 
 /**
  * Creates an optimized Supabase image URL with transformations for better performance
@@ -52,6 +67,31 @@ private fun getOptimizedImageUrl(originalUrl: String, width: Int = 400, height: 
     } else {
         originalUrl
     }
+}
+
+/**
+ * Pulsating loading animation for image placeholders
+ */
+@Composable
+private fun PulsatingPlaceholder(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "PulsatingPlaceholder")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+    
+    WineyardPlaceholderImage(
+        modifier = modifier.background(
+            Color.White.copy(alpha = alpha),
+            RoundedCornerShape(12.dp)
+        ),
+        aspectRatio = 1f
+    )
 }
 
 @Composable
@@ -135,33 +175,61 @@ fun WineyardCard(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF111111)) // Gray background
-                .padding(8.dp), // Margin around entire content
+                .padding(12.dp), // Increased margin around entire content
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side: Image with margin
+            // Left side: Image with additional padding
             Box(
                 modifier = Modifier
                     .size(80.dp) // Fixed square size for image
+                    .padding(4.dp) // Extra padding around image
                     .clip(RoundedCornerShape(12.dp))
             ) {
                 if (wineyard.photos.isNotEmpty()) {
-                    AsyncImage(
-                        model = getOptimizedImageUrl(wineyard.photos.first()),
+                    val imageUrl = wineyard.photos.first()
+                    Log.d("WineyardCard", "Loading image for ${wineyard.name}: $imageUrl")
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(
+                                when {
+                                    imageUrl.startsWith("/") -> File(imageUrl)
+                                    imageUrl.startsWith("content://") -> Uri.parse(imageUrl)
+                                    else -> getOptimizedImageUrl(imageUrl, 160, 160) // 2x size for sharp display
+                                }
+                            )
+                            .crossfade(true)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
                         contentDescription = "Wineyard ${wineyard.name}",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
-                        onState = { state ->
-                            // Optional: Handle loading states if needed
-                            when (state) {
-                                is AsyncImagePainter.State.Error -> {
-                                    // Fall back to placeholder on error
-                                }
-                                else -> { /* Handle other states if needed */ }
-                            }
+                        loading = {
+                            // Show pulsating animation while loading
+                            Log.d("WineyardCard", "Image loading for ${wineyard.name}")
+                            PulsatingPlaceholder(modifier = Modifier.fillMaxSize())
+                        },
+                        error = {
+                            // Show static placeholder on error
+                            Log.e("WineyardCard", "Image failed to load for ${wineyard.name}: $imageUrl")
+                            WineyardPlaceholderImage(
+                                modifier = Modifier.fillMaxSize(),
+                                aspectRatio = 1f
+                            )
+                        },
+                        success = { state ->
+                            Log.d("WineyardCard", "Image loaded successfully for ${wineyard.name}")
+                            Image(
+                                painter = state.painter,
+                                contentDescription = "Wineyard ${wineyard.name}",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
                         }
                     )
                 } else {
                     // Fallback to placeholder when no photos available
+                    Log.d("WineyardCard", "No photos available for ${wineyard.name}")
                     WineyardPlaceholderImage(
                         modifier = Modifier.fillMaxSize(),
                         aspectRatio = 1f // Square aspect ratio

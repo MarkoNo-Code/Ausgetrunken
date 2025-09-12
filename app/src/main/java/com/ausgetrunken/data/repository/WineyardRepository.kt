@@ -5,12 +5,15 @@ import com.ausgetrunken.data.local.dao.WineyardDao
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.data.remote.model.Wineyard
 import com.ausgetrunken.domain.util.NetworkConnectivityManager
+import com.ausgetrunken.domain.service.SupabaseWineyardPhoto
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -106,6 +109,25 @@ class WineyardRepository(
                         .decodeList<Wineyard>()
                     
                     val entities = response.map { wineyardData ->
+                        // Fetch photos for this wineyard from the wineyard_photos table
+                        val photos = try {
+                            // Get photos from the separate table and extract just the remote_url field
+                            val photosResult = postgrest.from("wineyard_photos")
+                                .select {
+                                    filter {
+                                        eq("wineyard_id", wineyardData.id)
+                                    }
+                                }
+                                .decodeList<kotlinx.serialization.json.JsonObject>()
+                                
+                            photosResult.mapNotNull { jsonObject ->
+                                jsonObject["remote_url"]?.jsonPrimitive?.content
+                            }
+                        } catch (e: Exception) {
+                            println("⚠️ WineyardRepository: Failed to fetch photos for wineyard ${wineyardData.id}: ${e.message}")
+                            emptyList<String>()
+                        }
+                        
                         WineyardEntity(
                             id = wineyardData.id,
                             name = wineyardData.name,
@@ -114,7 +136,7 @@ class WineyardRepository(
                             address = wineyardData.address,
                             latitude = wineyardData.latitude,
                             longitude = wineyardData.longitude,
-                            photos = wineyardData.photos ?: emptyList(),
+                            photos = photos, // Use photos from wineyard_photos table
                             createdAt = (wineyardData.createdAt.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000,
                             updatedAt = (wineyardData.updatedAt?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000
                         )
