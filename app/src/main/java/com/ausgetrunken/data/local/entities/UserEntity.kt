@@ -11,7 +11,8 @@ data class UserEntity(
     val profileCompleted: Boolean = false,
     val fcmToken: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val fullName: String? = null
+    val fullName: String? = null,
+    val profilePictureUrl: String? = null
 )
 
 enum class UserType {

@@ -4,6 +4,7 @@ import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.ImageUploadService
 import com.ausgetrunken.domain.service.ImageCompressionService
 import com.ausgetrunken.domain.service.NotificationService
+import com.ausgetrunken.domain.service.ProfilePictureService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardService
 import com.ausgetrunken.domain.service.WineyardSubscriptionService
@@ -26,6 +27,7 @@ val serviceModule = module {
     factory { NotificationService(get()) }
     factory { ImageUploadService(get(org.koin.core.qualifier.named("serviceRole"))) }
     factory { ImageCompressionService(androidContext()) }
+    factory { ProfilePictureService(androidContext(), get(org.koin.core.qualifier.named("serviceRole"))) }
     
     // Legacy photo service (keep for now during transition)
     factory { WineyardPhotoService(get(), get(), get(), androidContext(), get(), get()) }

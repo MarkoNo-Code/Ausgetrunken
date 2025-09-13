@@ -6,6 +6,7 @@ import com.ausgetrunken.auth.SupabaseAuthRepository
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.NotificationService
+import com.ausgetrunken.domain.service.ProfilePictureService
 import com.ausgetrunken.domain.service.WineyardService
 import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
 import com.ausgetrunken.notifications.FCMTokenManager
@@ -21,7 +22,8 @@ class OwnerProfileViewModel(
     private val authService: AuthService,
     private val notificationService: NotificationService,
     private val fcmTokenManager: FCMTokenManager,
-    private val getWineyardSubscribersUseCase: GetWineyardSubscribersUseCase
+    private val getWineyardSubscribersUseCase: GetWineyardSubscribersUseCase,
+    private val profilePictureService: ProfilePictureService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -132,7 +134,7 @@ class OwnerProfileViewModel(
                 // Load user info from UserRepository (remote-first with email fallback)
                 val userFromDb = userRepository.getUserByIdRemoteFirst(userId)
                 val userName = userFromDb?.fullName?.takeIf { it.isNotBlank() } ?: userEmail.substringBefore("@").takeIf { it.isNotEmpty() } ?: "User"
-                val profilePictureUrl = currentUser?.userMetadata?.get("avatar_url")?.toString()
+                val profilePictureUrl = userFromDb?.profilePictureUrl
                 
                 println("👤 ProfileViewModel: Resolved user name: '$userName' (from DB: '${userFromDb?.fullName}', email fallback: '${userEmail.substringBefore("@")}')")
                 
@@ -241,24 +243,79 @@ class OwnerProfileViewModel(
         _uiState.value = _uiState.value.copy(showProfilePicturePicker = false)
     }
     
-    fun updateProfilePicture(imageUrl: String) {
+    fun updateProfilePicture(localImagePath: String) {
         viewModelScope.launch {
             try {
-                println("🖼️ ProfileViewModel: Updating profile picture to: $imageUrl")
+                println("🖼️ ProfileViewModel: Starting profile picture upload from: $localImagePath")
                 
-                // Update UI state immediately for better UX
+                // Set uploading state
                 _uiState.value = _uiState.value.copy(
-                    profilePictureUrl = imageUrl,
-                    showProfilePicturePicker = false
+                    isLoading = true,
+                    showProfilePicturePicker = false,
+                    errorMessage = null
                 )
                 
-                // TODO: Implement actual upload to Supabase storage and update user metadata
-                // For now, we just store it locally and show it in the UI
-                println("✅ ProfileViewModel: Profile picture updated in UI")
+                // Get current user ID with session restoration logic (same as loadUserProfile)
+                var currentUser = authRepository.currentUser
+                var userIdFromSession: String? = null
+                
+                if (currentUser == null) {
+                    println("⚠️ ProfileViewModel: No currentUser for profile picture upload, attempting session restoration...")
+                    // Try to restore session to get user info
+                    authService.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("✅ ProfileViewModel: Session restored successfully for profile picture upload")
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                println("✅ ProfileViewModel: Valid session without UserInfo for profile picture upload, extracting data...")
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.isNotEmpty()) {
+                                    userIdFromSession = parts[0]
+                                    println("✅ ProfileViewModel: Extracted userId for profile picture upload: $userIdFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                // Determine user ID from either currentUser or session data
+                val currentUserId = currentUser?.id ?: userIdFromSession
+                if (currentUserId.isNullOrEmpty()) {
+                    throw Exception("User not authenticated - unable to determine user ID")
+                }
+                
+                // Upload to Supabase Storage using ProfilePictureService
+                val uploadResult = profilePictureService.uploadProfilePicture(currentUserId, localImagePath)
+                
+                if (uploadResult.isSuccess) {
+                    val supabaseUrl = uploadResult.getOrThrow()
+                    println("✅ ProfileViewModel: Profile picture uploaded to Supabase: $supabaseUrl")
+                    
+                    // Update profile picture URL in database
+                    val updateResult = userRepository.updateProfilePictureUrl(currentUserId, supabaseUrl)
+                    
+                    if (updateResult.isSuccess) {
+                        // Update UI state with the new Supabase URL
+                        _uiState.value = _uiState.value.copy(
+                            profilePictureUrl = supabaseUrl,
+                            isLoading = false
+                        )
+                        println("✅ ProfileViewModel: Profile picture URL saved to database and UI updated")
+                    } else {
+                        throw updateResult.exceptionOrNull() ?: Exception("Failed to update profile picture URL in database")
+                    }
+                } else {
+                    throw uploadResult.exceptionOrNull() ?: Exception("Failed to upload profile picture")
+                }
                 
             } catch (e: Exception) {
                 println("❌ ProfileViewModel: Error updating profile picture: ${e.message}")
                 _uiState.value = _uiState.value.copy(
+                    isLoading = false,
                     errorMessage = "Failed to update profile picture: ${e.message}"
                 )
             }
@@ -280,10 +337,37 @@ class OwnerProfileViewModel(
                 
                 _uiState.value = _uiState.value.copy(isUpdatingName = true)
                 
-                // Get current user ID
-                val currentUserId = authRepository.currentUser?.id?.toString()
+                // Get current user ID with session restoration logic (same as loadUserProfile)
+                var currentUser = authRepository.currentUser
+                var userIdFromSession: String? = null
+                
+                if (currentUser == null) {
+                    println("⚠️ ProfileViewModel: No currentUser for name update, attempting session restoration...")
+                    // Try to restore session to get user info
+                    authService.restoreSession()
+                        .onSuccess { user ->
+                            if (user != null) {
+                                currentUser = user
+                                println("✅ ProfileViewModel: Session restored successfully for name update")
+                            }
+                        }
+                        .onFailure { error ->
+                            val errorMessage = error.message ?: ""
+                            if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
+                                println("✅ ProfileViewModel: Valid session without UserInfo for name update, extracting data...")
+                                val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
+                                if (parts.isNotEmpty()) {
+                                    userIdFromSession = parts[0]
+                                    println("✅ ProfileViewModel: Extracted userId for name update: $userIdFromSession")
+                                }
+                            }
+                        }
+                }
+                
+                // Determine user ID from either currentUser or session data
+                val currentUserId = currentUser?.id ?: userIdFromSession
                 if (currentUserId.isNullOrEmpty()) {
-                    throw Exception("User not authenticated")
+                    throw Exception("User not authenticated - unable to determine user ID")
                 }
                 
                 // Update in Supabase via UserRepository

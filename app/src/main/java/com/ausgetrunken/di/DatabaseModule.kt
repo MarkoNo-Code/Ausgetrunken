@@ -16,7 +16,8 @@ val databaseModule = module {
         .addMigrations(
             AusgetrunkenDatabase.MIGRATION_2_3,
             AusgetrunkenDatabase.MIGRATION_3_4,
-            AusgetrunkenDatabase.MIGRATION_4_5
+            AusgetrunkenDatabase.MIGRATION_4_5,
+            AusgetrunkenDatabase.MIGRATION_5_6
         )
         // CRITICAL FIX: Use TRUNCATE mode for immediate consistency instead of WAL isolation issues
         .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)

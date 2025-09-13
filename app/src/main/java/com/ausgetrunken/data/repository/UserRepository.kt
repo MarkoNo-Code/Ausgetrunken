@@ -34,7 +34,8 @@ class UserRepository(
                 userType = com.ausgetrunken.data.local.entities.UserType.valueOf(response.userType),
                 profileCompleted = response.profileCompleted,
                 createdAt = response.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                fullName = response.fullName
+                fullName = response.fullName,
+                profilePictureUrl = response.profilePictureUrl
             )
             userDao.insertUser(user)
             Result.success(user)
@@ -54,6 +55,7 @@ class UserRepository(
                         put("user_type", user.userType.name)
                         put("profile_completed", user.profileCompleted)
                         put("full_name", user.fullName)
+                        put("profile_picture_url", user.profilePictureUrl)
                         put("updated_at", Instant.now().toString())
                     }
                 ) {
@@ -87,7 +89,8 @@ class UserRepository(
                     userType = com.ausgetrunken.data.local.entities.UserType.valueOf(response.userType),
                     profileCompleted = response.profileCompleted,
                     createdAt = response.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
-                    fullName = response.fullName
+                    fullName = response.fullName,
+                    profilePictureUrl = response.profilePictureUrl
                 )
                 Result.success(user)
             },
@@ -131,6 +134,41 @@ class UserRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             println("❌ UserRepository: Name update failed: ${e.message}")
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateProfilePictureUrl(userId: String, profilePictureUrl: String?): Result<Unit> {
+        return try {
+            println("🔄 UserRepository: Updating profile picture URL for $userId")
+            
+            // REMOTE-FIRST: Update Supabase first
+            postgrest.from("user_profiles")
+                .update(
+                    buildJsonObject {
+                        put("profile_picture_url", profilePictureUrl)
+                        put("updated_at", Instant.now().toString())
+                    }
+                ) {
+                    filter {
+                        eq("id", userId)
+                        eq("flagged_for_deletion", false)
+                    }
+                }
+            
+            println("✅ UserRepository: Supabase profile picture URL update successful")
+            
+            // LOCAL SECOND: Update local database after successful remote update
+            val currentUser = userDao.getUserById(userId)
+            if (currentUser != null) {
+                val updatedUser = currentUser.copy(profilePictureUrl = profilePictureUrl)
+                userDao.updateUser(updatedUser)
+                println("✅ UserRepository: Local database profile picture URL updated")
+            }
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            println("❌ UserRepository: Profile picture URL update failed: ${e.message}")
             Result.failure(e)
         }
     }

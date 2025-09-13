@@ -32,7 +32,7 @@ val viewModelModule = module {
     viewModel { LocationPickerViewModel(get()) }
     
     // FIXED: Changed from singleton to regular viewModel to prevent stale logout state
-    viewModel { OwnerProfileViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { OwnerProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     
     // WineyardDetailViewModel should create new instance per navigation (not singleton)
     // because it needs to load different wineyards based on wineyardId parameter

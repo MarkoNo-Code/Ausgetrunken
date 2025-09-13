@@ -12,6 +12,7 @@ data class UserProfile(
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("full_name") val fullName: String? = null,
+    @SerialName("profile_picture_url") val profilePictureUrl: String? = null,
     @SerialName("phone") val phone: String? = null,
     @SerialName("address") val address: String? = null,
     @SerialName("flagged_for_deletion") val flaggedForDeletion: Boolean = false,
