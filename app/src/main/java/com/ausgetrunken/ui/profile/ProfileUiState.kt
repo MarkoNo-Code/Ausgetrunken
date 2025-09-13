@@ -17,7 +17,9 @@ data class ProfileUiState(
     val logoutSuccess: Boolean = false,
     val showDeleteAccountDialog: Boolean = false,
     val isDeletingAccount: Boolean = false,
-    val deleteAccountSuccess: Boolean = false
+    val deleteAccountSuccess: Boolean = false,
+    val showEditNameDialog: Boolean = false,
+    val isUpdatingName: Boolean = false
 ) {
     val maxWineyards = 5
     val remainingWineyards = maxWineyards - wineyards.size

@@ -466,6 +466,7 @@ fun WineyardDetailScreen(
                 uiState.wineyard?.let { wineyard ->
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Unified Photos Section - Always at the top

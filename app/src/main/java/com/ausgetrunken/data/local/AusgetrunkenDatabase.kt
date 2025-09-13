@@ -21,7 +21,7 @@ import com.ausgetrunken.data.local.entities.*
         NotificationDeliveryEntity::class,
         WineyardPhotoEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -81,6 +81,17 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
                 database.execSQL(createIndexSQL)
                 
                 android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Migration completed successfully!")
+            }
+        }
+        
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                android.util.Log.d("DatabaseMigration", "MIGRATION 4->5: Starting migration...")
+                
+                // Add fullName column to users table
+                database.execSQL("ALTER TABLE users ADD COLUMN fullName TEXT")
+                
+                android.util.Log.d("DatabaseMigration", "MIGRATION 4->5: Migration completed successfully!")
             }
         }
     }

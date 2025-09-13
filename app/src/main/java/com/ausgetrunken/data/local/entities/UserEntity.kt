@@ -10,7 +10,8 @@ data class UserEntity(
     val userType: UserType,
     val profileCompleted: Boolean = false,
     val fcmToken: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val fullName: String? = null
 )
 
 enum class UserType {

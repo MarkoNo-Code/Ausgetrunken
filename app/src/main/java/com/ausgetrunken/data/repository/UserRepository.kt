@@ -33,7 +33,8 @@ class UserRepository(
                 email = response.email,
                 userType = com.ausgetrunken.data.local.entities.UserType.valueOf(response.userType),
                 profileCompleted = response.profileCompleted,
-                createdAt = response.createdAt.toLongOrNull() ?: System.currentTimeMillis()
+                createdAt = response.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                fullName = response.fullName
             )
             userDao.insertUser(user)
             Result.success(user)
@@ -52,6 +53,7 @@ class UserRepository(
                         put("email", user.email)
                         put("user_type", user.userType.name)
                         put("profile_completed", user.profileCompleted)
+                        put("full_name", user.fullName)
                         put("updated_at", Instant.now().toString())
                     }
                 ) {
@@ -84,7 +86,8 @@ class UserRepository(
                     email = response.email,
                     userType = com.ausgetrunken.data.local.entities.UserType.valueOf(response.userType),
                     profileCompleted = response.profileCompleted,
-                    createdAt = response.createdAt.toLongOrNull() ?: System.currentTimeMillis()
+                    createdAt = response.createdAt.toLongOrNull() ?: System.currentTimeMillis(),
+                    fullName = response.fullName
                 )
                 Result.success(user)
             },
@@ -95,5 +98,40 @@ class UserRepository(
                 user?.let { userDao.insertUser(it) }
             }
         )
+    }
+    
+    suspend fun updateUserName(userId: String, fullName: String): Result<Unit> {
+        return try {
+            println("🔄 UserRepository: Updating user name for $userId to: $fullName")
+            
+            // REMOTE-FIRST: Update Supabase first
+            postgrest.from("user_profiles")
+                .update(
+                    buildJsonObject {
+                        put("full_name", fullName)
+                        put("updated_at", Instant.now().toString())
+                    }
+                ) {
+                    filter {
+                        eq("id", userId)
+                        eq("flagged_for_deletion", false)
+                    }
+                }
+            
+            println("✅ UserRepository: Supabase name update successful")
+            
+            // LOCAL SECOND: Update local database after successful remote update
+            val currentUser = userDao.getUserById(userId)
+            if (currentUser != null) {
+                val updatedUser = currentUser.copy(fullName = fullName)
+                userDao.updateUser(updatedUser)
+                println("✅ UserRepository: Local database name updated")
+            }
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            println("❌ UserRepository: Name update failed: ${e.message}")
+            Result.failure(e)
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.ausgetrunken.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.auth.SupabaseAuthRepository
+import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.NotificationService
 import com.ausgetrunken.domain.service.WineyardService
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 
 class OwnerProfileViewModel(
     private val authRepository: SupabaseAuthRepository,
+    private val userRepository: UserRepository,
     private val wineyardService: WineyardService,
     private val authService: AuthService,
     private val notificationService: NotificationService,
@@ -127,9 +129,12 @@ class OwnerProfileViewModel(
                 println("🔍 ProfileViewModel: Loading profile for user ID: $userId")
                 println("🔍 ProfileViewModel: User email: $userEmail")
                 
-                // Load user info - set defaults to ensure UI shows something
-                val userName = currentUser?.userMetadata?.get("full_name")?.toString() ?: userEmail.substringBefore("@").takeIf { it.isNotEmpty() } ?: "User"
+                // Load user info from UserRepository (remote-first with email fallback)
+                val userFromDb = userRepository.getUserByIdRemoteFirst(userId)
+                val userName = userFromDb?.fullName?.takeIf { it.isNotBlank() } ?: userEmail.substringBefore("@").takeIf { it.isNotEmpty() } ?: "User"
                 val profilePictureUrl = currentUser?.userMetadata?.get("avatar_url")?.toString()
+                
+                println("👤 ProfileViewModel: Resolved user name: '$userName' (from DB: '${userFromDb?.fullName}', email fallback: '${userEmail.substringBefore("@")}')")
                 
                 // Update UI state immediately with user info, even before wineyards load
                 _uiState.value = _uiState.value.copy(
@@ -237,11 +242,75 @@ class OwnerProfileViewModel(
     }
     
     fun updateProfilePicture(imageUrl: String) {
-        _uiState.value = _uiState.value.copy(
-            profilePictureUrl = imageUrl,
-            showProfilePicturePicker = false
-        )
-        // TODO: Upload to storage and update user metadata
+        viewModelScope.launch {
+            try {
+                println("🖼️ ProfileViewModel: Updating profile picture to: $imageUrl")
+                
+                // Update UI state immediately for better UX
+                _uiState.value = _uiState.value.copy(
+                    profilePictureUrl = imageUrl,
+                    showProfilePicturePicker = false
+                )
+                
+                // TODO: Implement actual upload to Supabase storage and update user metadata
+                // For now, we just store it locally and show it in the UI
+                println("✅ ProfileViewModel: Profile picture updated in UI")
+                
+            } catch (e: Exception) {
+                println("❌ ProfileViewModel: Error updating profile picture: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "Failed to update profile picture: ${e.message}"
+                )
+            }
+        }
+    }
+    
+    fun showEditNameDialog() {
+        _uiState.value = _uiState.value.copy(showEditNameDialog = true)
+    }
+    
+    fun hideEditNameDialog() {
+        _uiState.value = _uiState.value.copy(showEditNameDialog = false)
+    }
+    
+    fun updateUserName(newName: String) {
+        viewModelScope.launch {
+            try {
+                println("👤 ProfileViewModel: Updating user name to: $newName")
+                
+                _uiState.value = _uiState.value.copy(isUpdatingName = true)
+                
+                // Get current user ID
+                val currentUserId = authRepository.currentUser?.id?.toString()
+                if (currentUserId.isNullOrEmpty()) {
+                    throw Exception("User not authenticated")
+                }
+                
+                // Update in Supabase via UserRepository
+                val result = userRepository.updateUserName(currentUserId, newName)
+                
+                if (result.isSuccess) {
+                    // Update UI state after successful database update
+                    _uiState.value = _uiState.value.copy(
+                        userName = newName,
+                        showEditNameDialog = false,
+                        isUpdatingName = false,
+                        errorMessage = null
+                    )
+                    println("✅ ProfileViewModel: User name successfully updated in database")
+                } else {
+                    throw result.exceptionOrNull() ?: Exception("Unknown error")
+                }
+                
+            } catch (e: Exception) {
+                println("❌ ProfileViewModel: Error updating user name: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isUpdatingName = false,
+                    showEditNameDialog = false,
+                    errorMessage = "Failed to update name: ${e.message}"
+                )
+            }
+        }
     }
     
     fun logout() {

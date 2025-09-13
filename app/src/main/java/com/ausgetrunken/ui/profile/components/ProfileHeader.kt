@@ -35,6 +35,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
+import coil.request.CachePolicy
+import java.io.File
+import android.net.Uri
+import androidx.compose.foundation.clickable
 
 @Composable
 fun ProfileHeader(
@@ -44,6 +52,7 @@ fun ProfileHeader(
     wineyardCount: Int,
     maxWineyards: Int,
     onProfilePictureClick: () -> Unit,
+    onNameClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -71,10 +80,34 @@ fun ProfileHeader(
                 contentAlignment = Alignment.Center
             ) {
                 if (profilePictureUrl != null) {
-                    // TODO: Load actual image from URL
-                    UserPlaceholderIcon(
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(
+                                when {
+                                    profilePictureUrl.startsWith("/") -> File(profilePictureUrl)
+                                    profilePictureUrl.startsWith("content://") -> Uri.parse(profilePictureUrl)
+                                    else -> profilePictureUrl
+                                }
+                            )
+                            .crossfade(true)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = "Profile Picture",
                         modifier = Modifier.size(114.dp),
-                        size = 114.dp
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            UserPlaceholderIcon(
+                                modifier = Modifier.size(114.dp),
+                                size = 114.dp
+                            )
+                        },
+                        error = {
+                            UserPlaceholderIcon(
+                                modifier = Modifier.size(114.dp),
+                                size = 114.dp
+                            )
+                        }
                     )
                 } else {
                     UserPlaceholderIcon(
@@ -85,7 +118,8 @@ fun ProfileHeader(
             }
             
             // Camera button with burgundy background
-            Box(
+            IconButton(
+                onClick = onProfilePictureClick,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .size(32.dp)
@@ -95,8 +129,7 @@ fun ProfileHeader(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.surface,
                         shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+                    )
             ) {
                 Icon(
                     imageVector = Icons.Default.Camera,
@@ -109,12 +142,13 @@ fun ProfileHeader(
         
         Spacer(modifier = Modifier.height(20.dp))
         
-        // User Name (larger and more prominent like the screenshot)
+        // User Name (larger and more prominent like the screenshot, clickable for editing)
         Text(
             text = userName,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.clickable { onNameClick() }
         )
         
         Spacer(modifier = Modifier.height(8.dp))

@@ -71,6 +71,20 @@ import com.ausgetrunken.ui.navigation.Screen
 import com.ausgetrunken.ui.profile.components.AddWineyardCard
 import com.ausgetrunken.ui.profile.components.ProfileHeader
 import com.ausgetrunken.ui.profile.components.WineyardCard
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
+import android.net.Uri
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,6 +107,108 @@ fun OwnerProfileScreen(
     val coroutineScope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
+    val context = LocalContext.current
+    
+    // Image picker state
+    var showImagePickerDialog by remember { mutableStateOf(false) }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    
+    // Helper functions for image picker
+    fun createImageFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "PROFILE_${timeStamp}_"
+        val storageDir = File(context.getExternalFilesDir(null), "Pictures")
+        if (!storageDir.exists()) storageDir.mkdirs()
+        return File.createTempFile(imageFileName, ".jpg", storageDir)
+    }
+    
+    fun copyImageToInternalStorage(sourceUri: Uri): String? {
+        return try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "profile_photo_${timeStamp}.jpg"
+            val imagesDir = File(context.filesDir, "profile_images")
+            if (!imagesDir.exists()) imagesDir.mkdirs()
+            
+            val destFile = File(imagesDir, fileName)
+            
+            context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                destFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            
+            destFile.absolutePath
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    fun hasPermission(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    fun getCameraPermission(): String = android.Manifest.permission.CAMERA
+    
+    fun getStoragePermission(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            android.Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            android.Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+    }
+    
+    // Gallery launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { selectedUri ->
+            val internalPath = copyImageToInternalStorage(selectedUri)
+            if (internalPath != null) {
+                viewModel.updateProfilePicture(internalPath)
+            }
+        }
+        showImagePickerDialog = false
+    }
+    
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            photoUri?.let { uri ->
+                val internalPath = copyImageToInternalStorage(uri)
+                if (internalPath != null) {
+                    viewModel.updateProfilePicture(internalPath)
+                }
+            }
+        }
+        showImagePickerDialog = false
+    }
+    
+    // Permission launchers
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            val imageFile = createImageFile()
+            photoUri = FileProvider.getUriForFile(
+                context,
+                "com.ausgetrunken.fileprovider",
+                imageFile
+            )
+            cameraLauncher.launch(photoUri!!)
+        }
+        showImagePickerDialog = false
+    }
+    
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            galleryLauncher.launch("image/*")
+        }
+        showImagePickerDialog = false
+    }
     
     // Load data efficiently when screen appears (only if needed)
     LaunchedEffect(Unit) {
@@ -165,6 +281,14 @@ fun OwnerProfileScreen(
             println("ProfileScreen: Received updatedWineyardId: $it")
             // Wait for animation to complete then clear the saved state
             kotlinx.coroutines.delay(2000) // 2 seconds
+        }
+    }
+    
+    // Handle profile picture picker dialog trigger
+    LaunchedEffect(uiState.showProfilePicturePicker) {
+        if (uiState.showProfilePicturePicker) {
+            showImagePickerDialog = true
+            viewModel.hideProfilePicturePicker()
         }
     }
     
@@ -342,7 +466,8 @@ fun OwnerProfileScreen(
                                     profilePictureUrl = uiState.profilePictureUrl,
                                     wineyardCount = uiState.wineyards.size,
                                     maxWineyards = uiState.maxWineyards,
-                                    onProfilePictureClick = { viewModel.showProfilePicturePicker() }
+                                    onProfilePictureClick = { viewModel.showProfilePicturePicker() },
+                                    onNameClick = { viewModel.showEditNameDialog() }
                                 )
                             }
 
@@ -385,6 +510,54 @@ fun OwnerProfileScreen(
                 contentDescription = "Settings",
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp)
+            )
+        }
+        
+        // Image picker dialog
+        if (showImagePickerDialog) {
+            ProfileImagePickerDialog(
+                onCameraClick = {
+                    if (hasPermission(getCameraPermission())) {
+                        val imageFile = createImageFile()
+                        photoUri = FileProvider.getUriForFile(
+                            context,
+                            "com.ausgetrunken.fileprovider",
+                            imageFile
+                        )
+                        cameraLauncher.launch(photoUri!!)
+                        showImagePickerDialog = false
+                    } else {
+                        cameraPermissionLauncher.launch(getCameraPermission())
+                    }
+                },
+                onGalleryClick = {
+                    val storagePermission = getStoragePermission()
+                    val hasStoragePermission = hasPermission(storagePermission)
+                    
+                    if (hasStoragePermission) {
+                        galleryLauncher.launch("image/*")
+                        showImagePickerDialog = false
+                    } else {
+                        storagePermissionLauncher.launch(storagePermission)
+                    }
+                },
+                onDismiss = {
+                    showImagePickerDialog = false
+                }
+            )
+        }
+        
+        // Edit name dialog
+        if (uiState.showEditNameDialog) {
+            EditNameDialog(
+                currentName = uiState.userName,
+                isUpdating = uiState.isUpdatingName,
+                onSave = { newName ->
+                    viewModel.updateUserName(newName)
+                },
+                onDismiss = {
+                    viewModel.hideEditNameDialog()
+                }
             )
         }
     }
@@ -496,5 +669,106 @@ private fun PullToRefreshAccordion(
             }
         }
     }
+}
+
+// Profile image picker dialog
+@Composable
+private fun ProfileImagePickerDialog(
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Select Profile Picture",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "Choose an image source for your profile picture",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onCameraClick) {
+                Text("Camera")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onGalleryClick) {
+                Text("Gallery")
+            }
+        }
+    )
+}
+
+// Edit name dialog
+@Composable
+private fun EditNameDialog(
+    currentName: String,
+    isUpdating: Boolean,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var editedName by remember { mutableStateOf(currentName) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Edit Name",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Enter your display name:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                androidx.compose.material3.OutlinedTextField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    placeholder = { Text("Enter your name") },
+                    singleLine = true,
+                    enabled = !isUpdating,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (editedName.isNotBlank() && editedName != currentName) {
+                        onSave(editedName.trim())
+                    } else {
+                        onDismiss()
+                    }
+                },
+                enabled = !isUpdating && editedName.isNotBlank()
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isUpdating
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
