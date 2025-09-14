@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,12 +19,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import com.ausgetrunken.ui.theme.UserPlaceholderIcon
 import androidx.compose.runtime.Composable
@@ -52,28 +57,31 @@ fun ProfileHeader(
     wineyardCount: Int,
     maxWineyards: Int,
     onProfilePictureClick: () -> Unit,
+    onNotificationCenterClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onNameClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Profile Picture with golden border (like the screenshot)
+        // Profile Picture with golden border - left aligned (increased by 30%)
         Box(
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(114.dp),
             contentAlignment = Alignment.Center
         ) {
             // Profile picture background with golden border
             Box(
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(114.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
                     .border(
-                        width = 3.dp,
+                        width = 2.dp,
                         color = MaterialTheme.colorScheme.primary, // Burgundy red
                         shape = CircleShape
                     ),
@@ -94,29 +102,29 @@ fun ProfileHeader(
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .build(),
                         contentDescription = "Profile Picture",
-                        modifier = Modifier.size(114.dp),
+                        modifier = Modifier.size(110.dp),
                         contentScale = ContentScale.Crop,
                         loading = {
                             UserPlaceholderIcon(
-                                modifier = Modifier.size(114.dp),
-                                size = 114.dp
+                                modifier = Modifier.size(110.dp),
+                                size = 110.dp
                             )
                         },
                         error = {
                             UserPlaceholderIcon(
-                                modifier = Modifier.size(114.dp),
-                                size = 114.dp
+                                modifier = Modifier.size(110.dp),
+                                size = 110.dp
                             )
                         }
                     )
                 } else {
                     UserPlaceholderIcon(
-                        modifier = Modifier.size(114.dp),
-                        size = 114.dp
+                        modifier = Modifier.size(110.dp),
+                        size = 110.dp
                     )
                 }
             }
-            
+
             // Camera button with burgundy background
             IconButton(
                 onClick = onProfilePictureClick,
@@ -139,27 +147,82 @@ fun ProfileHeader(
                 )
             }
         }
-        
-        Spacer(modifier = Modifier.height(20.dp))
-        
-        // User Name (larger and more prominent like the screenshot, clickable for editing)
-        Text(
-            text = userName,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.clickable { onNameClick() }
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // User Email (simpler, no icon like the screenshot)
-        Text(
-            text = userEmail,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Normal
-        )
-        
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Account info on the right side
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.Start
+        ) {
+            // User Name (no longer clickable - editing moved to settings)
+            Text(
+                text = userName,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // User Email
+            Text(
+                text = userEmail,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Normal
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Buttons Row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Notification Center Button (reduced padding)
+                OutlinedButton(
+                    onClick = onNotificationCenterClick,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(34.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Notification Center",
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Notifications",
+                        fontSize = 11.sp
+                    )
+                }
+
+                // Settings Button
+                OutlinedButton(
+                    onClick = onSettingsClick,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(34.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Settings",
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
     }
 }

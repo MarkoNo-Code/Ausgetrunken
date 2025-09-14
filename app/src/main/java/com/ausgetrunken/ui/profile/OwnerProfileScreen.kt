@@ -476,7 +476,16 @@ fun OwnerProfileScreen(
                                     wineyardCount = uiState.wineyards.size,
                                     maxWineyards = uiState.maxWineyards,
                                     onProfilePictureClick = { viewModel.showProfilePicturePicker() },
-                                    onNameClick = { viewModel.showEditNameDialog() }
+                                    onNotificationCenterClick = {
+                                        // Get current user ID from ViewModel using coroutine scope
+                                        coroutineScope.launch {
+                                            viewModel.getCurrentOwnerId()?.let { ownerId ->
+                                                onNavigateToNotificationManagement(ownerId)
+                                            }
+                                        }
+                                    },
+                                    onSettingsClick = onNavigateToSettings,
+                                    onNameClick = { }
                                 )
                             }
 
@@ -512,22 +521,6 @@ fun OwnerProfileScreen(
                 }
             }
         } // End Scaffold
-        
-        // Floating settings button (top right corner)
-        IconButton(
-            onClick = onNavigateToSettings,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 56.dp, end = 16.dp) // Add top padding to avoid system bar
-                .size(48.dp)
-        ) {
-            Icon(
-                Icons.Default.Settings,
-                contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(24.dp)
-            )
-        }
         
         // Image picker dialog
         if (showImagePickerDialog) {
@@ -565,19 +558,6 @@ fun OwnerProfileScreen(
             )
         }
         
-        // Edit name dialog
-        if (uiState.showEditNameDialog) {
-            EditNameDialog(
-                currentName = uiState.userName,
-                isUpdating = uiState.isUpdatingName,
-                onSave = { newName ->
-                    viewModel.updateUserName(newName)
-                },
-                onDismiss = {
-                    viewModel.hideEditNameDialog()
-                }
-            )
-        }
     }
 }
 
@@ -691,72 +671,6 @@ private fun PullToRefreshAccordion(
 
 // Profile image picker dialog
 
-// Edit name dialog
-@Composable
-private fun EditNameDialog(
-    currentName: String,
-    isUpdating: Boolean,
-    onSave: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var editedName by remember { mutableStateOf(currentName) }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Edit Name",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Column {
-                Text(
-                    text = "Enter your display name:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                androidx.compose.material3.OutlinedTextField(
-                    value = editedName,
-                    onValueChange = { editedName = it },
-                    placeholder = { Text("Enter your name") },
-                    singleLine = true,
-                    enabled = !isUpdating,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (editedName.isNotBlank() && editedName != currentName) {
-                        onSave(editedName.trim())
-                    } else {
-                        onDismiss()
-                    }
-                },
-                enabled = !isUpdating && editedName.isNotBlank()
-            ) {
-                if (isUpdating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Save")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isUpdating
-            ) {
-                Text("Cancel")
-            }
-        }
-    )
-}
 
 // Hoisted component for easier previewing
 @Composable
@@ -770,6 +684,8 @@ fun OwnerProfileContent(
     newWineyardId: String? = null,
     updatedWineyardId: String? = null,
     onProfilePictureClick: () -> Unit = {},
+    onNotificationCenterClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     onNameClick: () -> Unit = {},
     onWineyardClick: (String) -> Unit = {},
     onAddWineyardClick: () -> Unit = {},
@@ -786,6 +702,8 @@ fun OwnerProfileContent(
                 wineyardCount = wineyards.size,
                 maxWineyards = maxWineyards,
                 onProfilePictureClick = onProfilePictureClick,
+                onNotificationCenterClick = onNotificationCenterClick,
+                onSettingsClick = onSettingsClick,
                 onNameClick = onNameClick
             )
         }

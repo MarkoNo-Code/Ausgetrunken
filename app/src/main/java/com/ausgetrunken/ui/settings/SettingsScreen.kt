@@ -16,7 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -38,12 +39,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ausgetrunken.ui.common.DeleteAccountDialog
 import com.ausgetrunken.ui.profile.OwnerProfileViewModel
@@ -142,33 +146,15 @@ fun SettingsScreen(
                             )
                         }
                         
-                        // Notification Center Button
-                        if (uiState.wineyards.isNotEmpty()) {
-                            OutlinedButton(
-                                onClick = { 
-                                    coroutineScope.launch {
-                                        val currentOwnerId = viewModel.getCurrentOwnerId()
-                                        if (currentOwnerId != null) {
-                                            onNavigateToNotificationManagement(currentOwnerId)
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Icon(
-                                    Icons.Default.Notifications,
-                                    contentDescription = "Notification Center",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Notification Center")
-                            }
-                            
-                            Spacer(modifier = Modifier.width(12.dp))
-                        }
+                        // Edit Account Name
+                        EditAccountNameCard(
+                            userName = uiState.userName,
+                            onSaveClick = { newName -> viewModel.updateUserName(newName) },
+                            isUpdating = uiState.isUpdatingName,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp)
+                        )
                         
                         // Logout Button
                         Button(
@@ -278,5 +264,93 @@ fun SettingsScreen(
             onDismiss = { viewModel.hideDeleteAccountDialog() },
             onConfirm = { viewModel.deleteAccount() }
         )
+    }
+}
+
+@Composable
+private fun EditAccountNameCard(
+    userName: String,
+    onSaveClick: (String) -> Unit,
+    isUpdating: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var editedName by remember(userName) { mutableStateOf(userName) }
+    val hasChanges = editedName.trim() != userName.trim() && editedName.isNotBlank()
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit Name",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Account Name",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = editedName,
+                    onValueChange = { newValue ->
+                        editedName = newValue.replace("\n", "").take(50) // Limit length
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    enabled = !isUpdating,
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                Button(
+                    onClick = {
+                        if (editedName.isNotBlank() && editedName.trim() != userName.trim()) {
+                            onSaveClick(editedName.trim())
+                        }
+                    },
+                    enabled = hasChanges && !isUpdating,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.width(80.dp)
+                ) {
+                    if (isUpdating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text(
+                            text = "Save",
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
     }
 }
