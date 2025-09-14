@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,8 +18,10 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.WineType
 
 @Composable
@@ -241,4 +244,40 @@ private fun DrawScope.drawWineBottle(
             )
         }
     }
+}
+
+@Composable
+fun WineGlassIcon(
+    wineType: WineType,
+    modifier: Modifier = Modifier,
+    tint: Color = Color.Unspecified
+) {
+    val iconRes = when (wineType) {
+        WineType.RED -> R.drawable.ic_wine_glass_red
+        WineType.WHITE -> R.drawable.ic_wine_glass_white
+        WineType.ROSE -> R.drawable.ic_wine_glass_rose
+        WineType.SPARKLING -> R.drawable.ic_wine_glass_sparkling
+        WineType.DESSERT -> R.drawable.ic_wine_glass_dessert
+        WineType.FORTIFIED -> R.drawable.ic_wine_glass_fortified
+    }
+
+    Icon(
+        painter = painterResource(id = iconRes),
+        contentDescription = "${wineType.name} wine",
+        modifier = modifier,
+        tint = tint
+    )
+}
+
+@Composable
+fun AppLogo(
+    modifier: Modifier = Modifier,
+    tint: Color = Color.Unspecified
+) {
+    Icon(
+        painter = painterResource(id = R.drawable.ic_app_logo),
+        contentDescription = "Ausgetrunken app logo",
+        modifier = modifier,
+        tint = tint
+    )
 }

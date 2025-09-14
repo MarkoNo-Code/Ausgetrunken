@@ -14,7 +14,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.data.local.entities.WineEntity
-import com.ausgetrunken.ui.theme.WineBottlePlaceholder
+import com.ausgetrunken.ui.theme.WineGlassIcon
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -40,8 +40,8 @@ fun CustomerWineCard(
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Wine bottle placeholder
-            WineBottlePlaceholder(
+            // Wine glass icon with brand consistency
+            WineGlassIcon(
                 wineType = wine.wineType,
                 modifier = Modifier.size(80.dp)
             )
