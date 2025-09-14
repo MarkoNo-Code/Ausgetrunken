@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +20,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -147,40 +148,36 @@ fun WineyardCard(
         }
     }
     
-    Card(
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .height(100.dp)
             .scale(scale.value)
             .then(
                 if (glowAlpha.value > 0f) {
                     Modifier.border(
                         width = 3.dp,
                         color = Color(0xFFC0C0C0).copy(alpha = glowAlpha.value), // Silver color
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(0.dp)
                     )
                 } else {
                     Modifier
                 }
-            ),
-        onClick = { onWineyardClick(wineyard.id) },
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent // Transparent background
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = { onWineyardClick(wineyard.id) }
+            )
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp), // Increased margin around entire content
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left side: Image with additional padding
+            // Left side: Image (no extra padding to align with screen edge)
             Box(
                 modifier = Modifier
                     .size(80.dp) // Fixed square size for image
-                    .padding(4.dp) // Extra padding around image
                     .clip(RoundedCornerShape(12.dp))
             ) {
                 if (wineyard.photos.isNotEmpty()) {
@@ -238,8 +235,8 @@ fun WineyardCard(
             // Right side: Text content with proper spacing
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 12.dp), // Space between image and text
+                    .weight(1f) // Take remaining space but respect right margin
+                    .padding(start = 24.dp), // Reduced space between image and text
                 verticalArrangement = Arrangement.Center
             ) {
                 // Wineyard name
@@ -262,7 +259,6 @@ fun WineyardCard(
                     color = Color.White.copy(alpha = 0.9f),
                     maxLines = 1
                 )
-            }
         }
     }
 }

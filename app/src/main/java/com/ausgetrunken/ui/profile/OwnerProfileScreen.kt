@@ -86,6 +86,12 @@ import android.os.Build
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.material3.Surface
+import com.ausgetrunken.ui.theme.AusgetrunkenTheme
+import com.ausgetrunken.data.local.entities.WineyardEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -305,15 +311,18 @@ fun OwnerProfileScreen(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary, // Same burgundy as add card
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), // Semi-transparent burgundy
                             Color.Transparent // Fade to transparent
-                        )
+                        ),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY
                     )
                 )
         )
         
         // Main content without top bar
         Scaffold(
-            containerColor = Color.Transparent, // Make scaffold transparent to show gradient
+            containerColor = MaterialTheme.colorScheme.background, // Use proper theme background
             snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { paddingValues ->
             Column(
@@ -457,8 +466,7 @@ fun OwnerProfileScreen(
                         // Show profile content even if there are some errors, as long as we have user info
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentPadding = PaddingValues(vertical = 16.dp)
                         ) {
                             item {
                                 ProfileHeader(
@@ -470,6 +478,10 @@ fun OwnerProfileScreen(
                                     onProfilePictureClick = { viewModel.showProfilePicturePicker() },
                                     onNameClick = { viewModel.showEditNameDialog() }
                                 )
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
 
                             // Wineyard Cards
@@ -484,6 +496,9 @@ fun OwnerProfileScreen(
                     
                             // Add Wineyard Card
                             if (uiState.canAddMoreWineyards) {
+                                item {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
                                 item {
                                     AddWineyardCard(
                                         onAddWineyardClick = onNavigateToCreateWineyard,
@@ -741,5 +756,330 @@ private fun EditNameDialog(
             }
         }
     )
+}
+
+// Hoisted component for easier previewing
+@Composable
+fun OwnerProfileContent(
+    userName: String,
+    userEmail: String,
+    profilePictureUrl: String?,
+    wineyards: List<WineyardEntity>,
+    maxWineyards: Int,
+    canAddMoreWineyards: Boolean,
+    newWineyardId: String? = null,
+    updatedWineyardId: String? = null,
+    onProfilePictureClick: () -> Unit = {},
+    onNameClick: () -> Unit = {},
+    onWineyardClick: (String) -> Unit = {},
+    onAddWineyardClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+    ) {
+        item {
+            ProfileHeader(
+                userName = userName,
+                userEmail = userEmail,
+                profilePictureUrl = profilePictureUrl,
+                wineyardCount = wineyards.size,
+                maxWineyards = maxWineyards,
+                onProfilePictureClick = onProfilePictureClick,
+                onNameClick = onNameClick
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Wineyard Cards
+        items(wineyards) { wineyard ->
+            WineyardCard(
+                wineyard = wineyard,
+                onWineyardClick = onWineyardClick,
+                isNewlyAdded = newWineyardId == wineyard.id,
+                isUpdated = updatedWineyardId == wineyard.id
+            )
+        }
+
+        // Add Wineyard Card
+        if (canAddMoreWineyards) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            item {
+                AddWineyardCard(
+                    onAddWineyardClick = onAddWineyardClick,
+                    currentWineyardCount = wineyards.size,
+                    maxWineyards = maxWineyards
+                )
+            }
+        }
+    }
+}
+
+// Preview parameter provider for different states
+class OwnerProfilePreviewParameterProvider : PreviewParameterProvider<OwnerProfilePreviewData> {
+    override val values = sequenceOf(
+        OwnerProfilePreviewData.EmptyProfile,
+        OwnerProfilePreviewData.SingleWineyard,
+        OwnerProfilePreviewData.MultipleWineyards,
+        OwnerProfilePreviewData.FullProfile
+    )
+}
+
+data class OwnerProfilePreviewData(
+    val userName: String,
+    val userEmail: String,
+    val profilePictureUrl: String?,
+    val wineyards: List<WineyardEntity>,
+    val maxWineyards: Int,
+    val canAddMoreWineyards: Boolean
+) {
+    companion object {
+        val EmptyProfile = OwnerProfilePreviewData(
+            userName = "John Winemaker",
+            userEmail = "john@winemaker.com",
+            profilePictureUrl = null,
+            wineyards = emptyList(),
+            maxWineyards = 3,
+            canAddMoreWineyards = true
+        )
+
+        val SingleWineyard = OwnerProfilePreviewData(
+            userName = "Maria Gonzalez",
+            userEmail = "maria@vineyard.es",
+            profilePictureUrl = null,
+            wineyards = listOf(
+                WineyardEntity(
+                    id = "1",
+                    name = "Sunset Valley Vineyard",
+                    description = "A beautiful vineyard with stunning sunset views and premium wine production.",
+                    address = "1234 Wine Country Rd, Napa Valley, CA",
+                    latitude = 38.2975,
+                    longitude = -122.4664,
+                    ownerId = "owner1",
+                    photos = listOf("https://example.com/vineyard1.jpg")
+                )
+            ),
+            maxWineyards = 3,
+            canAddMoreWineyards = true
+        )
+
+        val MultipleWineyards = OwnerProfilePreviewData(
+            userName = "Francesco Rossi",
+            userEmail = "francesco@tuscanwines.it",
+            profilePictureUrl = null,
+            wineyards = listOf(
+                WineyardEntity(
+                    id = "1",
+                    name = "Tuscan Hills Winery",
+                    description = "Traditional Tuscan winemaking in the heart of Chianti.",
+                    address = "Via del Vino 123, Chianti, Tuscany, Italy",
+                    latitude = 43.4643,
+                    longitude = 11.2958,
+                    ownerId = "owner1",
+                    photos = listOf("https://example.com/tuscany1.jpg")
+                ),
+                WineyardEntity(
+                    id = "2",
+                    name = "Mountain Peak Vineyard",
+                    description = "High-altitude vineyard producing exceptional cool-climate wines.",
+                    address = "Mountain View Rd, Alto Adige, Italy",
+                    latitude = 46.4982,
+                    longitude = 11.3548,
+                    ownerId = "owner1",
+                    photos = listOf("https://example.com/mountain1.jpg")
+                )
+            ),
+            maxWineyards = 3,
+            canAddMoreWineyards = true
+        )
+
+        val FullProfile = OwnerProfilePreviewData(
+            userName = "Robert Mondavi",
+            userEmail = "robert@mondavi.com",
+            profilePictureUrl = null,
+            wineyards = listOf(
+                WineyardEntity(
+                    id = "1",
+                    name = "Mondavi Estate Winery",
+                    description = "World-renowned winery producing exceptional Cabernet Sauvignon and Chardonnay.",
+                    address = "7801 St Helena Hwy, Oakville, CA 94562",
+                    latitude = 38.4331,
+                    longitude = -122.4064,
+                    ownerId = "owner1",
+                    photos = listOf("https://example.com/mondavi1.jpg")
+                ),
+                WineyardEntity(
+                    id = "2",
+                    name = "Reserve Vineyard",
+                    description = "Premium vineyard dedicated to reserve wine production.",
+                    address = "Reserve Rd, Napa Valley, CA",
+                    latitude = 38.4431,
+                    longitude = -122.4164,
+                    ownerId = "owner1",
+                    photos = listOf("https://example.com/reserve1.jpg")
+                ),
+                WineyardEntity(
+                    id = "3",
+                    name = "Heritage Vineyard",
+                    description = "Historic vineyard maintaining traditional winemaking methods.",
+                    address = "Heritage Lane, Napa Valley, CA",
+                    latitude = 38.4531,
+                    longitude = -122.4264,
+                    ownerId = "owner1",
+                    photos = listOf("https://example.com/heritage1.jpg")
+                )
+            ),
+            maxWineyards = 3,
+            canAddMoreWineyards = false
+        )
+    }
+}
+
+// Previews
+@Preview(name = "Empty Profile", showBackground = true)
+@Composable
+fun OwnerProfileContentPreview_Empty() {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val data = OwnerProfilePreviewData.EmptyProfile
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
+}
+
+@Preview(name = "Single Wineyard", showBackground = true)
+@Composable
+fun OwnerProfileContentPreview_Single() {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val data = OwnerProfilePreviewData.SingleWineyard
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
+}
+
+@Preview(name = "Multiple Wineyards", showBackground = true)
+@Composable
+fun OwnerProfileContentPreview_Multiple() {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val data = OwnerProfilePreviewData.MultipleWineyards
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
+}
+
+@Preview(name = "Full Profile (Max Wineyards)", showBackground = true)
+@Composable
+fun OwnerProfileContentPreview_Full() {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val data = OwnerProfilePreviewData.FullProfile
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
+}
+
+@Preview(name = "Parameterized Preview", showBackground = true)
+@Composable
+fun OwnerProfileContentPreview_Parameterized(
+    @PreviewParameter(OwnerProfilePreviewParameterProvider::class) data: OwnerProfilePreviewData
+) {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
+}
+
+// Dark theme previews
+@Preview(name = "Empty Profile - Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun OwnerProfileContentPreview_Empty_Dark() {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val data = OwnerProfilePreviewData.EmptyProfile
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
+}
+
+@Preview(name = "Multiple Wineyards - Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun OwnerProfileContentPreview_Multiple_Dark() {
+    AusgetrunkenTheme {
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val data = OwnerProfilePreviewData.MultipleWineyards
+            OwnerProfileContent(
+                userName = data.userName,
+                userEmail = data.userEmail,
+                profilePictureUrl = data.profilePictureUrl,
+                wineyards = data.wineyards,
+                maxWineyards = data.maxWineyards,
+                canAddMoreWineyards = data.canAddMoreWineyards
+            )
+        }
+    }
 }
 
