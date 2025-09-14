@@ -2,6 +2,11 @@ package com.ausgetrunken.ui.wineyard
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import android.net.Uri
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +19,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +40,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import coil.compose.AsyncImage
 import com.ausgetrunken.R
-import com.ausgetrunken.ui.wineyard.components.WineFormCard
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,17 +47,60 @@ import org.koin.androidx.compose.koinViewModel
 fun AddWineyardScreen(
     onNavigateBack: () -> Unit,
     onNavigateBackWithSuccess: (String) -> Unit,
+    onNavigateToLocationPicker: (Double, Double) -> Unit = { _, _ -> },
+    locationResult: Triple<Double, Double, String?>? = null,
     viewModel: AddWineyardViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
-    // Image picker launcher
-    val imagePickerLauncher = rememberLauncherForActivityResult(
+    // State for image picker dialog
+    var showImagePickerDialog by remember { mutableStateOf(false) }
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
+
+    // Helper function to create image file
+    fun createImageFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "WINEYARD_${timeStamp}_"
+        val storageDir = File(context.getExternalFilesDir(null), "Pictures")
+        if (!storageDir.exists()) storageDir.mkdirs()
+        return File.createTempFile(imageFileName, ".jpg", storageDir)
+    }
+
+    // Gallery launcher
+    val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { viewModel.onImageAdded(it.toString()) }
+        showImagePickerDialog = false
+    }
+
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            photoUri?.let { uri ->
+                viewModel.onImageAdded(uri.toString())
+            }
+        }
+        showImagePickerDialog = false
+    }
+
+    // Handle location selection result
+    LaunchedEffect(locationResult) {
+        locationResult?.let { (latitude, longitude, address) ->
+            android.util.Log.d("AddWineyardScreen", "🎯 Processing location result: lat=$latitude, lng=$longitude, address=$address")
+
+            // Update the viewModel with the selected location
+            address?.let { viewModel.onAddressChanged(it) }
+            viewModel.onLocationChanged(latitude, longitude)
+
+            // Clear the result to prevent reprocessing
+            // Note: This would be cleared automatically on next navigation in real implementation
+        }
     }
 
     LaunchedEffect(uiState.error) {
@@ -119,7 +170,7 @@ fun AddWineyardScreen(
                 item {
                     WineyardImageSection(
                         images = uiState.selectedImages,
-                        onAddImage = { imagePickerLauncher.launch("image/*") },
+                        onAddImage = { showImagePickerDialog = true },
                         onRemoveImage = viewModel::onImageRemoved
                     )
                 }
@@ -130,20 +181,20 @@ fun AddWineyardScreen(
                         name = uiState.name,
                         description = uiState.description,
                         address = uiState.address,
+                        latitude = uiState.latitude ?: 0.0,
+                        longitude = uiState.longitude ?: 0.0,
                         onNameChanged = viewModel::onNameChanged,
                         onDescriptionChanged = viewModel::onDescriptionChanged,
-                        onAddressChanged = viewModel::onAddressChanged
+                        onAddressChanged = viewModel::onAddressChanged,
+                        onLocationPickerClick = {
+                            onNavigateToLocationPicker(uiState.latitude ?: 0.0, uiState.longitude ?: 0.0)
+                        }
                     )
                 }
 
-                // Wine List Section
+                // Wine Information Section
                 item {
-                    WineListSection(
-                        wines = uiState.wines,
-                        onAddWine = viewModel::addWine,
-                        onRemoveWine = viewModel::removeWine,
-                        onWineChanged = viewModel::updateWine
-                    )
+                    WineInfoSection()
                 }
 
                 item {
@@ -183,6 +234,33 @@ fun AddWineyardScreen(
             }
         }
     }
+
+    // Image picker dialog
+    if (showImagePickerDialog) {
+        ImagePickerDialog(
+            onCameraClick = {
+                try {
+                    val imageFile = createImageFile()
+                    photoUri = FileProvider.getUriForFile(
+                        context,
+                        "com.ausgetrunken.fileprovider",
+                        imageFile
+                    )
+                    cameraLauncher.launch(photoUri!!)
+                } catch (e: Exception) {
+                    println("Error creating camera file: ${e.message}")
+                    showImagePickerDialog = false
+                }
+            },
+            onGalleryClick = {
+                galleryLauncher.launch("image/*")
+            },
+            onDismiss = {
+                showImagePickerDialog = false
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -193,6 +271,9 @@ private fun WineyardImageSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF111111) // Dark gray like WineyardCard
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -277,12 +358,18 @@ private fun WineyardBasicInfoSection(
     name: String,
     description: String,
     address: String,
+    latitude: Double,
+    longitude: Double,
     onNameChanged: (String) -> Unit,
     onDescriptionChanged: (String) -> Unit,
-    onAddressChanged: (String) -> Unit
+    onAddressChanged: (String) -> Unit,
+    onLocationPickerClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF111111) // Dark gray like WineyardCard
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -320,78 +407,137 @@ private fun WineyardBasicInfoSection(
                 minLines = 2,
                 maxLines = 3
             )
+
+            // Coordinates display (show when location is set)
+            if (latitude != 0.0 && longitude != 0.0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Koordinaten: ${String.format("%.6f", latitude)}, ${String.format("%.6f", longitude)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Location picker button
+            OutlinedButton(
+                onClick = onLocationPickerClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Standort auf Karte auswählen")
+            }
         }
     }
 }
 
 @Composable
-private fun WineListSection(
-    wines: List<WineFormData>,
-    onAddWine: () -> Unit,
-    onRemoveWine: (String) -> Unit,
-    onWineChanged: (String, WineFormData) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+private fun WineInfoSection() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Wines",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
                 )
-                
-                OutlinedButton(
-                    onClick = onAddWine,
-                    modifier = Modifier.height(36.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add Wine",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add Wine")
-                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Weine können später hinzugefügt werden",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
-            if (wines.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No wines added yet.\nClick 'Add Wine' to get started.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                wines.forEachIndexed { index, wine ->
-                    WineFormCard(
-                        wine = wine,
-                        onWineChanged = { updatedWine -> onWineChanged(wine.id, updatedWine) },
-                        onRemoveWine = { onRemoveWine(wine.id) }
-                    )
-                    
-                    if (index < wines.size - 1) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                }
-            }
-        }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Nachdem dein Weingut erstellt wurde, kannst du in den Weingut-Details beliebig viele Weine hinzufügen und verwalten.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+
     }
 }
+
+// Image picker dialog
+@Composable
+private fun ImagePickerDialog(
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Foto hinzufügen",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Text(
+                text = "Wählen Sie eine Bildquelle für Ihr Weingut-Foto",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TextButton(
+                    onClick = onCameraClick,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Kamera")
+                }
+
+                TextButton(
+                    onClick = onGalleryClick,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        Icons.Default.PhotoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Galerie")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        }
+    )
+}
+

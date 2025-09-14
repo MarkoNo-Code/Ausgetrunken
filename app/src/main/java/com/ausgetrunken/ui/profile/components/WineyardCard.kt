@@ -166,7 +166,7 @@ fun WineyardCard(
             ),
         onClick = { onWineyardClick(wineyard.id) },
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF111111) // Dark gray background
+            containerColor = Color.Transparent // Transparent background
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
@@ -174,7 +174,6 @@ fun WineyardCard(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF111111)) // Gray background
                 .padding(12.dp), // Increased margin around entire content
             verticalAlignment = Alignment.CenterVertically
         ) {

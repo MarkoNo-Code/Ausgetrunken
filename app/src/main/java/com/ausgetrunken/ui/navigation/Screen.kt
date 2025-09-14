@@ -34,6 +34,7 @@ sealed class Screen(val route: String) {
     data object LocationPicker : Screen("location_picker/{wineyardId}") {
         fun createRoute(wineyardId: String) = "location_picker/$wineyardId"
     }
+    data object AddWineyardLocationPicker : Screen("add_wineyard_location_picker")
     data object Map : Screen("map")
     data object Settings : Screen("settings")
 }

@@ -207,7 +207,10 @@ fun AusgetrunkenNavigation(
             )
         }
         
-        composable(Screen.AddWineyard.route) {
+        composable(Screen.AddWineyard.route) { backStackEntry ->
+            // Get location result from savedStateHandle if available
+            val locationResult = backStackEntry.savedStateHandle.get<Triple<Double, Double, String?>>("location_result")
+
             AddWineyardScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateBackWithSuccess = { wineyardId ->
@@ -216,7 +219,14 @@ fun AusgetrunkenNavigation(
                     println("🔥 AusgetrunkenNavigation: About to call popBackStack()")
                     navController.popBackStack()
                     println("🔥 AusgetrunkenNavigation: popBackStack() called")
-                }
+                },
+                onNavigateToLocationPicker = { currentLat, currentLng ->
+                    // Store current coordinates for location picker
+                    navController.currentBackStackEntry?.savedStateHandle?.set("current_lat", currentLat)
+                    navController.currentBackStackEntry?.savedStateHandle?.set("current_lng", currentLng)
+                    navController.navigate(Screen.AddWineyardLocationPicker.route)
+                },
+                locationResult = locationResult
             )
         }
         
@@ -296,7 +306,29 @@ fun AusgetrunkenNavigation(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
+        composable(Screen.AddWineyardLocationPicker.route) {
+            // Get current coordinates from previous backstack entry if available
+            val currentLat = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lat") ?: 0.0
+            val currentLng = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lng") ?: 0.0
+            android.util.Log.d("Navigation", "🗺️ AddWineyardLocationPicker starting with: lat=$currentLat, lng=$currentLng")
+
+            LocationPickerScreen(
+                wineyardId = "add_wineyard", // Placeholder ID for add wineyard flow
+                initialLatitude = currentLat,
+                initialLongitude = currentLng,
+                onLocationSelected = { latitude, longitude, address ->
+                    // CORRECT PATTERN: Set result in savedStateHandle and popBackStack()
+                    android.util.Log.d("Navigation", "🎯 Setting AddWineyard location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("location_result", Triple(latitude, longitude, address))
+                    navController.popBackStack()
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onNavigateToNotificationManagement = { ownerId ->
