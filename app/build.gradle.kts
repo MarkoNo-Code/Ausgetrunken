@@ -20,7 +20,7 @@ android {
         minSdk = 31
         //noinspection EditedTargetSdkVersion
         targetSdk = 36
-        versionCode = 2
+        versionCode = 5
         versionName = "1.0.0-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -58,7 +58,7 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
