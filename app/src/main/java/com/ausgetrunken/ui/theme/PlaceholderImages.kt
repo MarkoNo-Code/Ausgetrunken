@@ -109,51 +109,13 @@ fun WineyardPlaceholderImage(
     }
 }
 
-
-@Composable
-fun WineBottlePlaceholder(
-    wineType: WineType,
-    modifier: Modifier = Modifier,
-    size: Dp = 80.dp
-) {
-    val bottleColor = when (wineType) {
-        WineType.RED -> RedWineBottle
-        WineType.WHITE -> WhiteWineBottle
-        WineType.ROSE -> RoseWineBottle
-        WineType.SPARKLING -> SparklingWineBottle
-        WineType.DESSERT -> Color(0xFFDAA520) // Goldenrod
-        WineType.FORTIFIED -> Color(0xFF8B4513) // Saddle brown
-    }
-    
-    val wineColor = when (wineType) {
-        WineType.RED -> Color(0xFF8B0000)
-        WineType.WHITE -> Color(0xFFFFFFE0)
-        WineType.ROSE -> Color(0xFFFFB6C1)
-        WineType.SPARKLING -> Color(0xFFF0F8FF)
-        WineType.DESSERT -> Color(0xFFFFD700)
-        WineType.FORTIFIED -> Color(0xFFB8860B)
-    }
-    
-    Canvas(
-        modifier = modifier.size(size)
-    ) {
-        drawWineBottle(
-            size = this.size,
-            bottleColor = bottleColor,
-            wineColor = wineColor,
-            wineType = wineType
-        )
-    }
-}
-
 private fun DrawScope.drawWineBottle(
     size: Size,
-    bottleColor: androidx.compose.ui.graphics.Color,
-    wineColor: androidx.compose.ui.graphics.Color,
+    bottleColor: Color,
+    wineColor: Color,
     wineType: WineType
 ) {
     val bottleWidth = size.width * 0.6f
-    val bottleHeight = size.height * 0.85f
     val centerX = size.width / 2f
     
     // Bottle body
@@ -264,19 +226,6 @@ fun WineGlassIcon(
     Icon(
         painter = painterResource(id = iconRes),
         contentDescription = "${wineType.name} wine",
-        modifier = modifier,
-        tint = tint
-    )
-}
-
-@Composable
-fun AppLogo(
-    modifier: Modifier = Modifier,
-    tint: Color = Color.Unspecified
-) {
-    Icon(
-        painter = painterResource(id = R.drawable.ic_app_logo),
-        contentDescription = "Ausgetrunken app logo",
         modifier = modifier,
         tint = tint
     )

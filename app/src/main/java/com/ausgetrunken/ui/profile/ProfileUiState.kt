@@ -22,5 +22,4 @@ data class ProfileUiState(
     val isUpdatingName: Boolean = false
 ) {
     val maxWineyards = 5
-    val remainingWineyards = maxWineyards - wineyards.size
 }

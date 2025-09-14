@@ -2,9 +2,7 @@ package com.ausgetrunken.ui.splash
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.R
 import com.ausgetrunken.data.local.entities.UserType
-import com.ausgetrunken.ui.navigation.Screen
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 
@@ -192,7 +189,7 @@ private fun WineGlassAnimation(
     }
 }
 
-private fun DrawScope.createWineGlassPath(size: Size): Path {
+private fun createWineGlassPath(size: Size): Path {
     val path = Path()
     val centerX = size.width / 2f
     val centerY = size.height / 2f

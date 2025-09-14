@@ -5,33 +5,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ausgetrunken.ui.auth.AuthScreen
-import com.ausgetrunken.ui.profile.OwnerProfileScreen
-import com.ausgetrunken.ui.splash.SplashScreen
-import com.ausgetrunken.ui.wineyard.AddWineyardScreen
-import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
-import com.ausgetrunken.ui.wines.WineDetailScreen
-import com.ausgetrunken.ui.wines.AddWineScreen
-import com.ausgetrunken.ui.wines.EditWineScreen
 import com.ausgetrunken.ui.customer.CustomerLandingScreen
 import com.ausgetrunken.ui.customer.CustomerProfileScreen
 import com.ausgetrunken.ui.customer.CustomerWineyardDetailScreen
-import com.ausgetrunken.ui.notifications.NotificationManagementScreen
 import com.ausgetrunken.ui.location.LocationPickerScreen
+import com.ausgetrunken.ui.notifications.NotificationManagementScreen
+import com.ausgetrunken.ui.profile.OwnerProfileScreen
 import com.ausgetrunken.ui.settings.SettingsScreen
-import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
-import androidx.compose.runtime.remember
-import org.koin.androidx.compose.koinViewModel
+import com.ausgetrunken.ui.splash.SplashScreen
+import com.ausgetrunken.ui.wines.AddWineScreen
+import com.ausgetrunken.ui.wines.EditWineScreen
+import com.ausgetrunken.ui.wines.WineDetailScreen
+import com.ausgetrunken.ui.wineyard.AddWineyardScreen
+import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
 
 @Composable
 fun AusgetrunkenNavigation(
@@ -202,8 +195,7 @@ fun AusgetrunkenNavigation(
                     }
                 },
                 newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId"),
-                updatedWineyardId = backStackEntry.savedStateHandle.get<String>("updatedWineyardId"),
-                navController = navController
+                updatedWineyardId = backStackEntry.savedStateHandle.get<String>("updatedWineyardId")
             )
         }
         

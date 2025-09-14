@@ -51,16 +51,13 @@ import androidx.compose.foundation.clickable
 
 @Composable
 fun ProfileHeader(
+    modifier: Modifier = Modifier,
     userName: String,
     userEmail: String,
     profilePictureUrl: String?,
-    wineyardCount: Int,
-    maxWineyards: Int,
     onProfilePictureClick: () -> Unit,
     onNotificationCenterClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-    onNameClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onSettingsClick: () -> Unit
 ) {
     Row(
         modifier = modifier
