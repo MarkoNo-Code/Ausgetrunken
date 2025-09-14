@@ -73,6 +73,7 @@ import com.ausgetrunken.ui.profile.components.ProfileHeader
 import com.ausgetrunken.ui.profile.components.WineyardCard
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.ausgetrunken.ui.components.ImagePickerDialog
 import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import android.net.Uri
@@ -456,8 +457,8 @@ fun OwnerProfileScreen(
                         // Show profile content even if there are some errors, as long as we have user info
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             item {
                                 ProfileHeader(
@@ -515,7 +516,7 @@ fun OwnerProfileScreen(
         
         // Image picker dialog
         if (showImagePickerDialog) {
-            ProfileImagePickerDialog(
+            ImagePickerDialog(
                 onCameraClick = {
                     if (hasPermission(getCameraPermission())) {
                         val imageFile = createImageFile()
@@ -533,7 +534,7 @@ fun OwnerProfileScreen(
                 onGalleryClick = {
                     val storagePermission = getStoragePermission()
                     val hasStoragePermission = hasPermission(storagePermission)
-                    
+
                     if (hasStoragePermission) {
                         galleryLauncher.launch("image/*")
                         showImagePickerDialog = false
@@ -543,7 +544,9 @@ fun OwnerProfileScreen(
                 },
                 onDismiss = {
                     showImagePickerDialog = false
-                }
+                },
+                title = "Profilbild auswählen",
+                subtitle = "Wählen Sie eine Bildquelle für Ihr Profilbild"
             )
         }
         
@@ -672,38 +675,6 @@ private fun PullToRefreshAccordion(
 }
 
 // Profile image picker dialog
-@Composable
-private fun ProfileImagePickerDialog(
-    onCameraClick: () -> Unit,
-    onGalleryClick: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Select Profile Picture",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = "Choose an image source for your profile picture",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onCameraClick) {
-                Text("Camera")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onGalleryClick) {
-                Text("Gallery")
-            }
-        }
-    )
-}
 
 // Edit name dialog
 @Composable

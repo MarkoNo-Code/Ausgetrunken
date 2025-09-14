@@ -2,6 +2,10 @@ package com.ausgetrunken.ui.profile.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,21 +41,35 @@ fun AddWineyardCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .padding(horizontal = 16.dp, vertical = 4.dp), // Same margin as wineyard cards
+            .height(120.dp),
         onClick = onAddWineyardClick,
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), // Remove elevation
         shape = RoundedCornerShape(16.dp)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF111111)) // Same dark gray as wineyard cards
+            modifier = Modifier.fillMaxSize()
         ) {
+            // Dashed border
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                val strokeWidth = 2.dp.toPx()
+                val dashLength = 10.dp.toPx()
+                val gapLength = 5.dp.toPx()
+
+                drawRoundRect(
+                    color = androidx.compose.ui.graphics.Color(0xFF666666), // Gray dashed border
+                    style = Stroke(
+                        width = strokeWidth,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashLength, gapLength), 0f)
+                    ),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+                )
+            }
+
             // Centered content (+ icon and "Add Wineyard" text)
             Column(
                 modifier = Modifier
@@ -63,25 +81,25 @@ fun AddWineyardCard(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add Wineyard",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(32.dp)
                 )
-                
+
                 Text(
                     text = "Add Wineyard",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White, // Same color as + icon
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
-            
+
             // Count indicator positioned in bottom right corner
             Text(
                 text = "($currentWineyardCount/$maxWineyards)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.White, // Same color as + icon
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(12.dp)

@@ -151,7 +151,6 @@ fun WineyardCard(
         modifier = modifier
             .fillMaxWidth()
             .height(120.dp)
-            .padding(horizontal = 16.dp, vertical = 4.dp) // Add horizontal margin
             .scale(scale.value)
             .then(
                 if (glowAlpha.value > 0f) {

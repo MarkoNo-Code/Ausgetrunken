@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import coil.compose.AsyncImage
 import com.ausgetrunken.R
+import com.ausgetrunken.ui.components.ImagePickerDialog
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,7 +161,7 @@ fun AddWineyardScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -257,7 +258,9 @@ fun AddWineyardScreen(
             },
             onDismiss = {
                 showImagePickerDialog = false
-            }
+            },
+            title = "Weingut-Foto hinzufügen",
+            subtitle = "Wählen Sie eine Bildquelle für Ihr Weingut-Foto"
         )
     }
 
@@ -269,47 +272,56 @@ private fun WineyardImageSection(
     onAddImage: () -> Unit,
     onRemoveImage: (String) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF111111) // Dark gray like WineyardCard
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = stringResource(R.string.wineyard_photos),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "${images.size}/3",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
             
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Add Image Button
-                item {
-                    Card(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        onClick = onAddImage,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = stringResource(R.string.cd_add_photo),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                // Add Image Button (only show if less than 3 images)
+                if (images.size < 3) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            onClick = onAddImage,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
                             )
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = stringResource(R.string.cd_add_photo),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
@@ -349,7 +361,6 @@ private fun WineyardImageSection(
                     }
                 }
             }
-        }
     }
 }
 
@@ -365,22 +376,18 @@ private fun WineyardBasicInfoSection(
     onAddressChanged: (String) -> Unit,
     onLocationPickerClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF111111) // Dark gray like WineyardCard
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Wineyard Information",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+        Text(
+            text = "Wineyard Information",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
 
             OutlinedTextField(
                 value = name,
@@ -442,7 +449,6 @@ private fun WineyardBasicInfoSection(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Standort auf Karte auswählen")
             }
-        }
     }
 }
 
@@ -481,63 +487,4 @@ private fun WineInfoSection() {
     }
 }
 
-// Image picker dialog
-@Composable
-private fun ImagePickerDialog(
-    onCameraClick: () -> Unit,
-    onGalleryClick: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Foto hinzufügen",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = "Wählen Sie eine Bildquelle für Ihr Weingut-Foto",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                TextButton(
-                    onClick = onCameraClick,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Kamera")
-                }
-
-                TextButton(
-                    onClick = onGalleryClick,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        Icons.Default.PhotoLibrary,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Galerie")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
-            }
-        }
-    )
-}
 

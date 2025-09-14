@@ -85,6 +85,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.shape.CircleShape
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.ausgetrunken.ui.components.ImagePickerDialog
 import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import android.net.Uri
@@ -548,7 +549,7 @@ fun WineyardDetailScreen(
     
     // Image picker dialog
     if (showImagePickerDialog) {
-        ImagePickerDialog(
+        com.ausgetrunken.ui.components.ImagePickerDialog(
             onCameraClick = {
                 if (hasPermission(getCameraPermission())) {
                     val imageFile = createImageFile()
@@ -567,7 +568,7 @@ fun WineyardDetailScreen(
                 val storagePermission = getStoragePermission()
                 val hasStoragePermission = hasPermission(storagePermission)
                 Log.d("WineyardDetail", "Storage permission ($storagePermission): $hasStoragePermission")
-                
+
                 if (hasStoragePermission) {
                     galleryLauncher.launch("image/*")
                     showImagePickerDialog = false
@@ -578,7 +579,9 @@ fun WineyardDetailScreen(
             },
             onDismiss = {
                 showImagePickerDialog = false
-            }
+            },
+            title = "Weingut-Foto hinzufügen",
+            subtitle = "Wählen Sie eine Bildquelle für Ihr Weingut-Foto"
         )
     }
 }
@@ -1513,39 +1516,6 @@ private fun PhotoThumbnail(
     }
 }
 
-// Image picker dialog
-@Composable
-private fun ImagePickerDialog(
-    onCameraClick: () -> Unit,
-    onGalleryClick: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.select_image_source),
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = stringResource(R.string.choose_image_source_message),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onCameraClick) {
-                Text(stringResource(R.string.camera))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onGalleryClick) {
-                Text(stringResource(R.string.gallery))
-            }
-        }
-    )
-}
 
 @Composable
 private fun ShimmerLoadingEffect(
