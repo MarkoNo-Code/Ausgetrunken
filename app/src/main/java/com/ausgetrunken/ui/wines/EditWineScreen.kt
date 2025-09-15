@@ -11,11 +11,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ausgetrunken.data.local.entities.WineType
+import com.ausgetrunken.ui.theme.WineGlassIcon
 import org.koin.androidx.compose.koinViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,6 +125,14 @@ fun EditWineScreen(
                         onValueChange = { },
                         readOnly = true,
                         label = { Text("Wine Type") },
+                        leadingIcon = {
+                            uiState.wineType?.let { wineType ->
+                                WineGlassIcon(
+                                    wineType = wineType,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = wineTypeExpanded) },
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier.fillMaxWidth().menuAnchor(),
@@ -135,7 +146,18 @@ fun EditWineScreen(
                     ) {
                         WineType.values().forEach { wineType ->
                             DropdownMenuItem(
-                                text = { Text(wineType.name.lowercase().replaceFirstChar { it.uppercaseChar() }) },
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        WineGlassIcon(
+                                            wineType = wineType,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(wineType.name.lowercase().replaceFirstChar { it.uppercaseChar() })
+                                    }
+                                },
                                 onClick = {
                                     viewModel.updateWineType(wineType)
                                     wineTypeExpanded = false

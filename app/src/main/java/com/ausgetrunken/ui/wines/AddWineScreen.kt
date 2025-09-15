@@ -28,7 +28,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.ausgetrunken.data.local.entities.WineType
+import com.ausgetrunken.ui.theme.WineGlassIcon
 import org.koin.androidx.compose.koinViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,6 +129,14 @@ fun AddWineScreen(
                     onValueChange = { },
                     readOnly = true,
                     label = { Text("Wine Type") },
+                    leadingIcon = {
+                        uiState.wineType?.let { wineType ->
+                            WineGlassIcon(
+                                wineType = wineType,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = wineTypeExpanded) },
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
@@ -140,7 +150,18 @@ fun AddWineScreen(
                 ) {
                     WineType.values().forEach { wineType ->
                         DropdownMenuItem(
-                            text = { Text(wineType.name.lowercase().replaceFirstChar { it.uppercaseChar() }) },
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    WineGlassIcon(
+                                        wineType = wineType,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(wineType.name.lowercase().replaceFirstChar { it.uppercaseChar() })
+                                }
+                            },
                             onClick = {
                                 viewModel.updateWineType(wineType)
                                 wineTypeExpanded = false

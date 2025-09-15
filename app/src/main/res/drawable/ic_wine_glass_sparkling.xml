@@ -10,10 +10,16 @@
         android:translateX="54"
         android:translateY="41">
 
-        <!-- Wine fill (behind glass) -->
+        <!-- Wine fill with bubble holes -->
         <path
             android:fillColor="#F0F8FF"
-            android:pathData="M-10,-4 Q-12,8 -8,12 L-3,14 L3,14 L8,12 Q12,8 10,-4 Z" />
+            android:fillType="evenOdd"
+            android:pathData="M-10,-4 Q-12,8 -8,12 L-3,14 L3,14 L8,12 Q12,8 10,-4 Z
+                          M-6,-1 m-2,0 a2,2 0,1,0 4,0 a2,2 0,1,0 -4,0
+                          M3,1 m-2,0 a2,2 0,1,0 4,0 a2,2 0,1,0 -4,0
+                          M-1,5 m-2,0 a2,2 0,1,0 4,0 a2,2 0,1,0 -4,0
+                          M7,0 m-2,0 a2,2 0,1,0 4,0 a2,2 0,1,0 -4,0
+                          M2,8 m-2,0 a2,2 0,1,0 4,0 a2,2 0,1,0 -4,0" />
 
         <!-- Wine glass outline -->
         <path

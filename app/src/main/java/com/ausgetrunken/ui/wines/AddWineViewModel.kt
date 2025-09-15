@@ -37,8 +37,8 @@ class AddWineViewModel(
     }
     
     fun resetState() {
-        _uiState.update { 
-            AddWineUiState()
+        _uiState.update {
+            AddWineUiState(wineyardId = it.wineyardId)
         }
     }
     
@@ -256,7 +256,7 @@ data class AddWineUiState(
     val wineyardId: String = "",
     val name: String = "",
     val description: String = "",
-    val wineType: WineType? = null,
+    val wineType: WineType? = WineType.RED,
     val vintage: String = "",
     val price: String = "",
     val stockQuantity: String = "",
