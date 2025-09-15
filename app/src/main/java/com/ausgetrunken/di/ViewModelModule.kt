@@ -22,13 +22,13 @@ val viewModelModule = module {
     viewModel { AuthViewModel(get(), get()) }
     viewModel { SplashViewModel(get(), get()) }
     viewModel { AddWineyardViewModel(get(), get(), get()) }
-    viewModel { AddWineViewModel(get(), get(), get(), get()) }
-    viewModel { EditWineViewModel(get(), get(), get(), get()) }
+    viewModel { AddWineViewModel(get(), get(), get(), get(), get()) }
+    viewModel { EditWineViewModel(get(), get(), get(), get(), get()) }
     viewModel { CustomerLandingViewModel(get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get()) }
     viewModel { SubscriptionsViewModel(get(), get(), get()) }
     viewModel { NotificationManagementViewModel(get(), get(), get(), get(), get()) }
-    viewModel { WineDetailViewModel(get()) }
+    viewModel { WineDetailViewModel(get(), get()) }
     viewModel { LocationPickerViewModel(get()) }
     
     // FIXED: Changed from singleton to regular viewModel to prevent stale logout state

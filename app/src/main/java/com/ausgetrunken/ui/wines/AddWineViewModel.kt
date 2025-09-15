@@ -9,6 +9,7 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.service.WinePhotoService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,13 +18,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.net.Uri
 import java.util.UUID
 
 class AddWineViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
     private val userRepository: UserRepository,
-    private val wineyardService: WineyardService
+    private val wineyardService: WineyardService,
+    private val winePhotoService: WinePhotoService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AddWineUiState())
@@ -31,6 +34,9 @@ class AddWineViewModel(
     
     private val _navigationEvents = Channel<NavigationEvent>()
     val navigationEvents = _navigationEvents.receiveAsFlow()
+
+    // Wine photos flow
+    val winePhotos = MutableStateFlow<List<String>>(emptyList())
     
     fun setWineyardId(wineyardId: String) {
         _uiState.update { it.copy(wineyardId = wineyardId, isSuccess = false) }
@@ -115,7 +121,82 @@ class AddWineViewModel(
     }
     
     // Low stock threshold functionality removed - not in current database schema
-    
+
+    fun addPhoto(imageUri: Uri) {
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                // For now, we'll use a temporary wine ID - we'll update this after wine creation
+                val tempWineId = "temp_${System.currentTimeMillis()}"
+
+                winePhotoService.addPhoto(tempWineId, imageUri)
+                    .onSuccess { photoPath ->
+                        val currentPhotos = winePhotos.value.toMutableList()
+                        currentPhotos.add(photoPath)
+                        winePhotos.value = currentPhotos
+
+                        _uiState.update { it.copy(isLoading = false) }
+                        println("✅ AddWineViewModel: Photo added successfully: $photoPath")
+                    }
+                    .onFailure { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = exception.message ?: "Failed to add photo"
+                            )
+                        }
+                        println("❌ AddWineViewModel: Failed to add photo: ${exception.message}")
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Failed to add photo"
+                    )
+                }
+                println("❌ AddWineViewModel: Exception adding photo: ${e.message}")
+            }
+        }
+    }
+
+    fun removePhoto(photoPath: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                val tempWineId = "temp_${System.currentTimeMillis()}"
+
+                winePhotoService.removePhoto(tempWineId, photoPath)
+                    .onSuccess {
+                        val currentPhotos = winePhotos.value.toMutableList()
+                        currentPhotos.remove(photoPath)
+                        winePhotos.value = currentPhotos
+
+                        _uiState.update { it.copy(isLoading = false) }
+                        println("✅ AddWineViewModel: Photo removed successfully: $photoPath")
+                    }
+                    .onFailure { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = exception.message ?: "Failed to remove photo"
+                            )
+                        }
+                        println("❌ AddWineViewModel: Failed to remove photo: ${exception.message}")
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Failed to remove photo"
+                    )
+                }
+                println("❌ AddWineViewModel: Exception removing photo: ${e.message}")
+            }
+        }
+    }
+
     fun createWine() {
         val currentState = _uiState.value
         

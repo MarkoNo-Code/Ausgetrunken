@@ -9,6 +9,7 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
 import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.service.WinePhotoService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,12 +18,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.net.Uri
 
 class EditWineViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
     private val userRepository: UserRepository,
-    private val wineyardService: WineyardService
+    private val wineyardService: WineyardService,
+    private val winePhotoService: WinePhotoService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(EditWineUiState())
@@ -30,7 +33,10 @@ class EditWineViewModel(
     
     private val _navigationEvents = Channel<NavigationEvent>()
     val navigationEvents = _navigationEvents.receiveAsFlow()
-    
+
+    // Wine photos flow
+    val winePhotos = MutableStateFlow<List<String>>(emptyList())
+
     private var originalWine: WineEntity? = null
     
     fun loadWine(wineId: String) {
@@ -56,6 +62,9 @@ class EditWineViewModel(
                             isDataLoaded = true
                         )
                     }
+
+                    // Load wine photos
+                    loadWinePhotos(wine.id)
                 } else {
                     _uiState.update {
                         it.copy(
@@ -175,6 +184,90 @@ class EditWineViewModel(
                 lowStockThreshold = lowStockThreshold,
                 lowStockThresholdError = lowStockThresholdError
             )
+        }
+    }
+
+    private fun loadWinePhotos(wineId: String) {
+        viewModelScope.launch {
+            winePhotoService.getWinePhotosWithStatus(wineId).collect { photosWithStatus ->
+                val photosPaths = photosWithStatus.map { it.localPath }
+                winePhotos.value = photosPaths
+                println("✅ EditWineViewModel: Loaded ${photosPaths.size} photos for wine $wineId")
+            }
+        }
+    }
+
+    fun addPhoto(imageUri: Uri) {
+        val currentWineId = _uiState.value.wineId
+        if (currentWineId.isEmpty()) {
+            println("❌ EditWineViewModel: No wine ID available for adding photo")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                winePhotoService.addPhoto(currentWineId, imageUri)
+                    .onSuccess { photoPath ->
+                        _uiState.update { it.copy(isLoading = false) }
+                        println("✅ EditWineViewModel: Photo added successfully: $photoPath")
+                    }
+                    .onFailure { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = exception.message ?: "Failed to add photo"
+                            )
+                        }
+                        println("❌ EditWineViewModel: Failed to add photo: ${exception.message}")
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Failed to add photo"
+                    )
+                }
+                println("❌ EditWineViewModel: Exception adding photo: ${e.message}")
+            }
+        }
+    }
+
+    fun removePhoto(photoPath: String) {
+        val currentWineId = _uiState.value.wineId
+        if (currentWineId.isEmpty()) {
+            println("❌ EditWineViewModel: No wine ID available for removing photo")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                winePhotoService.removePhoto(currentWineId, photoPath)
+                    .onSuccess {
+                        _uiState.update { it.copy(isLoading = false) }
+                        println("✅ EditWineViewModel: Photo removed successfully: $photoPath")
+                    }
+                    .onFailure { exception ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = exception.message ?: "Failed to remove photo"
+                            )
+                        }
+                        println("❌ EditWineViewModel: Failed to remove photo: ${exception.message}")
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Failed to remove photo"
+                    )
+                }
+                println("❌ EditWineViewModel: Exception removing photo: ${e.message}")
+            }
         }
     }
     

@@ -14,6 +14,7 @@ import com.ausgetrunken.domain.service.SimplePhotoStorage
 import com.ausgetrunken.domain.service.PhotoUploadStatusStorage
 import com.ausgetrunken.domain.service.BackgroundPhotoUploadService
 import com.ausgetrunken.domain.service.NewWineyardPhotoService
+import com.ausgetrunken.domain.service.WinePhotoService
 import com.ausgetrunken.notifications.FCMTokenManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -38,6 +39,7 @@ val serviceModule = module {
     single { PhotoUploadStatusStorage(androidContext()) }
     single { BackgroundPhotoUploadService(androidContext(), get(), get()) }
     factory { NewWineyardPhotoService(androidContext(), get(), get(), get()) }
+    factory { WinePhotoService(androidContext(), get(), get(), get()) }
     
     // FCM Token Manager  
     single { FCMTokenManager(get(), get<NotificationService>()) }

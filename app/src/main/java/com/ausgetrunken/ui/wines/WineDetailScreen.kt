@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -71,6 +72,7 @@ fun WineDetailScreen(
             else -> {
                 WineDetailContent(
                     wine = uiState.wine!!,
+                    viewModel = viewModel,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
@@ -85,15 +87,25 @@ fun WineDetailScreen(
 @Composable
 private fun WineDetailContent(
     wine: WineEntity,
+    viewModel: WineDetailViewModel,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Wine Photos (at the top)
+        val winePhotos by viewModel.winePhotos.collectAsState()
+        WinePhotosCarousel(
+            photos = winePhotos
+        )
+
         // Wine Name and Type
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -115,7 +127,10 @@ private fun WineDetailContent(
         // Description
         if (wine.description.isNotEmpty()) {
             Card(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -138,7 +153,10 @@ private fun WineDetailContent(
         
         // Price Information
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -188,7 +206,10 @@ private fun WineDetailContent(
         
         // Stock Information
         Card(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)

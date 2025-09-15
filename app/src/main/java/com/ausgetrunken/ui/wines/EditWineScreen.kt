@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -76,6 +77,28 @@ fun EditWineScreen(
                 }
             )
         },
+        bottomBar = {
+            // Clean floating Update Wine button
+            Button(
+                onClick = {
+                    println("🔥 EditWineScreen: Update Wine button clicked!")
+                    viewModel.updateWine()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = uiState.canSubmit && !uiState.isLoading
+            ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Update Wine")
+                }
+            }
+        },
         modifier = modifier
     ) { paddingValues ->
         if (uiState.isLoading && !uiState.isDataLoaded) {
@@ -94,6 +117,15 @@ fun EditWineScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Wine Photos Section (at the top)
+                val winePhotos by viewModel.winePhotos.collectAsState()
+                WinePhotosManagementSection(
+                    photos = winePhotos,
+                    canEdit = true,
+                    onAddPhoto = viewModel::addPhoto,
+                    onRemovePhoto = viewModel::removePhoto
+                )
+
                 // Wine Name
                 OutlinedTextField(
                     value = uiState.name,
@@ -221,26 +253,7 @@ fun EditWineScreen(
                     isError = uiState.lowStockThresholdError != null,
                     supportingText = uiState.lowStockThresholdError?.let { { Text(it) } }
                 )
-                
-                // Submit Button
-                Button(
-                    onClick = { 
-                        println("🔥 EditWineScreen: Update Wine button clicked!")
-                        viewModel.updateWine()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = uiState.canSubmit && !uiState.isLoading
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Update Wine")
-                    }
-                }
-                
+
                 // Error Message
                 uiState.errorMessage?.let { error ->
                     Card(

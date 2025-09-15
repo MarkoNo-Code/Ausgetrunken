@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -98,6 +99,15 @@ fun AddWineScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Wine Photos Section (at the top)
+            val winePhotos by viewModel.winePhotos.collectAsState()
+            WinePhotosManagementSection(
+                photos = winePhotos,
+                canEdit = true,
+                onAddPhoto = viewModel::addPhoto,
+                onRemovePhoto = viewModel::removePhoto
+            )
+
             // Wine Name
             OutlinedTextField(
                 value = uiState.name,
@@ -207,7 +217,7 @@ fun AddWineScreen(
             )
             
             // Low Stock Threshold field removed - not in current database schema
-            
+
             // Submit Button
             Button(
                 onClick = { 
