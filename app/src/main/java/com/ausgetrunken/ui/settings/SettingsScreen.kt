@@ -91,12 +91,12 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -117,74 +117,41 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // Account Management Section
-                Card(
+                // Edit Account Name (simplified)
+                EditAccountNameCard(
+                    userName = uiState.userName,
+                    onSaveClick = { newName -> viewModel.updateUserName(newName) },
+                    isUpdating = uiState.isUpdatingName,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item {
+                // Logout Button
+                Button(
+                    onClick = { viewModel.logout() },
+                    enabled = !uiState.isLoggingOut,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = "Account",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = stringResource(R.string.account_management),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        
-                        // Edit Account Name
-                        EditAccountNameCard(
-                            userName = uiState.userName,
-                            onSaveClick = { newName -> viewModel.updateUserName(newName) },
-                            isUpdating = uiState.isUpdatingName,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp)
+                    if (uiState.isLoggingOut) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                        
-                        // Logout Button
-                        Button(
-                            onClick = { viewModel.logout() },
-                            enabled = !uiState.isLoggingOut,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        ) {
-                            if (uiState.isLoggingOut) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Signing out...")
-                            } else {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = "Logout",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Logout")
-                            }
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.signing_out))
+                    } else {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = stringResource(R.string.logout),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.logout))
                     }
                 }
             }
@@ -243,15 +210,15 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.error
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Flagging Account...")
+                                Text(stringResource(R.string.flagging_account))
                             } else {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = "Delete Account",
+                                    contentDescription = stringResource(R.string.cd_delete_account),
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Flag Account for Deletion")
+                                Text(stringResource(R.string.flag_account_for_deletion))
                             }
                         }
                     }
@@ -279,78 +246,58 @@ private fun EditAccountNameCard(
     var editedName by remember(userName) { mutableStateOf(userName) }
     val hasChanges = editedName.trim() != userName.trim() && editedName.isNotBlank()
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+    Column(
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Text(
+            text = stringResource(R.string.account_name),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "Edit Name",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.account_name),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            OutlinedTextField(
+                value = editedName,
+                onValueChange = { newValue ->
+                    editedName = newValue.replace("\n", "").take(50) // Limit length
+                },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                enabled = !isUpdating,
+                shape = RoundedCornerShape(8.dp)
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = editedName,
-                    onValueChange = { newValue ->
-                        editedName = newValue.replace("\n", "").take(50) // Limit length
-                    },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    enabled = !isUpdating,
-                    shape = RoundedCornerShape(8.dp)
-                )
-
-                Button(
-                    onClick = {
-                        if (editedName.isNotBlank() && editedName.trim() != userName.trim()) {
-                            onSaveClick(editedName.trim())
-                        }
-                    },
-                    enabled = hasChanges && !isUpdating,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.width(80.dp)
-                ) {
-                    if (isUpdating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(
-                            text = "Save",
-                            fontSize = 14.sp
-                        )
+            Button(
+                onClick = {
+                    if (editedName.isNotBlank() && editedName.trim() != userName.trim()) {
+                        onSaveClick(editedName.trim())
                     }
+                },
+                enabled = hasChanges && !isUpdating,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.save),
+                        fontSize = 14.sp
+                    )
                 }
             }
         }

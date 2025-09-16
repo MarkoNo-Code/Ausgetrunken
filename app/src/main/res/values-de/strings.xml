@@ -45,6 +45,7 @@
     <string name="update_wine">Wein aktualisieren</string>
     <string name="update_location">Standort aktualisieren</string>
     <string name="logout">Abmelden</string>
+    <string name="signing_out">Melde ab...</string>
     <string name="send">Senden</string>
     <string name="notify">Benachrichtigen</string>
     <string name="alert_now">Jetzt alarmieren!</string>
