@@ -45,10 +45,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.ausgetrunken.R
 import com.ausgetrunken.ui.common.DeleteAccountDialog
 import com.ausgetrunken.ui.profile.OwnerProfileViewModel
 import kotlinx.coroutines.launch
@@ -139,7 +141,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Account Management",
+                                text = stringResource(R.string.account_management),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -212,7 +214,7 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Danger Zone",
+                                text = stringResource(R.string.danger_zone),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.error
@@ -220,7 +222,7 @@ fun SettingsScreen(
                         }
                         
                         Text(
-                            text = "Once you delete your account, there is no going back. Please be certain.",
+                            text = stringResource(R.string.once_you_delete_account),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             modifier = Modifier.padding(bottom = 16.dp)
@@ -300,7 +302,7 @@ private fun EditAccountNameCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Account Name",
+                    text = stringResource(R.string.account_name),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface

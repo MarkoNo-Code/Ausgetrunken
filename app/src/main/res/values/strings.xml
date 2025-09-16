@@ -158,6 +158,7 @@
     <string name="threshold_label">Threshold: %d</string>
     <string name="in_stock">%d in stock</string>
     <string name="low_stock_warning">⚠️ Low stock warning</string>
+    <string name="low_stock">Low Stock</string>
     <string name="critical_stock_warning">CRITICAL: Almost \'ausgetrunken\'!</string>
     
     <!-- Wineyard Information -->
@@ -228,4 +229,22 @@
     <string name="choose_image_source_message">Choose where to get your photo from</string>
     <string name="camera">Camera</string>
     <string name="gallery">Gallery</string>
+
+    <!-- Additional hardcoded strings -->
+    <string name="subscribers_by_wineyard">Subscribers by Wineyard:</string>
+    <string name="total_across_all_wineyards">Total Across All Wineyards:</string>
+    <string name="no_low_stock_wines_found">No low stock wines found, so no subscriber information to display.</string>
+    <string name="account_management">Account Management</string>
+    <string name="once_you_delete_account">Once you delete your account, there is no going back. Please be certain.</string>
+    <string name="account_name">Account Name</string>
+    <string name="loading_your_profile">Loading your profile...</string>
+    <string name="please_wait_while_fetch">Please wait while we fetch your data</string>
+    <string name="failed_to_load_profile">Failed to load profile</string>
+    <string name="refreshing_wineyards_loading">Refreshing wineyards...</string>
+    <string name="wines_can_be_added_later">Wines can be added later</string>
+    <string name="after_wineyard_created">After your wineyard is created, you can add and manage as many wines as you want in the wineyard details.</string>
+    <string name="no_photos_available">No photos available</string>
+    <string name="wine_photos_count">Wine Photos (%d)</string>
+    <string name="your_wineyards">Your wineyards:</string>
+    <string name="wineyard_count_format" formatted="false">(%d/%d)</string>
 </resources>

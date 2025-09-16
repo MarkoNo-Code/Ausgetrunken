@@ -367,7 +367,7 @@ private fun SubscriberInfoCard(
             // Per-wineyard breakdown
             if (wineyardSubscriberInfo.isNotEmpty()) {
                 Text(
-                    text = "Subscribers by Wineyard:",
+                    text = stringResource(R.string.subscribers_by_wineyard),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
@@ -431,7 +431,7 @@ private fun SubscriberInfoCard(
                 if (wineyardSubscriberInfo.size > 1) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Total Across All Wineyards:",
+                        text = stringResource(R.string.total_across_all_wineyards),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
@@ -473,7 +473,7 @@ private fun SubscriberInfoCard(
             } else {
                 // No wineyards with low stock wines
                 Text(
-                    text = "No low stock wines found, so no subscriber information to display.",
+                    text = stringResource(R.string.no_low_stock_wines_found),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )

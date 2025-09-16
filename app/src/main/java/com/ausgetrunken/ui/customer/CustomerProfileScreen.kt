@@ -17,8 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.R
 import com.ausgetrunken.ui.common.DeleteAccountDialog
 import com.ausgetrunken.ui.theme.UserPlaceholderIcon
 import org.koin.androidx.compose.koinViewModel
@@ -302,7 +304,7 @@ private fun CustomerProfileHeader(
             
             // Welcome message
             Text(
-                text = "Welcome back!",
+                text = stringResource(R.string.welcome_back),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -311,7 +313,7 @@ private fun CustomerProfileHeader(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Happy wine tasting!",
+                text = stringResource(R.string.happy_wine_tasting),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -338,7 +340,7 @@ private fun CustomerInfoCard(
                 .padding(20.dp)
         ) {
             Text(
-                text = "Account Information",
+                text = stringResource(R.string.account_information),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface

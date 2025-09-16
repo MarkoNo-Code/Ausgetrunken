@@ -12,9 +12,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.ausgetrunken.R
 import coil.request.ImageRequest
 import java.io.File
 
@@ -39,7 +41,7 @@ fun WinePhotosCarousel(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Keine Fotos vorhanden",
+                    text = stringResource(R.string.no_photos_available),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -57,7 +59,7 @@ fun WinePhotosCarousel(
             Column {
                 // Header
                 Text(
-                    text = "Wein-Fotos (${photos.size})",
+                    text = stringResource(R.string.wine_photos_count, photos.size),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

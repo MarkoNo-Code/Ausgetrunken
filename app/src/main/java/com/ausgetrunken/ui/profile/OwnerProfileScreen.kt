@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -474,6 +475,31 @@ fun OwnerProfileScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
 
+                            // Wineyard List Title (only show if there are wineyards)
+                            if (uiState.wineyards.isNotEmpty()) {
+                                item {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.your_wineyards),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.wineyard_count_format, uiState.wineyards.size, uiState.maxWineyards),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                            }
+
                             // Wineyard Cards
                             items(uiState.wineyards) { wineyard ->
                                 WineyardCard(
@@ -491,9 +517,7 @@ fun OwnerProfileScreen(
                                 }
                                 item {
                                     AddWineyardCard(
-                                        onAddWineyardClick = onNavigateToCreateWineyard,
-                                        currentWineyardCount = uiState.wineyards.size,
-                                        maxWineyards = uiState.maxWineyards
+                                        onAddWineyardClick = onNavigateToCreateWineyard
                                     )
                                 }
                             }
@@ -686,6 +710,31 @@ fun OwnerProfileContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // Wineyard List Title (only show if there are wineyards)
+        if (wineyards.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.your_wineyards),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.wineyard_count_format, wineyards.size, maxWineyards),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+
         // Wineyard Cards
         items(wineyards) { wineyard ->
             WineyardCard(
@@ -703,9 +752,7 @@ fun OwnerProfileContent(
             }
             item {
                 AddWineyardCard(
-                    onAddWineyardClick = onAddWineyardClick,
-                    currentWineyardCount = wineyards.size,
-                    maxWineyards = maxWineyards
+                    onAddWineyardClick = onAddWineyardClick
                 )
             }
         }

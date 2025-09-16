@@ -259,7 +259,7 @@ private fun WineDetailContent(
                 if (wine.stockQuantity <= wine.lowStockThreshold) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "⚠️ Low stock warning",
+                        text = stringResource(R.string.low_stock_warning),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )

@@ -9,6 +9,7 @@
     <string name="welcome_title">Willkommen bei Ausgetrunken</string>
     <string name="sign_in_subtitle">Anmelden um fortzufahren</string>
     <string name="sign_up_subtitle">Erstellen Sie Ihr Konto</string>
+    <string name="forgot_password_subtitle">Geben Sie Ihre E-Mail ein, um Ihr Passwort zurückzusetzen</string>
     <string name="account_flagged_title">Konto Markiert</string>
     
     <!-- Form Labels -->
@@ -31,6 +32,9 @@
     <string name="sign_in">Anmelden</string>
     <string name="sign_up">Registrieren</string>
     <string name="create_account">Konto erstellen</string>
+    <string name="forgot_password">Passwort vergessen?</string>
+    <string name="reset_password">Passwort zurücksetzen</string>
+    <string name="back_to_login">Zurück zur Anmeldung</string>
     <string name="contact_support">Support kontaktieren</string>
     <string name="dismiss">Schließen</string>
     <string name="save">Speichern</string>
@@ -83,7 +87,20 @@
     <string name="cd_unsubscribe">Von Benachrichtigungen abmelden</string>
     <string name="cd_notification_settings">Benachrichtigungseinstellungen</string>
     <string name="cd_view_as_customer">Als Kunde anzeigen</string>
-    
+
+    <!-- Location Picker -->
+    <string name="select_location">Standort auswählen</string>
+    <string name="current_location">Aktueller Standort</string>
+    <string name="confirm_location">Standort bestätigen</string>
+    <string name="selected_location">Ausgewählter Standort</string>
+    <string name="loading_address">Adresse wird geladen…</string>
+    <string name="address_not_available">Adresse nicht verfügbar</string>
+    <string name="coordinates_format" formatted="false">%.6f, %.6f</string>
+    <string name="location_updated_successfully">Standort erfolgreich aktualisiert</string>
+    <string name="failed_to_update_location">Standort konnte nicht aktualisiert werden</string>
+    <string name="tap_to_open_maps">Tippen Sie, um in Karten zu öffnen</string>
+    <string name="location_not_set">Standort nicht festgelegt</string>
+
     <!-- Messages -->
     <string name="welcome_back">Willkommen zurück!</string>
     <string name="happy_wine_tasting">Fröhliche Weinverkostung!</string>
@@ -141,6 +158,7 @@
     <string name="threshold_label">Schwelle: %d</string>
     <string name="in_stock">%d auf Lager</string>
     <string name="low_stock_warning">⚠️ Niedriglager-Warnung</string>
+    <string name="low_stock">Niedriglager</string>
     <string name="critical_stock_warning">KRITISCH: Fast \'ausgetrunken\'!</string>
     
     <!-- Wineyard Information -->
@@ -175,7 +193,16 @@
     <!-- Dialogs -->
     <string name="delete_account_title">Konto löschen?</string>
     <string name="delete_account_message">Ihr Konto wird zur Löschung markiert und Sie können sich nicht mehr anmelden. Ihre Daten werden zu Wiederherstellungszwecken aufbewahrt und später von einem Administrator dauerhaft gelöscht.\n\nDaten, die zur Löschung markiert werden:\n• Ihre Profilinformationen\n• Alle von Ihnen erstellten Weingüter\n• Alle Weine in Ihren Weingütern\n• Ihr Abonnement-Verlauf\n• Alle anderen Kontodaten\n\nSind Sie sicher, dass Sie Ihr Konto zur Löschung markieren möchten?</string>
-    
+
+    <string name="delete_wineyard_title">Weingut löschen?</string>
+    <string name="delete_wineyard_message">Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten, die mit diesem Weingut verbunden sind, werden dauerhaft gelöscht:\n\n• Weingut-Informationen\n• Alle Weine in diesem Weingut\n• Alle Fotos\n• Abonnenten-Informationen\n\nSind Sie sicher, dass Sie dieses Weingut löschen möchten?</string>
+
+    <!-- Danger Zone -->
+    <string name="danger_zone">Gefahrenzone</string>
+    <string name="delete_wineyard_warning">Sobald Sie ein Weingut löschen, gibt es kein Zurück. Bitte seien Sie sich sicher.</string>
+    <string name="delete_wineyard">Weingut löschen</string>
+    <string name="deleting">Wird gelöscht…</string>
+
     <!-- Section Headers -->
     <string name="price_information">Preisinformationen</string>
     <string name="stock_information">Lagerinformationen</string>
@@ -193,4 +220,31 @@
     <string name="notification_preferences_header">Benachrichtigungseinstellungen</string>
     <string name="subscriber_info">Abonnenten-Informationen</string>
     <string name="sent_notification_success">Benachrichtigung an %d Abonnenten gesendet</string>
+
+    <!-- Photo Management -->
+    <string name="add_photo">Foto hinzufügen</string>
+    <string name="tap_add_photo_wineyard">Tippen Sie auf \'Foto hinzufügen\', um bis zu 3 Fotos Ihres Weinguts hinzuzufügen</string>
+    <string name="photos_count_with_limit">Fotos (%1$d/%2$d)</string>
+    <string name="select_image_source">Bildquelle auswählen</string>
+    <string name="choose_image_source_message">Wählen Sie aus, woher Sie Ihr Foto bekommen möchten</string>
+    <string name="camera">Kamera</string>
+    <string name="gallery">Galerie</string>
+
+    <!-- Additional hardcoded strings -->
+    <string name="subscribers_by_wineyard">Abonnenten nach Weingut:</string>
+    <string name="total_across_all_wineyards">Gesamt über alle Weingüter:</string>
+    <string name="no_low_stock_wines_found">Keine Niedriglager-Weine gefunden, daher keine Abonnenten-Informationen anzuzeigen.</string>
+    <string name="account_management">Kontoverwaltung</string>
+    <string name="once_you_delete_account">Sobald Sie Ihr Konto löschen, gibt es kein Zurück. Bitte seien Sie sich sicher.</string>
+    <string name="account_name">Kontoname</string>
+    <string name="loading_your_profile">Ihr Profil wird geladen...</string>
+    <string name="please_wait_while_fetch">Bitte warten Sie, während wir Ihre Daten abrufen</string>
+    <string name="failed_to_load_profile">Profil konnte nicht geladen werden</string>
+    <string name="refreshing_wineyards_loading">Weingüter werden aktualisiert...</string>
+    <string name="wines_can_be_added_later">Weine können später hinzugefügt werden</string>
+    <string name="after_wineyard_created">Nachdem Ihr Weingut erstellt wurde, können Sie in den Weingut-Details beliebig viele Weine hinzufügen und verwalten.</string>
+    <string name="no_photos_available">Keine Fotos verfügbar</string>
+    <string name="wine_photos_count">Wein-Fotos (%d)</string>
+    <string name="your_wineyards">Ihre Weingüter:</string>
+    <string name="wineyard_count_format" formatted="false">(%d/%d)</string>
 </resources>

@@ -30,15 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ausgetrunken.R
 
 @Composable
 fun AddWineyardCard(
     modifier: Modifier = Modifier,
-    onAddWineyardClick: () -> Unit,
-    currentWineyardCount: Int = 0,
-    maxWineyards: Int = 0
+    onAddWineyardClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -88,7 +88,7 @@ fun AddWineyardCard(
             )
 
             Text(
-                text = "Add Wineyard",
+                text = stringResource(R.string.add_wineyard),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -96,15 +96,5 @@ fun AddWineyardCard(
             )
         }
 
-        // Count indicator positioned in bottom right corner
-        Text(
-            text = "($currentWineyardCount/$maxWineyards)",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        )
     }
 }

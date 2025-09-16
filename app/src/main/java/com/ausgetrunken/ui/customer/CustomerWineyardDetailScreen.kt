@@ -513,7 +513,7 @@ private fun CustomerWineCard(
 
                 if (wine.stockQuantity <= wine.lowStockThreshold) {
                     Text(
-                        text = "Low Stock",
+                        text = stringResource(R.string.low_stock),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Medium

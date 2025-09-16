@@ -470,7 +470,7 @@ private fun WineInfoSection() {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Weine können später hinzugefügt werden",
+                    text = stringResource(R.string.wines_can_be_added_later),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -479,7 +479,7 @@ private fun WineInfoSection() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Nachdem dein Weingut erstellt wurde, kannst du in den Weingut-Details beliebig viele Weine hinzufügen und verwalten.",
+                text = stringResource(R.string.after_wineyard_created),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
