@@ -442,6 +442,48 @@ project-docs\deploy-internal.bat            # Windows
 
 ## Recent Development History
 
+### 🎯 User Type Assignment Bug - SOLVED! ✅
+**Status: ✅ Complete - 2025-09-24**
+
+**MAJOR BREAKTHROUGH**: The persistent user type assignment issue has been completely resolved with a hybrid self-healing solution!
+
+**Problem Recap**:
+- Users registering as "WINEYARD_OWNER" were incorrectly created as "CUSTOMER" in database
+- Multiple trigger fix attempts failed over several sessions
+- Root cause: Metadata extraction failure during email confirmation flow
+
+**Solution Implemented - Hybrid Self-Healing System**:
+1. **Immediate Profile Creation**: Attempts to create profile with correct type during registration
+2. **Enhanced Metadata Extraction**: Robust parsing with multiple fallback methods including regex
+3. **Post-Login Backup Correction**: Self-healing system that automatically fixes type mismatches
+4. **Comprehensive Debugging**: `UserTypeDebugLogger` for detailed troubleshooting
+
+**Technical Fix Details**:
+- **Critical Bug**: `user.userMetadata?.get("user_type")` returned `null` despite metadata containing `{"user_type":"WINEYARD_OWNER"}`
+- **Enhanced Extraction**: Added regex fallback parsing when direct object access fails
+- **Double Protection**: Both immediate creation and backup correction systems
+- **Self-Healing**: Automatically detects and corrects mismatches without manual intervention
+
+**Test Results**:
+- ✅ Before: `Extracted userType from metadata: 'null'` → Profile created as CUSTOMER
+- ✅ After: `Extracted userType from metadata: 'WINEYARD_OWNER'` → Profile created as WINEYARD_OWNER
+- ✅ New registrations work correctly from the app interface
+- ✅ No manual SQL corrections needed
+
+**Files Created/Modified**:
+- `SupabaseAuthRepository.kt`: Core hybrid logic with enhanced metadata extraction
+- `UserTypeDebugLogger.kt`: Centralized debugging utility for user type issues
+- `HYBRID_USER_TYPE_SOLUTION.md`: Complete technical documentation
+- `HYBRID_SOLUTION_TESTING_GUIDE.md`: Testing procedures and verification steps
+
+**Impact**:
+- 🎉 **User registration flow now works correctly** - wineyard owners get proper roles
+- 🛡️ **Self-healing system** protects against future trigger issues
+- 📊 **Comprehensive logging** enables easy troubleshooting
+- 🔄 **Backward compatible** with existing user data and systems
+
+**Architecture Decision**: Hybrid approach provides maximum reliability through redundancy - if one protection layer fails, backup layer ensures success.
+
 ### Data Synchronization Architecture Fix ✅
 **Status: ✅ Complete - 2025-07-26**
 
