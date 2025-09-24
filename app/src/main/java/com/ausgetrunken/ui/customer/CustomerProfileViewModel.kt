@@ -159,4 +159,53 @@ class CustomerProfileViewModel(
             }
         }
     }
+
+    fun updateUserName(newName: String) {
+        viewModelScope.launch {
+            try {
+                println("👤 CustomerProfileViewModel: Updating user name to: $newName")
+
+                _uiState.value = _uiState.value.copy(isUpdatingName = true)
+
+                // Get current user ID from local storage
+                val userId = tokenStorage.getUserId()
+
+                if (userId != null) {
+                    // Update in local database
+                    userRepository.updateUserName(userId, newName)
+                        .onSuccess {
+                            println("✅ CustomerProfileViewModel: Name updated successfully in database")
+                            _uiState.value = _uiState.value.copy(
+                                isUpdatingName = false,
+                                userName = newName
+                            )
+                        }
+                        .onFailure { error ->
+                            println("❌ CustomerProfileViewModel: Failed to update name: ${error.message}")
+                            _uiState.value = _uiState.value.copy(
+                                isUpdatingName = false,
+                                errorMessage = "Failed to update name: ${error.message}"
+                            )
+                        }
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingName = false,
+                        errorMessage = "User session not found"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isUpdatingName = false,
+                    errorMessage = "Unexpected error: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun updateUserEmail(newEmail: String) {
+        // TODO: Email update functionality not implemented yet
+        _uiState.value = _uiState.value.copy(
+            errorMessage = "Email update feature not yet available"
+        )
+    }
 }

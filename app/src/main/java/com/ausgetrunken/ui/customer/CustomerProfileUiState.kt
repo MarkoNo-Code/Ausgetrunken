@@ -12,5 +12,9 @@ data class CustomerProfileUiState(
     val logoutSuccess: Boolean = false,
     val showDeleteAccountDialog: Boolean = false,
     val isDeletingAccount: Boolean = false,
-    val deleteAccountSuccess: Boolean = false
+    val deleteAccountSuccess: Boolean = false,
+    val isUpdatingName: Boolean = false,
+    val isUpdatingEmail: Boolean = false,
+    val userName: String = "",
+    val userEmail: String = ""
 )

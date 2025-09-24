@@ -1,28 +1,55 @@
 package com.ausgetrunken.ui.customer
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ausgetrunken.R
 import com.ausgetrunken.ui.common.DeleteAccountDialog
-import com.ausgetrunken.ui.theme.UserPlaceholderIcon
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,212 +88,159 @@ fun CustomerProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile") },
+                title = { Text(stringResource(R.string.profile)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Box(
-            modifier = modifier
+        LazyColumn(
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                item {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(50.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             } else {
-                // Check if we have profile data from database (more reliable)
                 val profileData = uiState.userProfile
                 val sessionUser = uiState.user
+                val userEmail = profileData?.email ?: sessionUser?.email ?: "Unknown"
+                val userName = profileData?.fullName ?: "Customer"
 
-                if (profileData != null) {
-                    // Use profile data from database (preferred)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                item {
+                    // Edit Account Name
+                    EditAccountNameCard(
+                        userName = userName,
+                        onSaveClick = { newName -> viewModel.updateUserName(newName) },
+                        isUpdating = uiState.isUpdatingName,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    // Edit Email Address
+                    EditEmailCard(
+                        userEmail = userEmail,
+                        onSaveClick = { newEmail -> viewModel.updateUserEmail(newEmail) },
+                        isUpdating = uiState.isUpdatingEmail,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    // Logout Button
+                    Button(
+                        onClick = { viewModel.logout() },
+                        enabled = !uiState.isLoggingOut,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     ) {
-                        // Profile Header with database email
-                        CustomerProfileHeader(
-                            userEmail = profileData.email,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Profile Information Card with database data
-                        CustomerInfoCard(
-                            userEmail = profileData.email,
-                            userType = profileData.userType.name,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        if (uiState.isLoggingOut) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.signing_out))
+                        } else {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = stringResource(R.string.logout),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.logout))
+                        }
                     }
-                } else if (sessionUser != null) {
-                    // Fallback to session data
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        // Profile Header
-                        CustomerProfileHeader(
-                            userEmail = sessionUser.email ?: "",
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                }
 
-                        // Profile Information Card
-                        CustomerInfoCard(
-                            userEmail = sessionUser.email ?: "",
-                            userType = "Customer",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Spacer(modifier = Modifier.weight(1f))
-                        
-                        // Delete Account Button
-                        OutlinedButton(
-                            onClick = { viewModel.showDeleteAccountDialog() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            enabled = !uiState.isDeletingAccount
+                item {
+                    // Danger Zone Section
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), // Remove ugly shadow
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f)) // Add subtle border instead
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp)
                         ) {
-                            if (uiState.isDeletingAccount) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Danger Zone",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(R.string.danger_zone),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.error
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Flagging Account...",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Account",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Flag Account for Deletion",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
                             }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Logout Button
-                        Button(
-                            onClick = { viewModel.logout() },
-                            enabled = !uiState.isLoggingOut,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            if (uiState.isLoggingOut) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onError
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = "Logout",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Logout",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // Show fallback content when user is null but we're authenticated
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        // Fallback Profile Header
-                        CustomerProfileHeader(
-                            userEmail = "Customer",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        // Basic info
-                        CustomerInfoCard(
-                            userEmail = "Authenticated User",
-                            userType = "Customer",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Spacer(modifier = Modifier.weight(1f))
-                        
-                        // Logout Button
-                        Button(
-                            onClick = { viewModel.logout() },
-                            enabled = !uiState.isLoggingOut,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
+
+                            Text(
+                                text = stringResource(R.string.once_you_delete_account),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(bottom = 16.dp)
                             )
-                        ) {
-                            if (uiState.isLoggingOut) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onError
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                    contentDescription = "Logout",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Logout",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
+
+                            OutlinedButton(
+                                onClick = { viewModel.showDeleteAccountDialog() },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                enabled = !uiState.isDeletingAccount
+                            ) {
+                                if (uiState.isDeletingAccount) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.flagging_account))
+                                } else {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.cd_delete_account),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.flag_account_for_deletion))
+                                }
                             }
                         }
                     }
@@ -285,145 +259,140 @@ fun CustomerProfileScreen(
 }
 
 @Composable
-private fun CustomerProfileHeader(
-    userEmail: String,
+private fun EditAccountNameCard(
+    userName: String,
+    onSaveClick: (String) -> Unit,
+    isUpdating: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        shape = RoundedCornerShape(16.dp)
+    var editedName by remember(userName) { mutableStateOf(userName) }
+    val hasChanges = editedName.trim() != userName.trim() && editedName.isNotBlank()
+
+    Column(
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Text(
+            text = stringResource(R.string.account_name),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Profile Picture
-            Box(
-                modifier = Modifier.size(120.dp),
-                contentAlignment = Alignment.Center
+            OutlinedTextField(
+                value = editedName,
+                onValueChange = { newValue ->
+                    editedName = newValue.replace("\n", "").take(50) // Limit length
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                singleLine = true,
+                enabled = !isUpdating,
+                shape = RoundedCornerShape(8.dp)
+            )
+
+            Button(
+                onClick = {
+                    if (editedName.isNotBlank() && editedName.trim() != userName.trim()) {
+                        onSaveClick(editedName.trim())
+                    }
+                },
+                enabled = hasChanges && !isUpdating,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(56.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                        .border(
-                            width = 3.dp,
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    UserPlaceholderIcon(
-                        modifier = Modifier.size(120.dp),
-                        size = 120.dp
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.save),
+                        fontSize = 14.sp
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Welcome message
-            Text(
-                text = stringResource(R.string.welcome_back),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = stringResource(R.string.happy_wine_tasting),
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
         }
     }
 }
 
 @Composable
-private fun CustomerInfoCard(
+private fun EditEmailCard(
     userEmail: String,
-    userType: String,
+    onSaveClick: (String) -> Unit,
+    isUpdating: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp)
+    var editedEmail by remember(userEmail) { mutableStateOf(userEmail) }
+    val hasChanges = editedEmail.trim() != userEmail.trim() && editedEmail.isNotBlank()
+
+    Column(
+        modifier = modifier
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+        Text(
+            text = stringResource(R.string.email_address),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = stringResource(R.string.account_information),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+            OutlinedTextField(
+                value = editedEmail,
+                onValueChange = { newValue ->
+                    editedEmail = newValue.replace("\n", "").trim()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                singleLine = true,
+                enabled = !isUpdating,
+                shape = RoundedCornerShape(8.dp)
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Email
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+
+            Button(
+                onClick = {
+                    if (editedEmail.isNotBlank() && editedEmail.trim() != userEmail.trim()) {
+                        onSaveClick(editedEmail.trim())
+                    }
+                },
+                enabled = hasChanges && !isUpdating,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(56.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = "Email",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                
-                Column {
-                    Text(
-                        text = "Email",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
+                } else {
                     Text(
-                        text = userEmail,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // User Type
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "User Type",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                
-                Column {
-                    Text(
-                        text = "Account Type",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = userType,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = stringResource(R.string.save),
+                        fontSize = 14.sp
                     )
                 }
             }
