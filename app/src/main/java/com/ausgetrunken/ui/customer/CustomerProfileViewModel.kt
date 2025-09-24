@@ -2,14 +2,19 @@ package com.ausgetrunken.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ausgetrunken.data.local.TokenStorage
+import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class CustomerProfileViewModel(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val userRepository: UserRepository,
+    private val tokenStorage: TokenStorage
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(CustomerProfileUiState())
@@ -25,32 +30,57 @@ class CustomerProfileViewModel(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                
-                // Try to restore session to get current user info
+
+                // First try to get user ID from local storage
+                val userId = tokenStorage.getUserId()
+                println("🔍 CustomerProfileViewModel: Retrieved userId from storage: $userId")
+
+                // If we have user ID, get profile data from database
+                if (userId != null) {
+                    userRepository.getUserById(userId).collectLatest { userProfile ->
+                        if (userProfile != null) {
+                            println("✅ CustomerProfileViewModel: Profile loaded from database: ${userProfile.email}")
+                            _uiState.value = _uiState.value.copy(
+                                userProfile = userProfile,
+                                isLoading = false
+                            )
+                        } else {
+                            println("⚠️ CustomerProfileViewModel: No profile found in database for user $userId")
+                            // Try to sync from Supabase
+                            userRepository.syncUserFromSupabase(userId)
+                                .onSuccess { syncedUser ->
+                                    println("✅ CustomerProfileViewModel: Profile synced from Supabase: ${syncedUser.email}")
+                                    _uiState.value = _uiState.value.copy(
+                                        userProfile = syncedUser,
+                                        isLoading = false
+                                    )
+                                }
+                                .onFailure { syncError ->
+                                    println("❌ CustomerProfileViewModel: Failed to sync profile: ${syncError.message}")
+                                    _uiState.value = _uiState.value.copy(
+                                        isLoading = false,
+                                        errorMessage = "Could not load profile data"
+                                    )
+                                }
+                        }
+                    }
+                }
+
+                // Try to restore session to get current user info (still useful for some data)
                 authService.restoreSession()
                     .onSuccess { user ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            user = user
-                        )
+                        println("✅ CustomerProfileViewModel: Session restored successfully")
+                        _uiState.value = _uiState.value.copy(user = user)
                     }
                     .onFailure { error ->
                         val errorMessage = error.message ?: ""
                         if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                            // For VALID_SESSION_NO_USER case, we don't have full UserInfo
-                            // but we can still show the screen as "authenticated" with basic info
-                            println("✅ CustomerProfileViewModel: Valid session without UserInfo, showing minimal profile")
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                user = null // We'll handle null user gracefully in the UI
-                            )
+                            println("✅ CustomerProfileViewModel: Valid session without UserInfo, profile data from database is sufficient")
                         } else {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                errorMessage = "Failed to load user profile: ${error.message}"
-                            )
+                            println("⚠️ CustomerProfileViewModel: Session restore failed: ${error.message}")
                         }
                     }
+
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

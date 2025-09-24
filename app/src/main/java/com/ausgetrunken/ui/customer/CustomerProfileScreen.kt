@@ -90,8 +90,34 @@ fun CustomerProfileScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
             } else {
-                if (uiState.user != null) {
-                    val user = uiState.user!!
+                // Check if we have profile data from database (more reliable)
+                val profileData = uiState.userProfile
+                val sessionUser = uiState.user
+
+                if (profileData != null) {
+                    // Use profile data from database (preferred)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // Profile Header with database email
+                        CustomerProfileHeader(
+                            userEmail = profileData.email,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Profile Information Card with database data
+                        CustomerInfoCard(
+                            userEmail = profileData.email,
+                            userType = profileData.userType.name,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else if (sessionUser != null) {
+                    // Fallback to session data
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -101,13 +127,13 @@ fun CustomerProfileScreen(
                     ) {
                         // Profile Header
                         CustomerProfileHeader(
-                            userEmail = user.email ?: "",
+                            userEmail = sessionUser.email ?: "",
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
+
                         // Profile Information Card
                         CustomerInfoCard(
-                            userEmail = user.email ?: "",
+                            userEmail = sessionUser.email ?: "",
                             userType = "Customer",
                             modifier = Modifier.fillMaxWidth()
                         )

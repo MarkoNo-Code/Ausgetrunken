@@ -1,10 +1,12 @@
 package com.ausgetrunken.ui.customer
 
+import com.ausgetrunken.data.local.entities.UserEntity
 import io.github.jan.supabase.gotrue.user.UserInfo
 
 data class CustomerProfileUiState(
     val isLoading: Boolean = false,
     val user: UserInfo? = null,
+    val userProfile: UserEntity? = null, // Add profile data from database
     val isLoggingOut: Boolean = false,
     val errorMessage: String? = null,
     val logoutSuccess: Boolean = false,
