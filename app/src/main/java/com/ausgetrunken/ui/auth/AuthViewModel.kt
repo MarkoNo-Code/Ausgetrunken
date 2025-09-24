@@ -334,6 +334,7 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.value = currentState.copy(isLoading = true, errorMessage = null, successMessage = null)
             
+            println("🔍 AuthViewModel.register: Registering user with type: ${currentState.selectedUserType}")
             authService.signUp(currentState.email, currentState.password, currentState.selectedUserType)
                 .onSuccess { _ ->
                     _uiState.value = currentState.copy(
@@ -345,10 +346,23 @@ class AuthViewModel(
                     )
                 }
                 .onFailure { error ->
-                    _uiState.value = currentState.copy(
-                        isLoading = false,
-                        errorMessage = "${error.message ?: "Unknown error"}"
-                    )
+                    val errorMessage = error.message ?: "Unknown error"
+
+                    // Check if this is actually a successful registration requiring email confirmation
+                    if (errorMessage.startsWith("EMAIL_CONFIRMATION_REQUIRED:")) {
+                        val confirmationMessage = errorMessage.removePrefix("EMAIL_CONFIRMATION_REQUIRED:")
+                        _uiState.value = currentState.copy(
+                            isLoading = false,
+                            isRegistrationSuccessful = true,
+                            successMessage = confirmationMessage,
+                            mode = AuthMode.LOGIN // Switch to login mode
+                        )
+                    } else {
+                        _uiState.value = currentState.copy(
+                            isLoading = false,
+                            errorMessage = errorMessage
+                        )
+                    }
                 }
         }
     }

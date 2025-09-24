@@ -5,8 +5,12 @@ This file configures Claude Code for the Ausgetrunken project.
 > 🔧 **IMPORTANT for Future Sessions**: Always check files in `project-docs/` first! 
 > Setup scripts, documentation, and configuration files are organized here to keep the project root clean.
 
-> 🚨 **CRITICAL**: Before making ANY authentication/session changes, read `project-docs/critical-features.md` FIRST!  
+> 🚨 **CRITICAL**: Before making ANY authentication/session changes, read `project-docs/critical-features.md` FIRST!
 > Session persistence has broken multiple times and must never be broken again!
+
+> 🐛 **KNOWN BUG - USER TYPE ASSIGNMENT**: Read `project-docs/USER_TYPE_ASSIGNMENT_BUG_ANALYSIS.md` FIRST!
+> Users registering as "WINEYARD_OWNER" are created as "CUSTOMER" in database. Multiple fix attempts have failed.
+> DO NOT repeat the same trigger updates - focus on verification and alternative solutions!
 
 > 📁 **FILE ORGANIZATION RULE**: Read `project-docs/file-organization-rules.md` IMMEDIATELY!  
 > Never put .js, .sql, node_modules, supabase/, or other non-Android files in the root directory!

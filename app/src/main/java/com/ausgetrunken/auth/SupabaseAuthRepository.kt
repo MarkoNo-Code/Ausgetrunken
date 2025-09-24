@@ -35,25 +35,109 @@ class SupabaseAuthRepository(
     
     suspend fun signUp(email: String, password: String, userType: UserType): Result<UserInfo> {
         return try {
+            UserTypeDebugLogger.logRegistrationStart(email, userType)
+
             // Trim email to remove any whitespace that might cause issues
             val cleanEmail = email.trim().lowercase()
-            
+
             // First, try to sign up with Supabase Auth
             auth.signUpWith(Email) {
                 this.email = cleanEmail
                 this.password = password
+                // Store user type in metadata for later profile creation
+                this.data = buildJsonObject {
+                    put("user_type", userType.name)
+                }
+                UserTypeDebugLogger.logMetadataStorage(userType)
             }
-            
+
             // Check if user was created successfully
             val user = auth.currentUserOrNull()
-            
+
+            println("🔍 SupabaseAuthRepository.signUp: Post-registration user check:")
+            println("  - User exists: ${user != null}")
+            if (user != null) {
+                println("  - User ID: ${user.id}")
+                println("  - User email: ${user.email}")
+                println("  - emailConfirmedAt: ${user.emailConfirmedAt}")
+                println("  - aud: ${user.aud}")
+                println("  - Full user object: $user")
+            }
+
+            // HYBRID APPROACH PART 1: IMMEDIATE PROFILE CREATION
+            // Create profile immediately regardless of email confirmation status
+            // This prevents trigger timing issues
+            if (user != null) {
+                UserTypeDebugLogger.logImmediateCreationAttempt(user.id, userType)
+                try {
+                    // Force profile creation with correct user type immediately
+                    postgrest.from("user_profiles").insert(
+                        buildJsonObject {
+                            put("id", user.id)
+                            put("email", cleanEmail)
+                            put("user_type", userType.name)
+                            put("profile_completed", false)
+                            put("flagged_for_deletion", false)
+                        }
+                    )
+                    UserTypeDebugLogger.logImmediateCreationSuccess(userType)
+                } catch (immediateError: Exception) {
+                    UserTypeDebugLogger.logImmediateCreationFailure(
+                        immediateError.message ?: "Unknown error",
+                        immediateError.message?.contains("duplicate key", ignoreCase = true) == true
+                    )
+
+                    // Check if profile exists and needs correction
+                    if (immediateError.message?.contains("duplicate key", ignoreCase = true) == true) {
+                        try {
+                            // Get existing profile to check type
+                            val existingProfile = postgrest.from("user_profiles")
+                                .select {
+                                    filter {
+                                        eq("id", user.id)
+                                    }
+                                }
+                                .decodeSingleOrNull<UserProfile>()
+
+                            if (existingProfile != null && existingProfile.userType != userType.name) {
+                                UserTypeDebugLogger.logImmediateCorrection(existingProfile.userType, userType.name)
+                                postgrest.from("user_profiles")
+                                    .update(
+                                        buildJsonObject {
+                                            put("user_type", userType.name)
+                                            put("updated_at", Instant.now().toString())
+                                        }
+                                    ) {
+                                        filter {
+                                            eq("id", user.id)
+                                        }
+                                    }
+                                println("✅ HYBRID SOLUTION: Immediate correction successful - ${existingProfile.userType} → ${userType.name}")
+                            }
+                        } catch (correctionError: Exception) {
+                            println("❌ HYBRID SOLUTION: Immediate correction failed: ${correctionError.message}")
+                        }
+                    }
+                }
+            }
+
             if (user == null) {
-                // User might need email confirmation
-                throw Exception("Registration successful! Please check your email for confirmation link before signing in.")
+                // Registration successful but user needs email confirmation
+                // HYBRID APPROACH: Even without immediate user object, trigger will run
+                // Our post-login backup will catch any issues
+                println("✅ SupabaseAuthRepository.signUp: User is null - email confirmation required")
+                println("✅ HYBRID SOLUTION: Post-login backup will ensure correct user type")
+                return Result.failure(Exception("EMAIL_CONFIRMATION_REQUIRED:Registration successful! Please check your email for confirmation link before signing in."))
             }
             
-            // Only create user profile if user is confirmed or email confirmation is disabled
-            if (user.emailConfirmedAt != null || user.aud == "authenticated") {
+            // Only create user profile if user is confirmed
+            // Note: user.aud == "authenticated" doesn't mean email is confirmed, it just means they have a valid session
+            // We should ONLY create profile if emailConfirmedAt is not null (actually confirmed)
+            println("🔍 SupabaseAuthRepository.signUp: Email confirmation check:")
+            println("  - emailConfirmedAt: ${user.emailConfirmedAt}")
+            println("  - aud: ${user.aud}")
+
+            if (user.emailConfirmedAt != null) {
                 // Check if user profile already exists before creating
                 try {
                     val existingProfile = postgrest.from("user_profiles")
@@ -78,17 +162,108 @@ class SupabaseAuthRepository(
                         println("✅ SupabaseAuthRepository.signUp: User profile created successfully with type: ${userType.name}")
                     } else {
                         println("ℹ️ SupabaseAuthRepository.signUp: User profile already exists with type: ${existingProfile.userType}")
+
+                        // PROACTIVE FIX: Always verify and correct user type, even if profile exists
+                        if (existingProfile.userType != userType.name) {
+                            println("🔄 SupabaseAuthRepository.signUp: Profile exists but has wrong user type, correcting...")
+                            println("🔄 SupabaseAuthRepository.signUp: Profile type: ${existingProfile.userType}, Expected: ${userType.name}")
+
+                            try {
+                                postgrest.from("user_profiles")
+                                    .update(
+                                        buildJsonObject {
+                                            put("user_type", userType.name)
+                                            put("updated_at", Instant.now().toString())
+                                        }
+                                    ) {
+                                        filter {
+                                            eq("id", user.id)
+                                        }
+                                    }
+                                println("✅ SupabaseAuthRepository.signUp: Corrected user type from ${existingProfile.userType} to ${userType.name}")
+                            } catch (correctionError: Exception) {
+                                println("❌ SupabaseAuthRepository.signUp: Failed to correct user type: ${correctionError.message}")
+                            }
+                        } else {
+                            println("✅ SupabaseAuthRepository.signUp: User type is already correct: ${existingProfile.userType}")
+                        }
                     }
                 } catch (dbError: Exception) {
-                    // Profile creation is critical - if it fails, we should know about it
-                    println("❌ SupabaseAuthRepository.signUp: CRITICAL - Failed to create/check user profile: ${dbError.message}")
-                    println("❌ SupabaseAuthRepository.signUp: This may cause authentication issues later!")
-                    dbError.printStackTrace()
-                    // Still don't fail registration completely, but make it very obvious something went wrong
+                    // Check if this is a duplicate key error - means Supabase trigger already created profile
+                    if (dbError.message?.contains("duplicate key", ignoreCase = true) == true) {
+                        println("🔧 SupabaseAuthRepository.signUp: Profile already exists (likely created by Supabase trigger)")
+                        println("🔧 SupabaseAuthRepository.signUp: Attempting to update existing profile with correct user type")
+
+                        try {
+                            // Update the existing profile with the correct user type
+                            postgrest.from("user_profiles")
+                                .update(
+                                    buildJsonObject {
+                                        put("user_type", userType.name)
+                                        put("updated_at", Instant.now().toString())
+                                    }
+                                ) {
+                                    filter {
+                                        eq("id", user.id)
+                                    }
+                                }
+                            println("✅ SupabaseAuthRepository.signUp: Successfully updated existing profile with correct user type: ${userType.name}")
+                        } catch (updateError: Exception) {
+                            println("❌ SupabaseAuthRepository.signUp: Failed to update existing profile: ${updateError.message}")
+                            updateError.printStackTrace()
+                        }
+                    } else {
+                        // ENHANCED: Always try to fix user type regardless of error type
+                        println("🔧 SupabaseAuthRepository.signUp: Profile creation failed, but attempting user type fix anyway")
+                        println("🔧 SupabaseAuthRepository.signUp: Error was: ${dbError.message}")
+
+                        try {
+                            // Check if profile exists and fix user type if wrong
+                            val existingProfile = postgrest.from("user_profiles")
+                                .select {
+                                    filter {
+                                        eq("id", user.id)
+                                    }
+                                }
+                                .decodeSingleOrNull<UserProfile>()
+
+                            if (existingProfile != null) {
+                                println("🔍 SupabaseAuthRepository.signUp: Found existing profile with type: ${existingProfile.userType}")
+                                println("🔍 SupabaseAuthRepository.signUp: Expected type: ${userType.name}")
+
+                                if (existingProfile.userType != userType.name) {
+                                    println("🔄 SupabaseAuthRepository.signUp: Fixing incorrect user type")
+                                    postgrest.from("user_profiles")
+                                        .update(
+                                            buildJsonObject {
+                                                put("user_type", userType.name)
+                                                put("updated_at", Instant.now().toString())
+                                            }
+                                        ) {
+                                            filter {
+                                                eq("id", user.id)
+                                            }
+                                        }
+                                    println("✅ SupabaseAuthRepository.signUp: Fixed user type from ${existingProfile.userType} to ${userType.name}")
+                                } else {
+                                    println("ℹ️ SupabaseAuthRepository.signUp: User type already correct: ${existingProfile.userType}")
+                                }
+                            }
+                        } catch (fixError: Exception) {
+                            println("❌ SupabaseAuthRepository.signUp: Failed to fix user type: ${fixError.message}")
+                        }
+
+                        // Profile creation is critical - if it fails for other reasons, we should know about it
+                        println("❌ SupabaseAuthRepository.signUp: CRITICAL - Failed to create/check user profile: ${dbError.message}")
+                        println("❌ SupabaseAuthRepository.signUp: This may cause authentication issues later!")
+                        dbError.printStackTrace()
+                        // Still don't fail registration completely, but make it very obvious something went wrong
+                    }
                 }
             } else {
-                // User needs email confirmation, profile will be created on first login
-                throw Exception("Registration successful! Please check your email for confirmation link. Your profile will be created when you first sign in.")
+                // User needs email confirmation, profile will be created on first login after email confirmation
+                println("📧 SupabaseAuthRepository.signUp: User email not confirmed - profile creation deferred")
+                throw Exception("Registration successful! Please check your email for confirmation link. Your profile will be created when you first sign in after confirming your email.")
             }
             
             Result.success(user)
@@ -140,7 +315,56 @@ class SupabaseAuthRepository(
                     println("  - FlaggedForDeletion: ${existingProfile.flaggedForDeletion}")
                     println("  - DeletionType: ${existingProfile.deletionType}")
                     println("  - DeletionFlaggedAt: ${existingProfile.deletionFlaggedAt}")
-                    
+
+                    // HYBRID APPROACH PART 2: POST-LOGIN BACKUP CORRECTION
+                    // This is the self-healing backup system for the hybrid solution
+                    UserTypeDebugLogger.logBackupSystemStart(user.id, user)
+
+                    // ENHANCED: Use same robust extraction method
+                    val metadataUserType = try {
+                        user.userMetadata?.get("user_type") as? String
+                            ?: user.userMetadata?.get("userType") as? String
+                            ?: user.userMetadata?.get("type") as? String
+                            ?: run {
+                                val metadataStr = user.userMetadata.toString()
+                                if (metadataStr.contains("user_type")) {
+                                    val regex = """"user_type":\s*"([^"]+)"""".toRegex()
+                                    regex.find(metadataStr)?.groupValues?.get(1)
+                                } else null
+                            }
+                    } catch (e: Exception) {
+                        println("❌ HYBRID BACKUP: Metadata extraction error: ${e.message}")
+                        null
+                    }
+
+                    UserTypeDebugLogger.logMetadataExtraction(user, metadataUserType)
+
+                    // ENHANCED BACKUP LOGIC: More aggressive correction
+                    if (metadataUserType != null && metadataUserType != existingProfile.userType) {
+                        UserTypeDebugLogger.logTypeMismatchDetected(existingProfile.userType, metadataUserType)
+
+                        try {
+                            postgrest.from("user_profiles")
+                                .update(
+                                    buildJsonObject {
+                                        put("user_type", metadataUserType)
+                                        put("updated_at", Instant.now().toString())
+                                        // Add a marker to track hybrid corrections (optional field)
+                                        put("hybrid_corrected", true)
+                                    }
+                                ) {
+                                    filter {
+                                        eq("id", user.id)
+                                    }
+                                }
+                            UserTypeDebugLogger.logBackupCorrectionSuccess(existingProfile.userType, metadataUserType)
+                        } catch (updateError: Exception) {
+                            UserTypeDebugLogger.logBackupCorrectionFailure(updateError.message ?: "Unknown error", user.email)
+                        }
+                    } else {
+                        UserTypeDebugLogger.logNoMismatchFound(existingProfile.userType, metadataUserType)
+                    }
+
                     // Check if account is flagged for deletion
                     if (existingProfile.flaggedForDeletion) {
                         println("❌ SupabaseAuthRepository.signIn: Account IS flagged for deletion - blocking login")
@@ -201,16 +425,52 @@ class SupabaseAuthRepository(
                 } else {
                     // This should rarely happen - user signed in but no profile exists
                     // This could occur if registration profile creation failed but user was created in auth
-                    println("⚠️ SupabaseAuthRepository: User signed in but no profile exists - creating default profile")
-                    println("⚠️ SupabaseAuthRepository: This may indicate registration profile creation failed")
-                    
+                    UserTypeDebugLogger.logMissingProfile(user.id, user.email)
+
                     // Create profile for confirmed user with session tracking
-                    // NOTE: We default to CUSTOMER here, but user can update later via profile settings
+                    // Extract user type from registration metadata or default to CUSTOMER
+                    // Debug: Print all metadata to troubleshoot the user_type extraction issue
+                    println("🔍 SupabaseAuthRepository: Full user metadata: ${user.userMetadata}")
+                    println("🔍 SupabaseAuthRepository: Raw metadata keys: ${user.userMetadata?.keys}")
+
+                    // FIXED: Enhanced metadata extraction with multiple approaches
+                    val userTypeFromMetadata = try {
+                        // Try direct access first
+                        user.userMetadata?.get("user_type") as? String
+                            ?: user.userMetadata?.get("userType") as? String
+                            ?: user.userMetadata?.get("type") as? String
+                            ?: run {
+                                // Try alternative access methods
+                                val metadataStr = user.userMetadata.toString()
+                                println("🔍 HYBRID DEBUG: Raw metadata string: $metadataStr")
+
+                                // Parse the metadata if it's in JSON string format
+                                if (metadataStr.contains("user_type")) {
+                                    val regex = """"user_type":\s*"([^"]+)"""".toRegex()
+                                    regex.find(metadataStr)?.groupValues?.get(1)
+                                } else null
+                            }
+                    } catch (e: Exception) {
+                        println("❌ HYBRID DEBUG: Metadata extraction error: ${e.message}")
+                        null
+                    }
+
+                    val registeredUserType = userTypeFromMetadata ?: "CUSTOMER"
+
+                    println("🔍 SupabaseAuthRepository: Extracted userType from metadata: '$userTypeFromMetadata'")
+                    println("🔍 SupabaseAuthRepository: Final userType to use: '$registeredUserType'")
+
+                    // CRITICAL: If we still couldn't extract the type but metadata exists, log for debugging
+                    if (userTypeFromMetadata == null && user.userMetadata?.toString()?.contains("WINEYARD_OWNER") == true) {
+                        println("🚨 HYBRID CRITICAL: Metadata contains WINEYARD_OWNER but extraction failed!")
+                        println("🚨 HYBRID CRITICAL: This is a metadata parsing bug - defaulting to CUSTOMER")
+                    }
+
                     postgrest.from("user_profiles").insert(
                         buildJsonObject {
                             put("id", user.id)
                             put("email", user.email ?: email)
-                            put("user_type", "CUSTOMER") // Safe default - user can change this in profile settings
+                            put("user_type", registeredUserType)
                             put("profile_completed", false)
                             put("flagged_for_deletion", false)
                             put("current_session_id", newSessionId)
@@ -218,8 +478,7 @@ class SupabaseAuthRepository(
                             put("last_session_activity", Instant.now().toString())
                         }
                     )
-                    println("✅ SupabaseAuthRepository: Default user profile created with CUSTOMER type")
-                    println("📝 SupabaseAuthRepository: User can change their type later in profile settings")
+                    println("✅ SupabaseAuthRepository: User profile created with type: $registeredUserType")
                 }
             } catch (dbError: Exception) {
                 // If it's a flagged account error, re-throw it
@@ -634,26 +893,159 @@ class SupabaseAuthRepository(
         return try {
             // First, restore the session using the recovery token
             auth.retrieveUser(accessToken)
-            
+
             // Now update the password
             auth.updateUser {
                 password = newPassword
             }
-            
+
             // Sign out after password update so user has to log in with new password
             auth.signOut()
-            
+
             Result.success(Unit)
         } catch (e: Exception) {
             val errorMessage = when {
-                e.message?.contains("Invalid token") == true -> 
+                e.message?.contains("Invalid token") == true ->
                     "Reset link has expired. Please request a new password reset."
-                e.message?.contains("weak password") == true -> 
+                e.message?.contains("weak password") == true ->
                     "Password is too weak. Please choose a stronger password."
-                else -> 
+                else ->
                     "Failed to update password. Please try again."
             }
             Result.failure(Exception(errorMessage))
+        }
+    }
+
+    suspend fun updateUserEmail(newEmail: String): Result<String> {
+        return try {
+            val user = auth.currentUserOrNull()
+                ?: return Result.failure(Exception("No authenticated user found"))
+
+            val cleanEmail = newEmail.trim().lowercase()
+
+            // Validate email format
+            if (!isValidEmail(cleanEmail)) {
+                return Result.failure(Exception("Please enter a valid email address"))
+            }
+
+            // Check if it's the same email
+            if (user.email == cleanEmail) {
+                return Result.failure(Exception("This is already your current email address"))
+            }
+
+            println("📧 SupabaseAuthRepository.updateUserEmail: Attempting to update email from '${user.email}' to '$cleanEmail'")
+
+            // Attempt to update email in Supabase Auth
+            auth.updateUser {
+                email = cleanEmail
+            }
+
+            // Get the updated user to check the status
+            val updatedUser = auth.currentUserOrNull()
+
+            if (updatedUser != null) {
+                println("✅ SupabaseAuthRepository.updateUserEmail: Email update initiated successfully")
+                println("📧 SupabaseAuthRepository.updateUserEmail: Current user email: ${updatedUser.email}")
+                println("📧 SupabaseAuthRepository.updateUserEmail: Email confirmed at: ${updatedUser.emailConfirmedAt}")
+
+                // If email confirmation is enabled, the email won't change until confirmed
+                // But we should update our database optimistically or wait for confirmation
+                val confirmationRequired = updatedUser.email == user.email // Email hasn't changed yet
+
+                if (confirmationRequired) {
+                    // Email confirmation required - don't update database yet
+                    println("📧 SupabaseAuthRepository.updateUserEmail: Email confirmation required - confirmation emails sent")
+                    Result.success("Email update initiated! Please check both your current and new email addresses for confirmation links. Your email will be updated once confirmed.")
+                } else {
+                    // Email updated immediately - update database
+                    println("📧 SupabaseAuthRepository.updateUserEmail: Email updated immediately - updating database")
+                    try {
+                        postgrest.from("user_profiles")
+                            .update(
+                                buildJsonObject {
+                                    put("email", cleanEmail)
+                                    put("updated_at", Instant.now().toString())
+                                }
+                            ) {
+                                filter {
+                                    eq("id", user.id)
+                                }
+                            }
+                        println("✅ SupabaseAuthRepository.updateUserEmail: Database updated successfully")
+                        Result.success("Email updated successfully to $cleanEmail")
+                    } catch (dbError: Exception) {
+                        println("❌ SupabaseAuthRepository.updateUserEmail: Failed to update database: ${dbError.message}")
+                        // Email was updated in auth but not in database - this is problematic
+                        Result.success("Email updated in authentication but failed to update profile. Please contact support.")
+                    }
+                }
+            } else {
+                Result.failure(Exception("Failed to update email - user session lost"))
+            }
+
+        } catch (e: Exception) {
+            println("❌ SupabaseAuthRepository.updateUserEmail: Error updating email: ${e.message}")
+
+            val errorMessage = when {
+                e.message?.contains("User already registered", ignoreCase = true) == true ||
+                e.message?.contains("email already exists", ignoreCase = true) == true ||
+                e.message?.contains("duplicate", ignoreCase = true) == true ->
+                    "This email address is already in use by another account"
+                e.message?.contains("Invalid email", ignoreCase = true) == true ->
+                    "Please enter a valid email address"
+                e.message?.contains("rate limit", ignoreCase = true) == true ->
+                    "Too many attempts. Please wait a moment before trying again"
+                e.message?.contains("not authorized", ignoreCase = true) == true ->
+                    "You are not authorized to perform this action. Please sign in again"
+                else ->
+                    "Failed to update email: ${e.message}"
+            }
+            Result.failure(Exception(errorMessage))
+        }
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        val emailPattern = "^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$"
+        return email.matches(emailPattern.toRegex())
+    }
+
+    suspend fun handleEmailChangeConfirmation(): Result<Unit> {
+        return try {
+            // This method can be called when the app receives a deep link from email confirmation
+            // or when checking if a pending email change has been confirmed
+
+            val user = auth.currentUserOrNull()
+                ?: return Result.failure(Exception("No authenticated user found"))
+
+            // Refresh user data to get latest email status
+            auth.refreshCurrentSession()
+            val refreshedUser = auth.currentUserOrNull()
+
+            if (refreshedUser?.email != null) {
+                // Update database with confirmed email
+                try {
+                    postgrest.from("user_profiles")
+                        .update(
+                            buildJsonObject {
+                                put("email", refreshedUser.email!!)
+                                put("updated_at", Instant.now().toString())
+                            }
+                        ) {
+                            filter {
+                                eq("id", refreshedUser.id)
+                            }
+                        }
+                    println("✅ SupabaseAuthRepository.handleEmailChangeConfirmation: Email confirmed and database updated")
+                    Result.success(Unit)
+                } catch (dbError: Exception) {
+                    println("❌ SupabaseAuthRepository.handleEmailChangeConfirmation: Failed to update database: ${dbError.message}")
+                    Result.failure(Exception("Email confirmed but failed to update profile"))
+                }
+            } else {
+                Result.failure(Exception("Email confirmation not yet completed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to handle email confirmation: ${e.message}"))
         }
     }
     

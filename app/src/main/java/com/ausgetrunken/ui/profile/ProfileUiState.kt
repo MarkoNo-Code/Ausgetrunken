@@ -19,7 +19,9 @@ data class ProfileUiState(
     val isDeletingAccount: Boolean = false,
     val deleteAccountSuccess: Boolean = false,
     val showEditNameDialog: Boolean = false,
-    val isUpdatingName: Boolean = false
+    val isUpdatingName: Boolean = false,
+    val isUpdatingEmail: Boolean = false,
+    val successMessage: String? = null
 ) {
     val maxWineyards = 5
 }

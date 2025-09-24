@@ -396,7 +396,43 @@ class OwnerProfileViewModel(
             }
         }
     }
-    
+
+    fun updateUserEmail(newEmail: String) {
+        viewModelScope.launch {
+            try {
+                println("📧 ProfileViewModel: Updating user email to: $newEmail")
+
+                _uiState.value = _uiState.value.copy(isUpdatingEmail = true)
+
+                // Call the auth repository to update email
+                val result = authRepository.updateUserEmail(newEmail)
+
+                if (result.isSuccess) {
+                    val message = result.getOrNull() ?: "Email update initiated"
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingEmail = false,
+                        successMessage = message
+                    )
+                    println("✅ ProfileViewModel: Email update result: $message")
+
+                    // If email was updated immediately, refresh user profile
+                    if (!message.contains("confirmation")) {
+                        loadUserProfile()
+                    }
+                } else {
+                    throw result.exceptionOrNull() ?: Exception("Unknown error")
+                }
+
+            } catch (e: Exception) {
+                println("❌ ProfileViewModel: Error updating email: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isUpdatingEmail = false,
+                    errorMessage = e.message ?: "Failed to update email"
+                )
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             try {

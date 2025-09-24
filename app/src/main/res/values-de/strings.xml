@@ -238,6 +238,7 @@
     <string name="account_management">Kontoverwaltung</string>
     <string name="once_you_delete_account">Sobald Sie Ihr Konto löschen, gibt es kein Zurück. Bitte seien Sie sich sicher.</string>
     <string name="account_name">Kontoname</string>
+    <string name="email_address">E-Mail-Adresse</string>
     <string name="loading_your_profile">Ihr Profil wird geladen...</string>
     <string name="please_wait_while_fetch">Bitte warten Sie, während wir Ihre Daten abrufen</string>
     <string name="failed_to_load_profile">Profil konnte nicht geladen werden</string>

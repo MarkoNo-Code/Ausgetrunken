@@ -238,6 +238,7 @@
     <string name="account_management">Account Management</string>
     <string name="once_you_delete_account">Once you delete your account, there is no going back. Please be certain.</string>
     <string name="account_name">Account Name</string>
+    <string name="email_address">Email Address</string>
     <string name="loading_your_profile">Loading your profile...</string>
     <string name="please_wait_while_fetch">Please wait while we fetch your data</string>
     <string name="failed_to_load_profile">Failed to load profile</string>

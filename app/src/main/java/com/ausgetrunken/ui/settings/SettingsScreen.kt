@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -122,6 +123,16 @@ fun SettingsScreen(
                     userName = uiState.userName,
                     onSaveClick = { newName -> viewModel.updateUserName(newName) },
                     isUpdating = uiState.isUpdatingName,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item {
+                // Edit Email Address
+                EditEmailCard(
+                    userEmail = uiState.userEmail,
+                    onSaveClick = { newEmail -> viewModel.updateUserEmail(newEmail) },
+                    isUpdating = uiState.isUpdatingEmail,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -267,7 +278,9 @@ private fun EditAccountNameCard(
                 onValueChange = { newValue ->
                     editedName = newValue.replace("\n", "").take(50) // Limit length
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
                 singleLine = true,
                 enabled = !isUpdating,
                 shape = RoundedCornerShape(8.dp)
@@ -285,6 +298,78 @@ private fun EditAccountNameCard(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(56.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                if (isUpdating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.save),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditEmailCard(
+    userEmail: String,
+    onSaveClick: (String) -> Unit,
+    isUpdating: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var editedEmail by remember(userEmail) { mutableStateOf(userEmail) }
+    val hasChanges = editedEmail.trim() != userEmail.trim() && editedEmail.isNotBlank()
+
+    Column(
+        modifier = modifier
+    ) {
+        Text(
+            text = stringResource(R.string.email_address),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = editedEmail,
+                onValueChange = { newValue ->
+                    editedEmail = newValue.replace("\n", "").trim()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                singleLine = true,
+                enabled = !isUpdating,
+                shape = RoundedCornerShape(8.dp)
+            )
+
+            Button(
+                onClick = {
+                    if (editedEmail.isNotBlank() && editedEmail.trim() != userEmail.trim()) {
+                        onSaveClick(editedEmail.trim())
+                    }
+                },
+                enabled = hasChanges && !isUpdating,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(56.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 if (isUpdating) {
