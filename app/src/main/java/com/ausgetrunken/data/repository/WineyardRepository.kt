@@ -315,10 +315,29 @@ class WineyardRepository(
                     
                 println("📊 WineyardRepository: Fetched ${response.size} wineyards from Supabase")
                 
-                response.forEach { wineyardData ->
+                val entities = response.map { wineyardData ->
                     println("🏭 WineyardRepository: Processing wineyard: ${wineyardData.name} (ID: ${wineyardData.id}, Owner: ${wineyardData.ownerId})")
-                    
-                    val entity = WineyardEntity(
+
+                    // Fetch photos for this wineyard from the wineyard_photos table
+                    val photos = try {
+                        // Get photos from the separate table and extract just the remote_url field
+                        val photosResult = postgrest.from("wineyard_photos")
+                            .select {
+                                filter {
+                                    eq("wineyard_id", wineyardData.id)
+                                }
+                            }
+                            .decodeList<kotlinx.serialization.json.JsonObject>()
+
+                        photosResult.mapNotNull { jsonObject ->
+                            jsonObject["remote_url"]?.jsonPrimitive?.content
+                        }
+                    } catch (e: Exception) {
+                        println("⚠️ WineyardRepository: Failed to fetch photos for wineyard ${wineyardData.id}: ${e.message}")
+                        emptyList<String>()
+                    }
+
+                    WineyardEntity(
                         id = wineyardData.id,
                         name = wineyardData.name,
                         description = wineyardData.description ?: "",
@@ -326,12 +345,16 @@ class WineyardRepository(
                         address = wineyardData.address,
                         latitude = wineyardData.latitude,
                         longitude = wineyardData.longitude,
-                        photos = wineyardData.photos ?: emptyList(),
+                        photos = photos, // Use photos from wineyard_photos table
                         createdAt = (wineyardData.createdAt.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000, // Convert seconds to milliseconds for local storage
                         updatedAt = (wineyardData.updatedAt?.toLongOrNull() ?: (System.currentTimeMillis() / 1000)) * 1000 // Convert seconds to milliseconds for local storage
                     )
+                }
+
+                // Insert all entities
+                entities.forEach { entity ->
                     wineyardDao.insertWineyard(entity)
-                    println("💾 WineyardRepository: Saved wineyard to local database: ${entity.name}")
+                    println("💾 WineyardRepository: Saved wineyard to local database: ${entity.name} with ${entity.photos.size} photos")
                 }
                 
                 println("✅ WineyardRepository: Sync completed successfully")

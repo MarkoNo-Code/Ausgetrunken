@@ -1,6 +1,9 @@
 package com.ausgetrunken.ui.customer.components
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,13 +19,55 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.ausgetrunken.data.local.entities.WineyardEntity
 import com.ausgetrunken.ui.theme.WineyardPlaceholderImage
+import java.io.File
+
+/**
+ * Creates an optimized Supabase image URL with transformations for better performance
+ */
+private fun getOptimizedImageUrl(originalUrl: String, width: Int = 800, height: Int = 450): String {
+    return if (originalUrl.contains("supabase")) {
+        "$originalUrl?resize=cover&width=$width&height=$height&quality=75&format=webp"
+    } else {
+        originalUrl
+    }
+}
+
+/**
+ * Pulsating loading animation for image placeholders
+ */
+@Composable
+private fun PulsatingPlaceholder(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "PulsatingPlaceholder")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    WineyardPlaceholderImage(
+        modifier = modifier.background(
+            Color.White.copy(alpha = alpha),
+            RoundedCornerShape(16.dp)
+        ),
+        aspectRatio = 16f / 9f
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,10 +108,56 @@ fun CustomerWineyardCard(
                 .clip(RoundedCornerShape(16.dp))
         ) {
             // Background wineyard image
-            WineyardPlaceholderImage(
-                modifier = Modifier.fillMaxSize(),
-                aspectRatio = 16f / 9f
-            )
+            if (wineyard.photos.isNotEmpty()) {
+                val imageUrl = wineyard.photos.first()
+                Log.d("CustomerWineyardCard", "Loading backdrop image for ${wineyard.name}: $imageUrl")
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(
+                            when {
+                                imageUrl.startsWith("/") -> File(imageUrl)
+                                imageUrl.startsWith("content://") -> Uri.parse(imageUrl)
+                                else -> getOptimizedImageUrl(imageUrl, 800, 450) // Larger size for backdrop
+                            }
+                        )
+                        .crossfade(true)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = "Wineyard ${wineyard.name} backdrop",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        // Show pulsating animation while loading
+                        Log.d("CustomerWineyardCard", "Backdrop image loading for ${wineyard.name}")
+                        PulsatingPlaceholder(modifier = Modifier.fillMaxSize())
+                    },
+                    error = {
+                        // Show static placeholder on error
+                        Log.e("CustomerWineyardCard", "Backdrop image failed to load for ${wineyard.name}: $imageUrl")
+                        WineyardPlaceholderImage(
+                            modifier = Modifier.fillMaxSize(),
+                            aspectRatio = 16f / 9f
+                        )
+                    },
+                    success = { state ->
+                        Log.d("CustomerWineyardCard", "Backdrop image loaded successfully for ${wineyard.name}")
+                        Image(
+                            painter = state.painter,
+                            contentDescription = "Wineyard ${wineyard.name} backdrop",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                )
+            } else {
+                // Fallback to placeholder when no photos available
+                Log.d("CustomerWineyardCard", "No photos available for ${wineyard.name}")
+                WineyardPlaceholderImage(
+                    modifier = Modifier.fillMaxSize(),
+                    aspectRatio = 16f / 9f
+                )
+            }
             
             // Gradient overlay for text readability
             Box(
