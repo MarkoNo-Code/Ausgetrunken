@@ -461,8 +461,8 @@ class SupabaseAuthRepository(
                     println("🔍 SupabaseAuthRepository: Final userType to use: '$registeredUserType'")
 
                     // CRITICAL: If we still couldn't extract the type but metadata exists, log for debugging
-                    if (userTypeFromMetadata == null && user.userMetadata?.toString()?.contains("WINEYARD_OWNER") == true) {
-                        println("🚨 HYBRID CRITICAL: Metadata contains WINEYARD_OWNER but extraction failed!")
+                    if (userTypeFromMetadata == null && user.userMetadata?.toString()?.contains("WINERY_OWNER") == true) {
+                        println("🚨 HYBRID CRITICAL: Metadata contains WINERY_OWNER but extraction failed!")
                         println("🚨 HYBRID CRITICAL: This is a metadata parsing bug - defaulting to CUSTOMER")
                     }
 
@@ -776,28 +776,7 @@ class SupabaseAuthRepository(
             println("  - User Type (raw): '${response.userType}'")
             println("  - Flagged for deletion: ${response.flaggedForDeletion}")
             
-            val userType = try {
-                UserType.valueOf(response.userType)
-            } catch (enumException: IllegalArgumentException) {
-                println("❌ SupabaseAuthRepository.getUserType: Failed to parse UserType enum from '${response.userType}'")
-                println("❌ SupabaseAuthRepository.getUserType: Available values: ${UserType.values().joinToString(", ")}")
-                
-                // Handle common mismatches - fallback logic
-                when (response.userType.uppercase()) {
-                    "WINEYARD_OWNER", "OWNER", "WINE_OWNER" -> {
-                        println("🔧 SupabaseAuthRepository.getUserType: Mapping '${response.userType}' to WINEYARD_OWNER")
-                        UserType.WINEYARD_OWNER
-                    }
-                    "CUSTOMER", "USER" -> {
-                        println("🔧 SupabaseAuthRepository.getUserType: Mapping '${response.userType}' to CUSTOMER")
-                        UserType.CUSTOMER
-                    }
-                    else -> {
-                        println("❌ SupabaseAuthRepository.getUserType: No fallback mapping for '${response.userType}', defaulting to CUSTOMER")
-                        UserType.CUSTOMER // Default fallback
-                    }
-                }
-            }
+            val userType = UserType.valueOf(response.userType)
             println("🔍 SupabaseAuthRepository.getUserType: Final UserType: $userType")
             Result.success(userType)
         } catch (e: Exception) {

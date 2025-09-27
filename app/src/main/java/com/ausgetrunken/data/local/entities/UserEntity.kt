@@ -16,6 +16,6 @@ data class UserEntity(
 )
 
 enum class UserType {
-    WINEYARD_OWNER,
+    WINERY_OWNER,
     CUSTOMER
 }
