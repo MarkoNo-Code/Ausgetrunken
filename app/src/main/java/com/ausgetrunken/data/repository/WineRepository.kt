@@ -19,8 +19,8 @@ class WineRepository(
 ) : BaseRepository(authRepository) {
     fun getAllWines(): Flow<List<WineEntity>> = wineDao.getAllWines()
     
-    fun getWinesByWineyard(wineyardId: String): Flow<List<WineEntity>> = 
-        wineDao.getWinesByWineyard(wineyardId)
+    fun getWinesByWinery(wineryId: String): Flow<List<WineEntity>> =
+        wineDao.getWinesByWinery(wineryId)
     
     fun getWineById(wineId: String): Flow<WineEntity?> = 
         wineDao.getWineByIdFlow(wineId)
@@ -36,7 +36,7 @@ class WineRepository(
                     .insert(
                         buildJsonObject {
                             put("id", wine.id)
-                            put("wineyard_id", wine.wineyardId)
+                            put("winery_id", wine.wineryId)
                             put("name", wine.name)
                             put("description", wine.description)
                             put("wine_type", wine.wineType.name)
@@ -123,23 +123,23 @@ class WineRepository(
         return wineDao.getLowStockWines(threshold)
     }
     
-    suspend fun getWinesByWineyardFromSupabase(wineyardId: String): List<WineEntity> {
+    suspend fun getWinesByWineryFromSupabase(wineryId: String): List<WineEntity> {
         return try {
-            println("🍷 WineRepository: Fetching wines for wineyard: $wineyardId")
+            println("🍷 WineRepository: Fetching wines for winery: $wineryId")
             val response = postgrest.from("wines")
                 .select() {
                     filter {
-                        eq("wineyard_id", wineyardId)
+                        eq("winery_id", wineryId)
                     }
                 }
                 .decodeList<Wine>()
             
-            println("🍷 WineRepository: Found ${response.size} wines for wineyard $wineyardId in Supabase")
+            println("🍷 WineRepository: Found ${response.size} wines for winery $wineryId in Supabase")
             
             val wines = response.map { wineData ->
                 val entity = WineEntity(
                     id = wineData.id,
-                    wineyardId = wineData.wineyardId,
+                    wineryId = wineData.wineryId,
                     name = wineData.name,
                     description = wineData.description,
                     wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
@@ -159,7 +159,7 @@ class WineRepository(
             
             wines
         } catch (e: Exception) {
-            println("❌ WineRepository: Failed to fetch wines for wineyard $wineyardId: ${e.message}")
+            println("❌ WineRepository: Failed to fetch wines for winery $wineryId: ${e.message}")
             e.printStackTrace()
             emptyList()
         }
@@ -178,7 +178,7 @@ class WineRepository(
                 response.forEach { wineData ->
                     val entity = WineEntity(
                         id = wineData.id,
-                        wineyardId = wineData.wineyardId,
+                        wineryId = wineData.wineryId,
                         name = wineData.name,
                         description = wineData.description,
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
@@ -194,7 +194,7 @@ class WineRepository(
                     )
                     try {
                         wineDao.insertWine(entity)
-                        println("🍷 WineRepository: Synced wine: ${entity.name} (${entity.id}) for wineyard ${entity.wineyardId}")
+                        println("🍷 WineRepository: Synced wine: ${entity.name} (${entity.id}) for winery ${entity.wineryId}")
                     } catch (e: Exception) {
                         println("⚠️ WineRepository: Failed to insert wine ${entity.name}: ${e.message}")
                         // Continue with other wines even if one fails
@@ -221,7 +221,7 @@ class WineRepository(
                 val wines = response.map { wineData ->
                     WineEntity(
                         id = wineData.id,
-                        wineyardId = wineData.wineyardId,
+                        wineryId = wineData.wineryId,
                         name = wineData.name,
                         description = wineData.description,
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
@@ -248,14 +248,14 @@ class WineRepository(
         )
     }
     
-    suspend fun getWinesByWineyardRemoteFirst(wineyardId: String): List<WineEntity> {
+    suspend fun getWinesByWineryRemoteFirst(wineryId: String): List<WineEntity> {
         return networkManager.executeRemoteFirst(
-            operationName = "getWinesByWineyard",
+            operationName = "getWinesByWinery",
             remoteOperation = {
                 val response = postgrest.from("wines")
                     .select() {
                         filter {
-                            eq("wineyard_id", wineyardId)
+                            eq("winery_id", wineryId)
                         }
                     }
                     .decodeList<Wine>()
@@ -263,7 +263,7 @@ class WineRepository(
                 val wines = response.map { wineData ->
                     WineEntity(
                         id = wineData.id,
-                        wineyardId = wineData.wineyardId,
+                        wineryId = wineData.wineryId,
                         name = wineData.name,
                         description = wineData.description,
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),
@@ -281,7 +281,7 @@ class WineRepository(
                 Result.success(wines)
             },
             localFallback = {
-                wineDao.getWinesByWineyardList(wineyardId)
+                wineDao.getWinesByWineryList(wineryId)
             }
         )
     }
@@ -301,7 +301,7 @@ class WineRepository(
                 val wine = response.firstOrNull()?.let { wineData ->
                     WineEntity(
                         id = wineData.id,
-                        wineyardId = wineData.wineyardId,
+                        wineryId = wineData.wineryId,
                         name = wineData.name,
                         description = wineData.description,
                         wineType = com.ausgetrunken.data.local.entities.WineType.valueOf(wineData.wineType),

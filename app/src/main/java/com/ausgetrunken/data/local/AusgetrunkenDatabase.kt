@@ -13,27 +13,29 @@ import com.ausgetrunken.data.local.entities.*
 @Database(
     entities = [
         UserEntity::class,
-        WineyardEntity::class,
+        WineryEntity::class,
         WineEntity::class,
         SubscriptionEntity::class,
-        WineyardSubscriptionEntity::class,
+        WinerySubscriptionEntity::class,
         NotificationEntity::class,
         NotificationDeliveryEntity::class,
-        WineyardPhotoEntity::class
+        WineryPhotoEntity::class,
+        WinePhotoEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AusgetrunkenDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
-    abstract fun wineyardDao(): WineyardDao
+    abstract fun wineryDao(): WineryDao
     abstract fun wineDao(): WineDao
     abstract fun subscriptionDao(): SubscriptionDao
-    abstract fun wineyardSubscriptionDao(): WineyardSubscriptionDao
+    abstract fun winerySubscriptionDao(): WinerySubscriptionDao
     abstract fun notificationDao(): NotificationDao
     abstract fun notificationDeliveryDao(): NotificationDeliveryDao
-    abstract fun wineyardPhotoDao(): WineyardPhotoDao
+    abstract fun wineryPhotoDao(): WineryPhotoDao
+    abstract fun winePhotoDao(): WinePhotoDao
 
     companion object {
         const val DATABASE_NAME = "ausgetrunken_database"
@@ -55,11 +57,11 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Starting migration...")
                 
-                // Create wineyard_photos table
+                // Create winery_photos table
                 val createTableSQL = """
-                    CREATE TABLE IF NOT EXISTS `wineyard_photos` (
+                    CREATE TABLE IF NOT EXISTS `winery_photos` (
                         `id` TEXT NOT NULL,
-                        `wineyard_id` TEXT NOT NULL,
+                        `winery_id` TEXT NOT NULL,
                         `local_path` TEXT,
                         `remote_url` TEXT,
                         `display_order` INTEGER NOT NULL DEFAULT 0,
@@ -68,15 +70,15 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
                         `created_at` INTEGER NOT NULL DEFAULT 0,
                         `updated_at` INTEGER NOT NULL DEFAULT 0,
                         PRIMARY KEY(`id`),
-                        FOREIGN KEY(`wineyard_id`) REFERENCES `wineyards`(`id`) ON DELETE CASCADE
+                        FOREIGN KEY(`winery_id`) REFERENCES `wineries`(`id`) ON DELETE CASCADE
                     )
                 """.trimIndent()
                 
                 android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Executing SQL: $createTableSQL")
                 database.execSQL(createTableSQL)
                 
-                // Create index for wineyard_id for faster queries
-                val createIndexSQL = "CREATE INDEX IF NOT EXISTS `index_wineyard_photos_wineyard_id` ON `wineyard_photos` (`wineyard_id`)"
+                // Create index for winery_id for faster queries
+                val createIndexSQL = "CREATE INDEX IF NOT EXISTS `index_winery_photos_winery_id` ON `winery_photos` (`winery_id`)"
                 android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Creating index: $createIndexSQL")
                 database.execSQL(createIndexSQL)
                 
@@ -98,11 +100,44 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 android.util.Log.d("DatabaseMigration", "MIGRATION 5->6: Starting migration...")
-                
+
                 // Add profilePictureUrl column to users table
                 database.execSQL("ALTER TABLE users ADD COLUMN profilePictureUrl TEXT")
-                
+
                 android.util.Log.d("DatabaseMigration", "MIGRATION 5->6: Migration completed successfully!")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Starting migration...")
+
+                // Create wine_photos table
+                val createTableSQL = """
+                    CREATE TABLE IF NOT EXISTS `wine_photos` (
+                        `id` TEXT NOT NULL,
+                        `wine_id` TEXT NOT NULL,
+                        `local_path` TEXT,
+                        `remote_url` TEXT,
+                        `display_order` INTEGER NOT NULL DEFAULT 0,
+                        `upload_status` TEXT NOT NULL DEFAULT 'LOCAL_ONLY',
+                        `file_size` INTEGER NOT NULL DEFAULT 0,
+                        `created_at` INTEGER NOT NULL DEFAULT 0,
+                        `updated_at` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`wine_id`) REFERENCES `wines`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent()
+
+                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Executing SQL: $createTableSQL")
+                database.execSQL(createTableSQL)
+
+                // Create index for wine_id for faster queries
+                val createIndexSQL = "CREATE INDEX IF NOT EXISTS `index_wine_photos_wine_id` ON `wine_photos` (`wine_id`)"
+                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Creating index: $createIndexSQL")
+                database.execSQL(createIndexSQL)
+
+                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Migration completed successfully!")
             }
         }
     }

@@ -60,8 +60,8 @@ class SplashViewModel(
                                     println("✅ SplashViewModel: Detected User Type: $userType")
                                     println("✅ SplashViewModel: User type class: ${userType.javaClass.simpleName}")
                                     println("✅ SplashViewModel: Expected navigation target:")
-                                    if (userType == UserType.WINEYARD_OWNER) {
-                                        println("   -> OwnerProfile (WINEYARD_OWNER) ✅ CORRECT FOR OWNER")
+                                    if (userType == UserType.WINERY_OWNER) {
+                                        println("   -> OwnerProfile (WINERY_OWNER) ✅ CORRECT FOR OWNER")
                                     } else if (userType == UserType.CUSTOMER) {
                                         println("   -> CustomerLanding (CUSTOMER) ❌ WRONG IF USER IS OWNER!")
                                     }
@@ -125,8 +125,8 @@ class SplashViewModel(
                                         println("✅ SplashViewModel: Detected User Type: $userType")
                                         println("✅ SplashViewModel: User type class: ${userType.javaClass.simpleName}")
                                         println("✅ SplashViewModel: Expected navigation target (valid session):")
-                                        if (userType == UserType.WINEYARD_OWNER) {
-                                            println("   -> OwnerProfile (WINEYARD_OWNER) ✅ CORRECT FOR OWNER")
+                                        if (userType == UserType.WINERY_OWNER) {
+                                            println("   -> OwnerProfile (WINERY_OWNER) ✅ CORRECT FOR OWNER")
                                         } else if (userType == UserType.CUSTOMER) {
                                             println("   -> CustomerLanding (CUSTOMER) ❌ WRONG IF USER IS OWNER!")
                                         }

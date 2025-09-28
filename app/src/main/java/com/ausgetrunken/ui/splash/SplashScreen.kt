@@ -28,7 +28,7 @@ import org.koin.androidx.compose.koinViewModel
 fun SplashScreen(
     onNavigateToLogin: (String?) -> Unit,
     onNavigateToProfile: () -> Unit,
-    onNavigateToWineyardList: () -> Unit,
+    onNavigateToVineyardList: () -> Unit,
     viewModel: SplashViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -85,12 +85,12 @@ fun SplashScreen(
                 println("🔍 SplashScreen: UserType class = ${uiState.userType?.javaClass?.simpleName}")
                 when (uiState.userType) {
                     UserType.CUSTOMER -> {
-                        println("🔍 SplashScreen: Navigating to WineyardList for CUSTOMER")
+                        println("🔍 SplashScreen: Navigating to VineyardList for CUSTOMER")
                         println("🔍 SplashScreen: ❌ OWNER LOGGED IN AS CUSTOMER - CHECK USER TYPE DETECTION!")
-                        onNavigateToWineyardList()
+                        onNavigateToVineyardList()
                     }
-                    UserType.WINEYARD_OWNER -> {
-                        println("🔍 SplashScreen: Navigating to Profile for WINEYARD_OWNER")
+                    UserType.WINERY_OWNER -> {
+                        println("🔍 SplashScreen: Navigating to Profile for WINERY_OWNER")
                         println("🔍 SplashScreen: ✅ Owner correctly detected")
                         onNavigateToProfile()
                     }

@@ -36,7 +36,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWineScreen(
-    wineyardId: String,
+    wineryId: String,
     onNavigateBack: () -> Unit,
     onNavigateBackWithSuccess: (String) -> Unit,
     onNavigateToWineDetail: (String) -> Unit,
@@ -46,9 +46,9 @@ fun AddWineScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     
-    LaunchedEffect(wineyardId) {
+    LaunchedEffect(wineryId) {
         viewModel.resetState()
-        viewModel.setWineyardId(wineyardId)
+        viewModel.setWineryId(wineryId)
     }
     
     // Channel-based navigation event handling

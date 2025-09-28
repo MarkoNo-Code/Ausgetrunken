@@ -84,7 +84,7 @@ private fun DrawScope.drawUserIconSVG(size: Size, color: androidx.compose.ui.gra
 }
 
 @Composable
-fun WineyardPlaceholderImage(
+fun WineryPlaceholderImage(
     modifier: Modifier = Modifier,
     aspectRatio: Float = 16f / 9f
 ) {

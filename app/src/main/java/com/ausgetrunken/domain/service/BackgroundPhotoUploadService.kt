@@ -179,7 +179,7 @@ class BackgroundPhotoUploadService(
             uploadStatusStorage.updateUploadStatus(localPath, UploadStatus.UPLOADING, progress = 0f)
             
             // Perform the actual upload
-            val result = imageUploadService.uploadWineyardImage("", file)
+            val result = imageUploadService.uploadWineryImage("", file)
             
             result.fold(
                 onSuccess = { cloudUrl ->

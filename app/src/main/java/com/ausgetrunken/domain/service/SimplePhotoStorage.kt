@@ -20,7 +20,7 @@ class SimplePhotoStorage(private val context: Context) {
     
     companion object {
         private const val TAG = "SimplePhotoStorage"
-        private const val DATASTORE_NAME = "wineyard_photos"
+        private const val DATASTORE_NAME = "winery_photos"
         
         private val Context.photoDataStore: DataStore<Preferences> by preferencesDataStore(
             name = DATASTORE_NAME
@@ -30,18 +30,18 @@ class SimplePhotoStorage(private val context: Context) {
     private val dataStore = context.photoDataStore
     
     /**
-     * Save a photo path for a wineyard - immediately persisted
+     * Save a photo path for a vineyard - immediately persisted
      */
-    suspend fun addPhotoPath(wineyardId: String, filePath: String) {
-        Log.d(TAG, "Adding photo path for wineyard $wineyardId: $filePath")
-        
+    suspend fun addPhotoPath(wineryId: String, filePath: String) {
+        Log.d(TAG, "Adding photo path for winery $wineryId: $filePath")
+
         try {
-            val key = stringSetPreferencesKey("photos_$wineyardId")
+            val key = stringSetPreferencesKey("photos_$wineryId")
             dataStore.edit { preferences ->
                 val currentPaths = preferences[key]?.toMutableSet() ?: mutableSetOf()
                 currentPaths.add(filePath)
                 preferences[key] = currentPaths
-                Log.d(TAG, "✅ Photo path saved. Total paths for wineyard: ${currentPaths.size}")
+                Log.d(TAG, "✅ Photo path saved. Total paths for winery: ${currentPaths.size}")
             }
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to save photo path", e)
@@ -50,12 +50,12 @@ class SimplePhotoStorage(private val context: Context) {
     }
     
     /**
-     * Get all photo paths for a wineyard - returns Flow for reactive UI
+     * Get all photo paths for a vineyard - returns Flow for reactive UI
      */
-    fun getPhotoPaths(wineyardId: String): Flow<List<String>> {
-        Log.d(TAG, "Getting photo paths for wineyard: $wineyardId")
-        
-        val key = stringSetPreferencesKey("photos_$wineyardId")
+    fun getPhotoPaths(wineryId: String): Flow<List<String>> {
+        Log.d(TAG, "Getting photo paths for winery: $wineryId")
+
+        val key = stringSetPreferencesKey("photos_$wineryId")
         return dataStore.data
             .map { preferences ->
                 val paths = preferences[key]?.toList() ?: emptyList()
@@ -67,7 +67,7 @@ class SimplePhotoStorage(private val context: Context) {
                     exists
                 }
                 
-                Log.d(TAG, "Returning ${validPaths.size} valid photo paths for wineyard $wineyardId")
+                Log.d(TAG, "Returning ${validPaths.size} valid photo paths for winery $wineryId")
                 validPaths.sortedByDescending { File(it).lastModified() } // Most recent first
             }
     }
@@ -75,18 +75,18 @@ class SimplePhotoStorage(private val context: Context) {
     /**
      * Get photo paths synchronously (for background operations)
      */
-    suspend fun getPhotoPathsSync(wineyardId: String): List<String> {
-        return getPhotoPaths(wineyardId).first()
+    suspend fun getPhotoPathsSync(wineryId: String): List<String> {
+        return getPhotoPaths(wineryId).first()
     }
     
     /**
-     * Remove a photo path from a wineyard
+     * Remove a photo path from a vineyard
      */
-    suspend fun removePhotoPath(wineyardId: String, filePath: String) {
-        Log.d(TAG, "Removing photo path for wineyard $wineyardId: $filePath")
-        
+    suspend fun removePhotoPath(wineryId: String, filePath: String) {
+        Log.d(TAG, "Removing photo path for winery $wineryId: $filePath")
+
         try {
-            val key = stringSetPreferencesKey("photos_$wineyardId")
+            val key = stringSetPreferencesKey("photos_$wineryId")
             dataStore.edit { preferences ->
                 val currentPaths = preferences[key]?.toMutableSet() ?: mutableSetOf()
                 val removed = currentPaths.remove(filePath)
@@ -111,17 +111,17 @@ class SimplePhotoStorage(private val context: Context) {
     }
     
     /**
-     * Clear all photos for a wineyard
+     * Clear all photos for a vineyard
      */
-    suspend fun clearAllPhotos(wineyardId: String) {
-        Log.d(TAG, "Clearing all photos for wineyard: $wineyardId")
-        
+    suspend fun clearAllPhotos(wineryId: String) {
+        Log.d(TAG, "Clearing all photos for winery: $wineryId")
+
         try {
             // Get current paths to delete physical files
-            val currentPaths = getPhotoPathsSync(wineyardId)
-            
+            val currentPaths = getPhotoPathsSync(wineryId)
+
             // Clear from DataStore
-            val key = stringSetPreferencesKey("photos_$wineyardId")
+            val key = stringSetPreferencesKey("photos_$wineryId")
             dataStore.edit { preferences ->
                 preferences.remove(key)
             }
@@ -135,7 +135,7 @@ class SimplePhotoStorage(private val context: Context) {
                 }
             }
             
-            Log.d(TAG, "✅ Cleared ${currentPaths.size} photos for wineyard $wineyardId")
+            Log.d(TAG, "✅ Cleared ${currentPaths.size} photos for winery $wineryId")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to clear photos", e)
             throw e
@@ -143,10 +143,10 @@ class SimplePhotoStorage(private val context: Context) {
     }
     
     /**
-     * Get total photo count for a wineyard
+     * Get total photo count for a vineyard
      */
-    suspend fun getPhotoCount(wineyardId: String): Int {
-        return getPhotoPathsSync(wineyardId).size
+    suspend fun getPhotoCount(wineryId: String): Int {
+        return getPhotoPathsSync(wineryId).size
     }
     
     // ========== WINE PHOTO METHODS ==========
@@ -281,9 +281,9 @@ class SimplePhotoStorage(private val context: Context) {
             allData.asMap().forEach { (key, value) ->
                 when {
                     key.name.startsWith("photos_") -> {
-                        val wineyardId = key.name.removePrefix("photos_")
+                        val wineryId = key.name.removePrefix("photos_")
                         val paths = value as? Set<String> ?: emptySet()
-                        Log.d(TAG, "Wineyard $wineyardId: ${paths.size} photos")
+                        Log.d(TAG, "Winery $wineryId: ${paths.size} photos")
                         paths.forEach { path ->
                             val exists = File(path).exists()
                             Log.d(TAG, "  - $path (exists: $exists)")

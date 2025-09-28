@@ -3,7 +3,7 @@ package com.ausgetrunken
 import android.app.Application
 import android.util.Log
 import com.ausgetrunken.di.*
-import com.ausgetrunken.domain.service.WineyardPhotoService
+import com.ausgetrunken.domain.service.WineryPhotoService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,7 +43,7 @@ class AusgetrunkenApplication : Application() {
         applicationScope.launch {
             try {
                 Log.d("AusgetrunkenApp", "Starting photo validation on app startup...")
-                val photoService: WineyardPhotoService by inject()
+                val photoService: WineryPhotoService by inject()
                 photoService.validateAndMigratePhotos()
                 Log.d("AusgetrunkenApp", "Photo validation completed")
             } catch (e: Exception) {

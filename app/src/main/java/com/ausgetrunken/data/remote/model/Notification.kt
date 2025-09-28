@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Notification(
     val id: String,
-    @SerialName("wineyard_id") val wineyardId: String,
+    @SerialName("winery_id") val wineryId: String,
     @SerialName("sender_id") val senderId: String,
     @SerialName("notification_type") val notificationType: String,
     val title: String,

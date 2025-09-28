@@ -17,7 +17,8 @@ val databaseModule = module {
             AusgetrunkenDatabase.MIGRATION_2_3,
             AusgetrunkenDatabase.MIGRATION_3_4,
             AusgetrunkenDatabase.MIGRATION_4_5,
-            AusgetrunkenDatabase.MIGRATION_5_6
+            AusgetrunkenDatabase.MIGRATION_5_6,
+            AusgetrunkenDatabase.MIGRATION_6_7
         )
         // CRITICAL FIX: Use TRUNCATE mode for immediate consistency instead of WAL isolation issues
         .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
@@ -27,11 +28,12 @@ val databaseModule = module {
     }
 
     single { get<AusgetrunkenDatabase>().userDao() }
-    single { get<AusgetrunkenDatabase>().wineyardDao() }
+    single { get<AusgetrunkenDatabase>().wineryDao() }
     single { get<AusgetrunkenDatabase>().wineDao() }
     single { get<AusgetrunkenDatabase>().subscriptionDao() }
-    single { get<AusgetrunkenDatabase>().wineyardSubscriptionDao() }
+    single { get<AusgetrunkenDatabase>().winerySubscriptionDao() }
     single { get<AusgetrunkenDatabase>().notificationDao() }
     single { get<AusgetrunkenDatabase>().notificationDeliveryDao() }
-    single { get<AusgetrunkenDatabase>().wineyardPhotoDao() }
+    single { get<AusgetrunkenDatabase>().wineryPhotoDao() }
+    single { get<AusgetrunkenDatabase>().winePhotoDao() }
 }

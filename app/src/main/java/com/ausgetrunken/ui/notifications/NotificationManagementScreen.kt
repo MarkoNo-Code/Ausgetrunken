@@ -140,7 +140,7 @@ fun NotificationManagementScreen(
             // Subscriber Info Section
             item {
                 SubscriberInfoCard(
-                    wineyardSubscriberInfo = uiState.wineyardSubscriberInfo,
+                    winerySubscriberInfo = uiState.winerySubscriberInfo,
                     totalSubscribers = uiState.subscriberCount,
                     totalLowStockSubscribers = uiState.lowStockSubscribers,
                     totalGeneralSubscribers = uiState.generalSubscribers
@@ -343,7 +343,7 @@ private fun CriticalStockWineCard(
 
 @Composable
 private fun SubscriberInfoCard(
-    wineyardSubscriberInfo: List<WineyardSubscriberInfo>,
+    winerySubscriberInfo: List<WinerySubscriberInfo>,
     totalSubscribers: Int,
     totalLowStockSubscribers: Int,
     totalGeneralSubscribers: Int
@@ -364,16 +364,16 @@ private fun SubscriberInfoCard(
                 fontWeight = FontWeight.Bold
             )
             
-            // Per-wineyard breakdown
-            if (wineyardSubscriberInfo.isNotEmpty()) {
+            // Per-vineyard breakdown
+            if (winerySubscriberInfo.isNotEmpty()) {
                 Text(
-                    text = stringResource(R.string.subscribers_by_wineyard),
+                    text = stringResource(R.string.subscribers_by_winery),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                 )
                 
-                wineyardSubscriberInfo.forEach { wineyard ->
+                winerySubscriberInfo.forEach { winery ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -385,7 +385,7 @@ private fun SubscriberInfoCard(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = wineyard.wineyardName,
+                                text = winery.wineryName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -396,7 +396,7 @@ private fun SubscriberInfoCard(
                             ) {
                                 Text("Total", style = MaterialTheme.typography.bodySmall)
                                 Text(
-                                    text = "${wineyard.totalSubscribers}",
+                                    text = "${winery.totalSubscribers}",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -408,7 +408,7 @@ private fun SubscriberInfoCard(
                             ) {
                                 Text("Low Stock", style = MaterialTheme.typography.bodySmall)
                                 Text(
-                                    text = "${wineyard.lowStockSubscribers}",
+                                    text = "${winery.lowStockSubscribers}",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -419,7 +419,7 @@ private fun SubscriberInfoCard(
                             ) {
                                 Text("General", style = MaterialTheme.typography.bodySmall)
                                 Text(
-                                    text = "${wineyard.generalSubscribers}",
+                                    text = "${winery.generalSubscribers}",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -427,11 +427,11 @@ private fun SubscriberInfoCard(
                     }
                 }
                 
-                // Total summary (only show if owner has multiple wineyards)
-                if (wineyardSubscriberInfo.size > 1) {
+                // Total summary (only show if owner has multiple wineries)
+                if (winerySubscriberInfo.size > 1) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = stringResource(R.string.total_across_all_wineyards),
+                        text = stringResource(R.string.total_across_all_wineries),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
@@ -471,7 +471,7 @@ private fun SubscriberInfoCard(
                     }
                 }
             } else {
-                // No wineyards with low stock wines
+                // No vineyards with low stock wines
                 Text(
                     text = stringResource(R.string.no_low_stock_wines_found),
                     style = MaterialTheme.typography.bodyMedium,

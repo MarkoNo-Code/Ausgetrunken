@@ -8,8 +8,8 @@ import com.ausgetrunken.data.local.entities.WineType
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
-import com.ausgetrunken.domain.service.WineyardService
-import com.ausgetrunken.domain.service.WinePhotoService
+import com.ausgetrunken.domain.service.WineryService
+import com.ausgetrunken.domain.service.SimpleWinePhotoService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,8 +25,8 @@ class AddWineViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
     private val userRepository: UserRepository,
-    private val wineyardService: WineyardService,
-    private val winePhotoService: WinePhotoService
+    private val wineryService: WineryService,
+    private val winePhotoService: SimpleWinePhotoService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AddWineUiState())
@@ -38,13 +38,13 @@ class AddWineViewModel(
     // Wine photos flow
     val winePhotos = MutableStateFlow<List<String>>(emptyList())
     
-    fun setWineyardId(wineyardId: String) {
-        _uiState.update { it.copy(wineyardId = wineyardId, isSuccess = false) }
+    fun setWineryId(wineryId: String) {
+        _uiState.update { it.copy(wineryId = wineryId, isSuccess = false) }
     }
     
     fun resetState() {
         _uiState.update {
-            AddWineUiState(wineyardId = it.wineyardId)
+            AddWineUiState(wineryId = it.wineryId)
         }
     }
     
@@ -131,13 +131,13 @@ class AddWineViewModel(
                 val tempWineId = "temp_${System.currentTimeMillis()}"
 
                 winePhotoService.addPhoto(tempWineId, imageUri)
-                    .onSuccess { photoPath ->
+                    .onSuccess { remoteUrl ->
                         val currentPhotos = winePhotos.value.toMutableList()
-                        currentPhotos.add(photoPath)
+                        currentPhotos.add(remoteUrl)
                         winePhotos.value = currentPhotos
 
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ AddWineViewModel: Photo added successfully: $photoPath")
+                        println("✅ AddWineViewModel: Photo added successfully: $remoteUrl")
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -160,21 +160,21 @@ class AddWineViewModel(
         }
     }
 
-    fun removePhoto(photoPath: String) {
+    fun removePhoto(photoUrl: String) {
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
                 val tempWineId = "temp_${System.currentTimeMillis()}"
 
-                winePhotoService.removePhoto(tempWineId, photoPath)
+                winePhotoService.removePhoto(tempWineId, photoUrl)
                     .onSuccess {
                         val currentPhotos = winePhotos.value.toMutableList()
-                        currentPhotos.remove(photoPath)
+                        currentPhotos.remove(photoUrl)
                         winePhotos.value = currentPhotos
 
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ AddWineViewModel: Photo removed successfully: $photoPath")
+                        println("✅ AddWineViewModel: Photo removed successfully: $photoUrl")
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -253,23 +253,23 @@ class AddWineViewModel(
             }
             
             val user = userRepository.getUserById(userId).first()
-            if (user?.userType != UserType.WINEYARD_OWNER) {
+            if (user?.userType != UserType.WINERY_OWNER) {
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Only wineyard owners can create wines"
+                        errorMessage = "Only winery owners can create wines"
                     )
                 }
                 return@launch
             }
             
-            // Validate wineyard ownership for security
-            val isOwner = wineyardService.validateWineyardOwnership(userId, currentState.wineyardId)
+            // Validate winery ownership for security
+            val isOwner = wineryService.validateWineryOwnership(userId, currentState.wineryId)
             if (!isOwner) {
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Access denied: You can only add wines to your own wineyards"
+                        errorMessage = "Access denied: You can only add wines to your own wineries"
                     )
                 }
                 return@launch
@@ -279,12 +279,12 @@ class AddWineViewModel(
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 
                 // Check wine limit
-                val existingWines = wineService.getWinesByWineyard(currentState.wineyardId).first()
+                val existingWines = wineService.getWinesByWinery(currentState.wineryId).first()
                 if (existingWines.size >= 20) {
-                    _uiState.update { 
+                    _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "Maximum of 20 wines per wineyard allowed"
+                            errorMessage = "Maximum of 20 wines per winery allowed"
                         )
                     }
                     return@launch
@@ -292,7 +292,7 @@ class AddWineViewModel(
                 
                 val wine = WineEntity(
                     id = UUID.randomUUID().toString(),
-                    wineyardId = currentState.wineyardId,
+                    wineryId = currentState.wineryId,
                     name = currentState.name,
                     description = currentState.description,
                     wineType = currentState.wineType!!,
@@ -310,7 +310,7 @@ class AddWineViewModel(
                                 isSuccess = true
                             )
                         }
-                        // Navigate back to wineyard detail page with wine ID for highlighting
+                        // Navigate back to winery detail page with wine ID for highlighting
                         _navigationEvents.trySend(NavigationEvent.NavigateBackWithWineId(wine.id))
                     }
                     .onFailure { exception ->
@@ -334,7 +334,7 @@ class AddWineViewModel(
 }
 
 data class AddWineUiState(
-    val wineyardId: String = "",
+    val wineryId: String = "",
     val name: String = "",
     val description: String = "",
     val wineType: WineType? = WineType.RED,

@@ -2,11 +2,11 @@ package com.ausgetrunken.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ausgetrunken.data.local.entities.WineyardSubscriptionEntity
+import com.ausgetrunken.data.local.entities.WinerySubscriptionEntity
 import com.ausgetrunken.data.repository.UserRepository
-import com.ausgetrunken.data.repository.WineyardRepository
+import com.ausgetrunken.data.repository.WineryRepository
 import com.ausgetrunken.domain.service.AuthService
-import com.ausgetrunken.domain.service.WineyardSubscriptionService
+import com.ausgetrunken.domain.service.WinerySubscriptionService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,9 +18,9 @@ import java.util.Date
 import java.util.Locale
 
 class SubscriptionsViewModel(
-    private val subscriptionService: WineyardSubscriptionService,
+    private val subscriptionService: WinerySubscriptionService,
     private val authService: AuthService,
-    private val wineyardRepository: WineyardRepository
+    private val wineryRepository: WineryRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(SubscriptionsUiState())
@@ -81,14 +81,14 @@ class SubscriptionsViewModel(
                     .onSuccess { subscriptions ->
                         println("📊 SubscriptionsViewModel: Found ${subscriptions.size} real-time subscriptions")
                         
-                        val subscriptionsWithWineyards = subscriptions.map { subscription ->
-                            val wineyard = wineyardRepository.getWineyardById(subscription.wineyardId).first()
-                            println("🔗 SubscriptionsViewModel: Processing subscription to wineyard: ${subscription.wineyardId} -> ${wineyard?.name ?: "Unknown"}")
-                            SubscriptionWithWineyard(
+                        val subscriptionsWithWineries = subscriptions.map { subscription ->
+                            val winery = wineryRepository.getWineryById(subscription.wineryId).first()
+                            println("🔗 SubscriptionsViewModel: Processing subscription to winery: ${subscription.wineryId} -> ${winery?.name ?: "Unknown"}")
+                            SubscriptionWithWinery(
                                 id = subscription.id,
-                                wineyardId = subscription.wineyardId,
-                                wineyardName = wineyard?.name ?: "Unknown Wineyard",
-                                wineyardAddress = wineyard?.address ?: "",
+                                wineryId = subscription.wineryId,
+                                wineryName = winery?.name ?: "Unknown Winery",
+                                wineryAddress = winery?.address ?: "",
                                 lowStockNotifications = subscription.lowStockNotifications,
                                 newReleaseNotifications = subscription.newReleaseNotifications,
                                 specialOfferNotifications = subscription.specialOfferNotifications,
@@ -100,7 +100,7 @@ class SubscriptionsViewModel(
                         
                         println("✅ SubscriptionsViewModel: Real-time subscriptions loaded successfully")
                         _uiState.value = _uiState.value.copy(
-                            subscriptions = subscriptionsWithWineyards,
+                            subscriptions = subscriptionsWithWineries,
                             isLoading = false
                         )
                     }
@@ -121,7 +121,7 @@ class SubscriptionsViewModel(
         }
     }
     
-    fun unsubscribe(wineyardId: String) {
+    fun unsubscribe(wineryId: String) {
         viewModelScope.launch {
             try {
                 // Check if we have a valid session first
@@ -162,11 +162,11 @@ class SubscriptionsViewModel(
                     return@launch
                 }
                 
-                println("🔄 SubscriptionsViewModel: Unsubscribing from wineyard: $wineyardId")
-                
-                subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
+                println("🔄 SubscriptionsViewModel: Unsubscribing from winery: $wineryId")
+
+                subscriptionService.unsubscribeFromWinery(userId, wineryId)
                     .onSuccess {
-                        println("✅ SubscriptionsViewModel: Successfully unsubscribed from wineyard: $wineyardId")
+                        println("✅ SubscriptionsViewModel: Successfully unsubscribed from winery: $wineryId")
                         // Reload subscriptions immediately to reflect changes across devices
                         loadSubscriptions()
                     }
@@ -186,7 +186,7 @@ class SubscriptionsViewModel(
     }
     
     fun updateNotificationPreferences(
-        wineyardId: String,
+        wineryId: String,
         lowStock: Boolean,
         newRelease: Boolean,
         specialOffer: Boolean,
@@ -232,17 +232,17 @@ class SubscriptionsViewModel(
                     return@launch
                 }
                 
-                println("🔄 SubscriptionsViewModel: Updating notification preferences for wineyard: $wineyardId")
-                
+                println("🔄 SubscriptionsViewModel: Updating notification preferences for winery: $wineryId")
+
                 subscriptionService.updateNotificationPreferences(
                     userId,
-                    wineyardId,
+                    wineryId,
                     lowStock,
                     newRelease,
                     specialOffer,
                     general
                 ).onSuccess {
-                    println("✅ SubscriptionsViewModel: Successfully updated notification preferences for wineyard: $wineyardId")
+                    println("✅ SubscriptionsViewModel: Successfully updated notification preferences for winery: $wineryId")
                     // Reload subscriptions to reflect changes across devices
                     loadSubscriptions()
                 }.onFailure { error ->
@@ -271,16 +271,16 @@ class SubscriptionsViewModel(
 }
 
 data class SubscriptionsUiState(
-    val subscriptions: List<SubscriptionWithWineyard> = emptyList(),
+    val subscriptions: List<SubscriptionWithWinery> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
 
-data class SubscriptionWithWineyard(
+data class SubscriptionWithWinery(
     val id: String,
-    val wineyardId: String,
-    val wineyardName: String,
-    val wineyardAddress: String,
+    val wineryId: String,
+    val wineryName: String,
+    val wineryAddress: String,
     val lowStockNotifications: Boolean,
     val newReleaseNotifications: Boolean,
     val specialOfferNotifications: Boolean,

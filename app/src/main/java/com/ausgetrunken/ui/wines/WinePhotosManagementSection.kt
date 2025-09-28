@@ -63,7 +63,11 @@ fun WinePhotosManagementSection(
     fun createImageFile(): File {
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val imageFileName = "WINE_${timeStamp}_"
-        val storageDir: File? = context.getExternalFilesDir(null)
+        // Use internal files directory which is properly configured in FileProvider
+        val storageDir = File(context.filesDir, "wine_images")
+        if (!storageDir.exists()) {
+            storageDir.mkdirs()
+        }
         return File.createTempFile(imageFileName, ".jpg", storageDir)
     }
 

@@ -32,7 +32,7 @@ android {
     signingConfigs {
         create("release") {
             // Load keystore properties from secure file (not committed to git)
-            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            val keystorePropertiesFile = rootProject.file("project-docs/certificates/keystore.properties")
             val keystoreProperties = Properties()
             
             if (keystorePropertiesFile.exists()) {

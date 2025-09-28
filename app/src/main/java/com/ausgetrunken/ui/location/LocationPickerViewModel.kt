@@ -3,7 +3,7 @@ package com.ausgetrunken.ui.location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.domain.common.AppResult
-import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.service.WineryService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,14 +16,14 @@ data class LocationPickerUiState(
 )
 
 class LocationPickerViewModel(
-    private val wineyardService: WineyardService
+    private val wineryService: WineryService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(LocationPickerUiState())
     val uiState: StateFlow<LocationPickerUiState> = _uiState.asStateFlow()
     
-    fun updateWineyardLocation(
-        wineyardId: String,
+    fun updateWineryLocation(
+        wineryId: String,
         latitude: Double,
         longitude: Double,
         address: String?
@@ -32,8 +32,8 @@ class LocationPickerViewModel(
             _uiState.value = _uiState.value.copy(isUpdating = true, errorMessage = null)
             
             try {
-                val result = wineyardService.updateWineyardLocation(
-                    wineyardId = wineyardId,
+                val result = wineryService.updateWineryLocation(
+                    wineryId = wineryId,
                     latitude = latitude,
                     longitude = longitude,
                     address = address ?: ""

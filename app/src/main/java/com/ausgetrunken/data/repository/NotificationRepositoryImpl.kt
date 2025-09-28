@@ -22,7 +22,7 @@ class NotificationRepositoryImpl(
 ) : BaseRepository(authRepository), NotificationRepository {
 
     override suspend fun sendNotification(
-        wineyardId: String,
+        wineryId: String,
         notificationType: NotificationType,
         title: String,
         message: String,
@@ -31,14 +31,14 @@ class NotificationRepositoryImpl(
         return execute {
             Result.success(try {
                 println("🔍 NotificationRepository: Sending notification")
-                println("🔍 NotificationRepository: Wineyard ID: $wineyardId")
+                println("🔍 NotificationRepository: Winery ID: $wineryId")
                 println("🔍 NotificationRepository: Notification Type: ${notificationType.name}")
                 println("🔍 NotificationRepository: Wine ID: $wineId")
                 println("🔍 NotificationRepository: Title: $title")
                 println("🔍 NotificationRepository: Message: $message")
                 
                 val payload = NotificationPayload(
-                    wineyardId = wineyardId,
+                    wineryId = wineryId,
                     notificationType = notificationType.name,
                     title = title,
                     message = message,
@@ -88,7 +88,7 @@ class NotificationRepositoryImpl(
         }
     }
 
-    override suspend fun sendLowStockNotificationsForWineyard(wineyardId: String): NotificationSendResult {
+    override suspend fun sendLowStockNotificationsForWinery(wineryId: String): NotificationSendResult {
         return try {
             // Call the database function to send low stock notifications for all wines
             // For now, return empty list since RPC function exists
@@ -238,7 +238,7 @@ class NotificationRepositoryImpl(
 
     @Serializable
     data class NotificationPayload(
-        val wineyardId: String,
+        val wineryId: String,
         val notificationType: String,
         val title: String,
         val message: String,

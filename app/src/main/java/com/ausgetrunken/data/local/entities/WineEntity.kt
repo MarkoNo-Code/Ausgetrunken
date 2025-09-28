@@ -9,19 +9,19 @@ import androidx.room.Index
     tableName = "wines",
     foreignKeys = [
         ForeignKey(
-            entity = WineyardEntity::class,
+            entity = WineryEntity::class,
             parentColumns = ["id"],
-            childColumns = ["wineyardId"],
+            childColumns = ["wineryId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
-        Index(value = ["wineyardId"])
+        Index(value = ["wineryId"])
     ]
 )
 data class WineEntity(
     @PrimaryKey val id: String,
-    val wineyardId: String,
+    val wineryId: String,
     val name: String,
     val description: String,
     val wineType: WineType,

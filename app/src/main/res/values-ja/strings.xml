@@ -24,7 +24,7 @@
     <string name="discounted_price_euro">割引価格 (€) - オプション</string>
     <string name="stock_quantity">在庫数</string>
     <string name="low_stock_threshold">在庫不足の閾値</string>
-    <string name="wineyard_name">ワイナリー名</string>
+    <string name="winery_name">ワイナリー名</string>
     <string name="address">住所</string>
     
     <!-- Button Labels -->
@@ -46,26 +46,26 @@
     <string name="alert_now">今すぐアラート！</string>
     <string name="flag_for_deletion">削除用フラグ</string>
     <string name="flagging_account">アカウントをフラグ中…</string>
-    <string name="creating_wineyard">ワイナリーを作成中…</string>
+    <string name="creating_winery">ワイナリーを作成中…</string>
     
     <!-- User Types -->
     <string name="customer">顧客</string>
-    <string name="wineyard_owner">ワイナリーオーナー</string>
+    <string name="winery_owner">ワイナリーオーナー</string>
     
     <!-- Screen Titles -->
     <string name="discover_wines">ワインを発見</string>
     <string name="my_profile">マイプロフィール</string>
     <string name="profile">プロフィール</string>
     <string name="my_subscriptions">マイサブスクリプション</string>
-    <string name="add_wineyard">ワイナリー追加</string>
-    <string name="wineyard_details">ワイナリー詳細</string>
+    <string name="add_winery">ワイナリー追加</string>
+    <string name="winery_details">ワイナリー詳細</string>
     <string name="add_wine_title">ワイン追加</string>
     <string name="edit_wine_title">ワイン編集</string>
     <string name="wine_details">ワイン詳細</string>
     <string name="notification_management">通知管理</string>
     
     <!-- Navigation -->
-    <string name="tab_wineyards">ワイナリー</string>
+    <string name="tab_winerys">ワイナリー</string>
     <string name="tab_wines">ワイン</string>
     
     <!-- Content Descriptions -->
@@ -93,10 +93,10 @@
     <string name="account_flagged_message">こんにちは、\n\n私のアカウントが管理者によって削除用にフラグされました。これはエラーの可能性があり、レビューをリクエストしたいと思います。\n\nこの問題の解決をお手伝いください。\n\nありがとうございます。</string>
     
     <!-- Empty States -->
-    <string name="no_wineyards_found">ワイナリーが見つかりません</string>
+    <string name="no_winerys_found">ワイナリーが見つかりません</string>
     <string name="no_wines_found">ワインが見つかりません</string>
     <string name="no_subscriptions_yet">まだサブスクリプションがありません</string>
-    <string name="subscribe_to_wineyards_message">ワイナリーを購読して、在庫不足のワイン、新製品、特別オファーの通知を受け取りましょう</string>
+    <string name="subscribe_to_winerys_message">ワイナリーを購読して、在庫不足のワイン、新製品、特別オファーの通知を受け取りましょう</string>
     <string name="no_wines_added_yet">まだワインが追加されていません。\n\'ワイン追加\'をクリックして始めましょう。</string>
     <string name="no_wines_available">利用可能なワインがありません</string>
     <string name="tap_add_wine">\'ワイン追加\'をタップして最初のワインを追加してください</string>
@@ -106,17 +106,17 @@
     
     <!-- Loading States -->
     <string name="loading">読み込み中…</string>
-    <string name="refreshing_wineyards">ワイナリーを更新中…</string>
+    <string name="refreshing_winerys">ワイナリーを更新中…</string>
     <string name="refreshing_wines">ワインを更新中…</string>
     <string name="pull_to_refresh">プルして更新</string>
     <string name="release_to_refresh">リリースして更新</string>
-    <string name="wineyards_refreshed">ワイナリーが更新されました</string>
+    <string name="winerys_refreshed">ワイナリーが更新されました</string>
     <string name="wines_refreshed">ワインが更新されました</string>
     <string name="profile_refreshed">プロフィールが更新されました</string>
     
     <!-- Account Information -->
     <string name="account_information">アカウント情報</string>
-    <string name="subscribed_to_wineyards">%d のワイナリーを購読しています</string>
+    <string name="subscribed_to_winerys">%d のワイナリーを購読しています</string>
     <string name="subscribed_since">%s から購読</string>
     
     <!-- Notification Preferences -->
@@ -129,7 +129,7 @@
     <string name="special_offers_desc">割引やプロモーションを見逃さない</string>
     <string name="general_updates">一般的な更新</string>
     <string name="general_updates_desc">ワイナリーからのニュースと更新</string>
-    <string name="unsubscribe_from_wineyard">%s から購読解除</string>
+    <string name="unsubscribe_from_winery">%s から購読解除</string>
     
     <!-- Wine Information -->
     <string name="regular_price">通常価格:</string>
@@ -143,9 +143,9 @@
     <string name="low_stock_warning">⚠️ 在庫不足警告</string>
     <string name="critical_stock_warning">緊急: ほぼ\'売り切れ\'！</string>
     
-    <!-- Wineyard Information -->
-    <string name="wineyard_photos">ワイナリー写真</string>
-    <string name="wineyard_information">ワイナリー情報</string>
+    <!-- Vineyard Information -->
+    <string name="winery_photos">ワイナリー写真</string>
+    <string name="winery_information">ワイナリー情報</string>
     <string name="wines_section">ワイン</string>
     <string name="photos_count">写真 (%d)</string>
     <string name="wines_count">ワイン (%d)</string>
@@ -168,7 +168,7 @@
     
     <!-- Settings & Debug -->
     <string name="settings">設定</string>
-    <string name="debug_wineyards">🐛 ワイナリーデバッグ</string>
+    <string name="debug_winerys">🐛 ワイナリーデバッグ</string>
     <string name="debug_fcm_token">🔧 FCMトークンデバッグ</string>
     <string name="flag_account_for_deletion">削除用にアカウントをフラグ</string>
     
@@ -185,10 +185,10 @@
     <string name="coordinates">座標: %s</string>
     <string name="remove_photo">写真を削除</string>
     <string name="tap_plus_add_photo">+ をタップして最初の写真を追加してください</string>
-    <string name="wineyard_photo">ワイナリー写真</string>
+    <string name="winery_photo">ワイナリー写真</string>
     <string name="low_stock_threshold_label">在庫不足の閾値:</string>
     <string name="wines_refreshed_success">ワインが更新されました</string>
-    <string name="wineyards_refreshed_success">ワイナリーが更新されました</string>
+    <string name="winerys_refreshed_success">ワイナリーが更新されました</string>
     <string name="account_information_header">アカウント情報</string>
     <string name="notification_preferences_header">通知設定</string>
     <string name="subscriber_info">購読者情報</string>

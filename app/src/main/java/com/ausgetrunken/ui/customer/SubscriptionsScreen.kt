@@ -80,7 +80,7 @@ fun SubscriptionsScreen(
                 ) {
                     item {
                         Text(
-                            text = stringResource(R.string.subscribed_to_wineyards, uiState.subscriptions.size),
+                            text = stringResource(R.string.subscribed_to_wineries, uiState.subscriptions.size),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -93,10 +93,10 @@ fun SubscriptionsScreen(
                     ) { subscription ->
                         SubscriptionCard(
                             subscription = subscription,
-                            onUnsubscribe = { viewModel.unsubscribe(subscription.wineyardId) },
+                            onUnsubscribe = { viewModel.unsubscribe(subscription.wineryId) },
                             onUpdatePreferences = { lowStock, newRelease, specialOffer, general ->
                                 viewModel.updateNotificationPreferences(
-                                    subscription.wineyardId,
+                                    subscription.wineryId,
                                     lowStock,
                                     newRelease,
                                     specialOffer,
@@ -138,7 +138,7 @@ private fun EmptySubscriptionsMessage(
         Spacer(modifier = Modifier.height(8.dp))
         
         Text(
-            text = stringResource(R.string.subscribe_to_wineyards_message),
+            text = stringResource(R.string.subscribe_to_wineries_message),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -149,7 +149,7 @@ private fun EmptySubscriptionsMessage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SubscriptionCard(
-    subscription: SubscriptionWithWineyard,
+    subscription: SubscriptionWithWinery,
     onUnsubscribe: () -> Unit,
     onUpdatePreferences: (Boolean, Boolean, Boolean, Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -173,7 +173,7 @@ private fun SubscriptionCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = subscription.wineyardName,
+                        text = subscription.wineryName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -217,7 +217,7 @@ private fun SubscriptionCard(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text(stringResource(R.string.unsubscribe_from_wineyard, subscription.wineyardName))
+                    Text(stringResource(R.string.unsubscribe_from_winery, subscription.wineryName))
                 }
             }
         }

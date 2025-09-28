@@ -3,24 +3,46 @@ package com.ausgetrunken.domain.service
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.ausgetrunken.data.local.dao.WinePhotoDao
+import com.ausgetrunken.data.local.entities.WinePhotoEntity
+import com.ausgetrunken.data.local.entities.PhotoUploadStatus
 import com.ausgetrunken.domain.model.PhotoWithStatus
 import com.ausgetrunken.domain.model.UploadStatus
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import java.io.File
 import java.io.FileOutputStream
+import java.time.Instant
 import java.util.UUID
 
+@Serializable
+data class SupabaseWinePhoto(
+    val id: String,
+    @SerialName("wine_id") val wineId: String,
+    @SerialName("remote_url") val remoteUrl: String? = null,
+    @SerialName("local_path") val localPath: String? = null,
+    @SerialName("display_order") val displayOrder: Int = 0,
+    @SerialName("upload_status") val uploadStatus: String = "LOCAL_ONLY",
+    @SerialName("file_size") val fileSize: Long = 0,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
 /**
- * Wine photo service using file system + DataStore approach, similar to NewWineyardPhotoService
+ * Wine photo service with database sync, similar to WineryPhotoService
  */
 class WinePhotoService(
     private val context: Context,
     private val photoStorage: SimplePhotoStorage,
     private val uploadStatusStorage: PhotoUploadStatusStorage,
-    private val uploadService: BackgroundPhotoUploadService
+    private val winePhotoUploadService: WinePhotoUploadService,
+    private val winePhotoDao: WinePhotoDao,
+    private val postgrest: Postgrest
 ) {
     companion object {
         private const val TAG = "WinePhotoService"
@@ -126,8 +148,48 @@ class WinePhotoService(
                 // Initialize upload status as pending
                 uploadStatusStorage.updateUploadStatus(localFile.absolutePath, UploadStatus.PENDING)
 
+                // Save to database for persistence and sync
+                val photoEntity = WinePhotoEntity(
+                    id = UUID.randomUUID().toString(),
+                    wineId = wineId,
+                    localPath = localFile.absolutePath,
+                    remoteUrl = null, // Will be updated after upload
+                    displayOrder = 0,
+                    uploadStatus = PhotoUploadStatus.LOCAL_ONLY,
+                    fileSize = localFile.length(),
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                )
+
+                // SYNC TO SUPABASE DATABASE TABLE
+                try {
+                    Log.d(TAG, "Inserting wine photo record into Supabase wine_photos table...")
+                    val supabasePhoto = SupabaseWinePhoto(
+                        id = photoEntity.id,
+                        wineId = photoEntity.wineId,
+                        remoteUrl = photoEntity.remoteUrl,
+                        localPath = photoEntity.localPath,
+                        displayOrder = photoEntity.displayOrder,
+                        uploadStatus = photoEntity.uploadStatus.toString(),
+                        fileSize = photoEntity.fileSize,
+                        createdAt = Instant.now().toString(),
+                        updatedAt = Instant.now().toString()
+                    )
+
+                    postgrest.from("wine_photos").insert(supabasePhoto)
+                    Log.d(TAG, "✅ Successfully inserted wine photo record into Supabase table")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to insert wine photo record into Supabase table: ${e.message}")
+                    // Don't fail the entire operation - local database is still updated
+                    Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
+                }
+
+                // Save to local database
+                winePhotoDao.insertPhoto(photoEntity)
+                Log.d(TAG, "Wine photo saved to local database: ${photoEntity.id}")
+
                 // Queue for background upload
-                uploadService.queuePhotoForUpload(localFile.absolutePath)
+                winePhotoUploadService.queueWinePhotoForUpload(localFile.absolutePath, wineId)
                 Log.d(TAG, "Wine photo queued for background upload")
 
                 Result.success(localFile.absolutePath)
@@ -177,8 +239,48 @@ class WinePhotoService(
                 // Initialize upload status as pending
                 uploadStatusStorage.updateUploadStatus(localFile.absolutePath, UploadStatus.PENDING)
 
+                // Save to database for persistence and sync
+                val photoEntity = WinePhotoEntity(
+                    id = UUID.randomUUID().toString(),
+                    wineId = wineId,
+                    localPath = localFile.absolutePath,
+                    remoteUrl = null, // Will be updated after upload
+                    displayOrder = 0,
+                    uploadStatus = PhotoUploadStatus.LOCAL_ONLY,
+                    fileSize = localFile.length(),
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                )
+
+                // SYNC TO SUPABASE DATABASE TABLE
+                try {
+                    Log.d(TAG, "Inserting wine photo record into Supabase wine_photos table...")
+                    val supabasePhoto = SupabaseWinePhoto(
+                        id = photoEntity.id,
+                        wineId = photoEntity.wineId,
+                        remoteUrl = photoEntity.remoteUrl,
+                        localPath = photoEntity.localPath,
+                        displayOrder = photoEntity.displayOrder,
+                        uploadStatus = photoEntity.uploadStatus.toString(),
+                        fileSize = photoEntity.fileSize,
+                        createdAt = Instant.now().toString(),
+                        updatedAt = Instant.now().toString()
+                    )
+
+                    postgrest.from("wine_photos").insert(supabasePhoto)
+                    Log.d(TAG, "✅ Successfully inserted wine photo record into Supabase table")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to insert wine photo record into Supabase table: ${e.message}")
+                    // Don't fail the entire operation - local database is still updated
+                    Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
+                }
+
+                // Save to local database
+                winePhotoDao.insertPhoto(photoEntity)
+                Log.d(TAG, "Wine photo saved to local database: ${photoEntity.id}")
+
                 // Queue for background upload
-                uploadService.queuePhotoForUpload(localFile.absolutePath)
+                winePhotoUploadService.queueWinePhotoForUpload(localFile.absolutePath, wineId)
                 Log.d(TAG, "Wine photo queued for background upload")
 
                 Result.success(localFile.absolutePath)

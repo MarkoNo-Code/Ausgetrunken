@@ -10,14 +10,14 @@ class NotificationService(
 ) {
     
     suspend fun sendLowStockNotification(
-        wineyardId: String, 
+        wineryId: String,
         wine: WineEntity
     ): NotificationSendResult {
         val title = "Low Stock Alert"
         val message = "${wine.name} has only ${wine.stockQuantity} bottles left - grab yours now!"
         
         return notificationRepository.sendNotification(
-            wineyardId = wineyardId,
+            wineryId = wineryId,
             notificationType = NotificationType.LOW_STOCK,
             title = title,
             message = message,
@@ -26,14 +26,14 @@ class NotificationService(
     }
     
     suspend fun sendCriticalStockNotification(
-        wineyardId: String, 
+        wineryId: String,
         wine: WineEntity
     ): NotificationSendResult {
         val title = "Critical Stock Alert!"
         val message = "Ausgetrunken - ${wine.name} is almost gone! Last chance before it's 'ausgetrunken'! Only ${wine.stockQuantity} bottles remaining."
         
         return notificationRepository.sendNotification(
-            wineyardId = wineyardId,
+            wineryId = wineryId,
             notificationType = NotificationType.CRITICAL_STOCK,
             title = title,
             message = message,
@@ -41,19 +41,19 @@ class NotificationService(
         )
     }
     
-    suspend fun sendLowStockNotificationsForWineyard(wineyardId: String): NotificationSendResult {
-        return notificationRepository.sendLowStockNotificationsForWineyard(wineyardId)
+    suspend fun sendLowStockNotificationsForWinery(wineryId: String): NotificationSendResult {
+        return notificationRepository.sendLowStockNotificationsForWinery(wineryId)
     }
     
     suspend fun sendCustomNotification(
-        wineyardId: String,
+        wineryId: String,
         title: String,
         message: String,
         notificationType: NotificationType,
         wineId: String? = null
     ): NotificationSendResult {
         return notificationRepository.sendNotification(
-            wineyardId = wineyardId,
+            wineryId = wineryId,
             notificationType = notificationType,
             title = title,
             message = message,

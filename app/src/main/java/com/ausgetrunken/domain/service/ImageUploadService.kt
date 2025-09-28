@@ -13,15 +13,15 @@ class ImageUploadService(
     // Feature flag to control cloud uploads - ENABLED for remote-first strategy
     private val ENABLE_CLOUD_UPLOAD = true
     companion object {
-        private const val BUCKET_NAME = "wineyard-photos" // Updated bucket name for better organization
+        private const val BUCKET_NAME = "winery-photos" // Updated bucket name for better organization
         private const val TAG = "ImageUploadService"
     }
 
     /**
      * Upload image to Supabase Storage and return the public URL
      */
-    suspend fun uploadWineyardImage(
-        wineyardId: String, 
+    suspend fun uploadWineryImage(
+        wineryId: String,
         imageFile: File
     ): Result<String> {
         if (!ENABLE_CLOUD_UPLOAD) {
@@ -33,7 +33,7 @@ class ImageUploadService(
             Log.d(TAG, "=== STARTING CLOUD UPLOAD ===")
             Log.d(TAG, "UPLOAD: Cloud upload enabled: $ENABLE_CLOUD_UPLOAD")
             Log.d(TAG, "UPLOAD: Target bucket: $BUCKET_NAME")
-            Log.d(TAG, "UPLOAD: Uploading image for wineyard: $wineyardId")
+            Log.d(TAG, "UPLOAD: Uploading image for winery: $wineryId")
             Log.d(TAG, "UPLOAD: Image file: ${imageFile.absolutePath}")
             Log.d(TAG, "UPLOAD: File exists: ${imageFile.exists()}")
             Log.d(TAG, "UPLOAD: File size: ${imageFile.length()} bytes")
@@ -48,8 +48,8 @@ class ImageUploadService(
                 return Result.failure(Exception("Image file is empty"))
             }
             
-            val fileName = "wineyard_${wineyardId}_${UUID.randomUUID()}.jpg"
-            val filePath = "wineyards/$fileName"
+            val fileName = "winery_${wineryId}_${UUID.randomUUID()}.jpg"
+            val filePath = "wineries/$fileName"
             Log.d(TAG, "UPLOAD: Target path: $filePath")
             
             // Upload file to Supabase Storage
@@ -75,8 +75,8 @@ class ImageUploadService(
     /**
      * Upload image from URI to Supabase Storage
      */
-    suspend fun uploadWineyardImageFromUri(
-        wineyardId: String,
+    suspend fun uploadWineryImageFromUri(
+        wineryId: String,
         imageUri: Uri,
         contentResolver: android.content.ContentResolver
     ): Result<String> {
@@ -86,10 +86,10 @@ class ImageUploadService(
         }
         
         return try {
-            Log.d(TAG, "Uploading image from URI for wineyard: $wineyardId")
-            
-            val fileName = "wineyard_${wineyardId}_${UUID.randomUUID()}.jpg"
-            val filePath = "wineyards/$fileName"
+            Log.d(TAG, "Uploading image from URI for winery: $wineryId")
+
+            val fileName = "winery_${wineryId}_${UUID.randomUUID()}.jpg"
+            val filePath = "wineries/$fileName"
             
             // Read bytes from URI
             val inputStream = contentResolver.openInputStream(imageUri)
@@ -115,7 +115,7 @@ class ImageUploadService(
     /**
      * Delete image from Supabase Storage
      */
-    suspend fun deleteWineyardImage(imageUrl: String): Result<Unit> {
+    suspend fun deleteWineryImage(imageUrl: String): Result<Unit> {
         return try {
             Log.d(TAG, "=== DELETING IMAGE FROM SUPABASE ===")
             Log.d(TAG, "Image URL to delete: ${imageUrl.replace("\n", "\\n")}")

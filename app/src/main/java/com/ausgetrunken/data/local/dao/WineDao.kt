@@ -9,8 +9,8 @@ interface WineDao {
     @Query("SELECT * FROM wines")
     fun getAllWines(): Flow<List<WineEntity>>
     
-    @Query("SELECT * FROM wines WHERE wineyardId = :wineyardId")
-    fun getWinesByWineyard(wineyardId: String): Flow<List<WineEntity>>
+    @Query("SELECT * FROM wines WHERE wineryId = :wineryId")
+    fun getWinesByWinery(wineryId: String): Flow<List<WineEntity>>
     
     @Query("SELECT * FROM wines WHERE id = :wineId")
     suspend fun getWineById(wineId: String): WineEntity?
@@ -24,7 +24,7 @@ interface WineDao {
     @Query("SELECT * FROM wines WHERE stockQuantity <= lowStockThreshold")
     suspend fun getWinesAtLowStockThreshold(): List<WineEntity>
     
-    @Query("SELECT * FROM wines WHERE wineyardId IN (SELECT id FROM wineyards WHERE ownerId = :ownerId)")
+    @Query("SELECT * FROM wines WHERE wineryId IN (SELECT id FROM wineries WHERE ownerId = :ownerId)")
     fun getWinesByOwner(ownerId: String): Flow<List<WineEntity>>
     
     @Query("SELECT * FROM wines ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
@@ -48,8 +48,8 @@ interface WineDao {
     @Query("SELECT * FROM wines")
     suspend fun getAllWinesList(): List<WineEntity>
     
-    @Query("SELECT * FROM wines WHERE wineyardId = :wineyardId")
-    suspend fun getWinesByWineyardList(wineyardId: String): List<WineEntity>
+    @Query("SELECT * FROM wines WHERE wineryId = :wineryId")
+    suspend fun getWinesByWineryList(wineryId: String): List<WineEntity>
     
     @Query("DELETE FROM wines")
     suspend fun clearAllWines()

@@ -2,9 +2,9 @@ package com.ausgetrunken.ui.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ausgetrunken.domain.service.WineyardService
+import com.ausgetrunken.domain.service.WineryService
 import com.ausgetrunken.domain.service.WineService
-import com.ausgetrunken.domain.service.WineyardSubscriptionService
+import com.ausgetrunken.domain.service.WinerySubscriptionService
 import com.ausgetrunken.auth.SupabaseAuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class CustomerLandingViewModel(
-    private val wineyardService: WineyardService,
+    private val wineryService: WineryService,
     private val wineService: WineService,
-    private val subscriptionService: WineyardSubscriptionService,
+    private val subscriptionService: WinerySubscriptionService,
     private val authRepository: SupabaseAuthRepository
 ) : ViewModel() {
     
@@ -27,16 +27,16 @@ class CustomerLandingViewModel(
     }
     
     init {
-        loadWineyards()
+        loadWineries()
         loadSubscriptions()
     }
     
     fun switchTab(tab: CustomerTab) {
         _uiState.value = _uiState.value.copy(currentTab = tab)
         when (tab) {
-            CustomerTab.WINEYARDS -> {
-                if (_uiState.value.wineyards.isEmpty()) {
-                    loadWineyards()
+            CustomerTab.WINERIES -> {
+                if (_uiState.value.wineries.isEmpty()) {
+                    loadWineries()
                 }
             }
             CustomerTab.WINES -> {
@@ -47,46 +47,46 @@ class CustomerLandingViewModel(
         }
     }
     
-    fun loadWineyards(page: Int = 0) {
+    fun loadWineries(page: Int = 0) {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
                 
                 // Check if we need to sync from Supabase first
                 if (page == 0) {
-                    val localWineyards = wineyardService.getAllWineyardsPaginated(1, 0)
-                    if (localWineyards.isEmpty()) {
+                    val localWineries = wineryService.getAllWinerysPaginated(1, 0)
+                    if (localWineries.isEmpty()) {
                         // Sync from Supabase if local database is empty
-                        wineyardService.syncWineyards()
+                        wineryService.syncWinerys()
                     }
                 }
-                
+
                 val offset = page * ITEMS_PER_PAGE
-                val wineyards = wineyardService.getAllWineyardsPaginated(ITEMS_PER_PAGE, offset)
+                val wineries = wineryService.getAllWinerysPaginated(ITEMS_PER_PAGE, offset)
                 
-                val hasMore = wineyards.size == ITEMS_PER_PAGE
-                
+                val hasMore = wineries.size == ITEMS_PER_PAGE
+
                 if (page == 0) {
-                    // First page - replace all wineyards
+                    // First page - replace all wineries
                     _uiState.value = _uiState.value.copy(
-                        wineyards = wineyards,
-                        currentWineyardPage = page,
-                        hasMoreWineyards = hasMore,
+                        wineries = wineries,
+                        currentWineryPage = page,
+                        hasMoreWineries = hasMore,
                         isLoading = false
                     )
                 } else {
-                    // Additional pages - append to existing wineyards
+                    // Additional pages - append to existing wineries
                     _uiState.value = _uiState.value.copy(
-                        wineyards = _uiState.value.wineyards + wineyards,
-                        currentWineyardPage = page,
-                        hasMoreWineyards = hasMore,
+                        wineries = _uiState.value.wineries + wineries,
+                        currentWineryPage = page,
+                        hasMoreWineries = hasMore,
                         isLoading = false
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Failed to load wineyards: ${e.message}"
+                    errorMessage = "Failed to load wineries: ${e.message}"
                 )
             }
         }
@@ -139,9 +139,9 @@ class CustomerLandingViewModel(
     
     fun loadNextPage() {
         when (_uiState.value.currentTab) {
-            CustomerTab.WINEYARDS -> {
-                if (_uiState.value.hasMoreWineyards && !_uiState.value.isLoading) {
-                    loadWineyards(_uiState.value.currentWineyardPage + 1)
+            CustomerTab.WINERIES -> {
+                if (_uiState.value.hasMoreWineries && !_uiState.value.isLoading) {
+                    loadWineries(_uiState.value.currentWineryPage + 1)
                 }
             }
             CustomerTab.WINES -> {
@@ -154,8 +154,8 @@ class CustomerLandingViewModel(
     
     fun refreshData() {
         when (_uiState.value.currentTab) {
-            CustomerTab.WINEYARDS -> {
-                loadWineyards(0)
+            CustomerTab.WINERIES -> {
+                loadWineries(0)
                 loadSubscriptions() // Also refresh subscriptions
             }
             CustomerTab.WINES -> loadWines(0)
@@ -229,9 +229,9 @@ class CustomerLandingViewModel(
                 val supabaseResult = subscriptionService.getUserSubscriptionsFromSupabase(userId)
                 supabaseResult.onSuccess { supabaseSubscriptions ->
                     println("✅ CustomerLandingViewModel: Loaded ${supabaseSubscriptions.size} active subscriptions from Supabase")
-                    val subscribedIds = supabaseSubscriptions.map { it.wineyardId }.toSet()
+                    val subscribedIds = supabaseSubscriptions.map { it.wineryId }.toSet()
                     _uiState.value = _uiState.value.copy(
-                        subscribedWineyardIds = subscribedIds,
+                        subscribedWineryIds = subscribedIds,
                         isSubscriptionDataLoading = false
                     )
                 }.onFailure { supabaseError ->
@@ -240,9 +240,9 @@ class CustomerLandingViewModel(
                     // Fallback to local data if Supabase fails
                     val localSubscriptions = subscriptionService.getUserSubscriptions(userId).firstOrNull() ?: emptyList()
                     println("💾 CustomerLandingViewModel: Loaded ${localSubscriptions.size} active subscriptions from local database")
-                    val subscribedIds = localSubscriptions.map { it.wineyardId }.toSet()
+                    val subscribedIds = localSubscriptions.map { it.wineryId }.toSet()
                     _uiState.value = _uiState.value.copy(
-                        subscribedWineyardIds = subscribedIds,
+                        subscribedWineryIds = subscribedIds,
                         isSubscriptionDataLoading = false
                     )
                 }
@@ -255,10 +255,10 @@ class CustomerLandingViewModel(
         }
     }
     
-    fun toggleWineyardSubscription(wineyardId: String) {
+    fun toggleWinerySubscription(wineryId: String) {
         viewModelScope.launch {
             try {
-                println("🔄 CustomerLandingViewModel: toggleWineyardSubscription called")
+                println("🔄 CustomerLandingViewModel: toggleWinerySubscription called")
                 
                 // Check for valid session first
                 if (!authRepository.hasValidSession()) {
@@ -298,17 +298,17 @@ class CustomerLandingViewModel(
                 
                 // Add loading state
                 _uiState.value = _uiState.value.copy(
-                    subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds + wineyardId
+                    subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds + wineryId
                 )
                 
                 // CRITICAL: Check real-time subscription status from database, not UI state
                 // UI state might be out of sync with actual database state
-                println("🔍 CustomerLandingViewModel: Checking real-time subscription status for user $userId, wineyard $wineyardId")
-                val isCurrentlySubscribed = subscriptionService.isSubscribed(userId, wineyardId)
+                println("🔍 CustomerLandingViewModel: Checking real-time subscription status for user $userId, winery $wineryId")
+                val isCurrentlySubscribed = subscriptionService.isSubscribed(userId, wineryId)
                 println("🔍 CustomerLandingViewModel: Real-time subscription check result: $isCurrentlySubscribed")
                 
                 if (isCurrentlySubscribed) {
-                    val result = subscriptionService.unsubscribeFromWineyard(userId, wineyardId)
+                    val result = subscriptionService.unsubscribeFromWinery(userId, wineryId)
                     result.onSuccess {
                         println("✅ CustomerLandingViewModel: Unsubscribe successful, refreshing subscription list")
                         // Refresh subscriptions from Supabase to ensure consistency
@@ -321,8 +321,8 @@ class CustomerLandingViewModel(
                         )
                     }
                 } else {
-                    println("🔄 CustomerLandingViewModel: Attempting to subscribe to wineyard $wineyardId")
-                    val result = subscriptionService.subscribeToWineyard(userId, wineyardId)
+                    println("🔄 CustomerLandingViewModel: Attempting to subscribe to winery $wineryId")
+                    val result = subscriptionService.subscribeToWinery(userId, wineryId)
                     result.onSuccess {
                         println("✅ CustomerLandingViewModel: Subscription successful, refreshing subscription list")
                         // Refresh subscriptions from Supabase to ensure consistency
@@ -335,10 +335,10 @@ class CustomerLandingViewModel(
                         val userFriendlyMessage = when {
                             error.message?.contains("unique constraint", ignoreCase = true) == true ||
                             error.message?.contains("Already subscribed", ignoreCase = true) == true -> {
-                                "You are already subscribed to this wineyard"
+                                "You are already subscribed to this winery"
                             }
-                            error.message?.contains("wineyard_subscriptions_user_id_wineyard_id_key", ignoreCase = true) == true -> {
-                                "You are already subscribed to this wineyard"
+                            error.message?.contains("winery_subscriptions_user_id_winery_id_key", ignoreCase = true) == true -> {
+                                "You are already subscribed to this winery"
                             }
                             else -> "Failed to subscribe: ${error.message}"
                         }
@@ -355,7 +355,7 @@ class CustomerLandingViewModel(
             } finally {
                 // Remove loading state
                 _uiState.value = _uiState.value.copy(
-                    subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds - wineyardId
+                    subscriptionLoadingIds = _uiState.value.subscriptionLoadingIds - wineryId
                 )
             }
         }

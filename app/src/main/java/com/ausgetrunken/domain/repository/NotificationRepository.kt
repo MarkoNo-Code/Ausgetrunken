@@ -5,14 +5,14 @@ import com.ausgetrunken.data.local.entities.NotificationType
 interface NotificationRepository {
     
     suspend fun sendNotification(
-        wineyardId: String,
+        wineryId: String,
         notificationType: NotificationType,
         title: String,
         message: String,
         wineId: String? = null
     ): NotificationSendResult
     
-    suspend fun sendLowStockNotificationsForWineyard(wineyardId: String): NotificationSendResult
+    suspend fun sendLowStockNotificationsForWinery(wineryId: String): NotificationSendResult
     
     suspend fun updateUserFcmToken(userId: String, fcmToken: String)
     

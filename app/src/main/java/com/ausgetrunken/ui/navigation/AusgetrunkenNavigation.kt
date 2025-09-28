@@ -14,7 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ausgetrunken.ui.auth.AuthScreen
 import com.ausgetrunken.ui.customer.CustomerLandingScreen
 import com.ausgetrunken.ui.customer.CustomerProfileScreen
-import com.ausgetrunken.ui.customer.CustomerWineyardDetailScreen
+import com.ausgetrunken.ui.customer.CustomerWineryDetailScreen
 import com.ausgetrunken.ui.location.LocationPickerScreen
 import com.ausgetrunken.ui.notifications.NotificationManagementScreen
 import com.ausgetrunken.ui.profile.OwnerProfileScreen
@@ -23,8 +23,8 @@ import com.ausgetrunken.ui.splash.SplashScreen
 import com.ausgetrunken.ui.wines.AddWineScreen
 import com.ausgetrunken.ui.wines.EditWineScreen
 import com.ausgetrunken.ui.wines.WineDetailScreen
-import com.ausgetrunken.ui.wineyard.AddWineyardScreen
-import com.ausgetrunken.ui.wineyard.WineyardDetailScreen
+import com.ausgetrunken.ui.winery.AddWineryScreen
+import com.ausgetrunken.ui.winery.WineryDetailScreen
 
 @Composable
 fun AusgetrunkenNavigation(
@@ -68,7 +68,7 @@ fun AusgetrunkenNavigation(
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
-                onNavigateToWineyardList = {
+                onNavigateToVineyardList = {
                     navController.navigate(Screen.CustomerLanding.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
@@ -80,7 +80,7 @@ fun AusgetrunkenNavigation(
         
         composable(Screen.Auth.route) {
             AuthScreen(
-                onNavigateToWineyardList = {
+                onNavigateToVineyardList = {
                     navController.navigate(Screen.CustomerLanding.route) {
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     }
@@ -96,8 +96,8 @@ fun AusgetrunkenNavigation(
         
         composable(Screen.CustomerLanding.route) {
             CustomerLandingScreen(
-                onWineyardClick = { wineyardId ->
-                    navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
+                onWineryClick = { wineryId ->
+                    navController.navigate(Screen.CustomerWineryDetail.createRoute(wineryId))
                 },
                 onWineClick = { wineId ->
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
@@ -119,17 +119,17 @@ fun AusgetrunkenNavigation(
             )
         }
         
-        composable(Screen.WineyardDetail.route) { backStackEntry ->
-            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
-            WineyardDetailScreen(
-                wineyardId = wineyardId,
+        composable(Screen.WineryDetail.route) { backStackEntry ->
+            val wineryId = backStackEntry.arguments?.getString("wineryId") ?: ""
+            WineryDetailScreen(
+                wineryId = wineryId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateBackAfterSave = { updatedWineyardId ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set("updatedWineyardId", updatedWineyardId)
+                onNavigateBackAfterSave = { updatedWineryId ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set("updatedWineryId", updatedWineryId)
                     navController.popBackStack()
                 },
-                onNavigateToAddWine = { wineyardId ->
-                    navController.navigate(Screen.AddWine.createRoute(wineyardId))
+                onNavigateToAddWine = { wineryId ->
+                    navController.navigate(Screen.AddWine.createRoute(wineryId))
                 },
                 onNavigateToEditWine = { wineId ->
                     navController.navigate(Screen.EditWine.createRoute(wineId))
@@ -138,13 +138,13 @@ fun AusgetrunkenNavigation(
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
                 },
                 onNavigateToCustomerView = {
-                    navController.navigate(Screen.CustomerWineyardDetail.createRoute(wineyardId))
+                    navController.navigate(Screen.CustomerWineryDetail.createRoute(wineryId))
                 },
                 onNavigateToLocationPicker = { currentLat, currentLng ->
                     // Store current coordinates for the location picker
                     backStackEntry.savedStateHandle.set("current_lat", currentLat)
                     backStackEntry.savedStateHandle.set("current_lng", currentLng)
-                    navController.navigate(Screen.LocationPicker.createRoute(wineyardId))
+                    navController.navigate(Screen.LocationPicker.createRoute(wineryId))
                 },
                 onLocationProcessed = {
                     // PROPER CLEANUP: Remove result after successful processing
@@ -156,10 +156,10 @@ fun AusgetrunkenNavigation(
             )
         }
         
-        composable(Screen.CustomerWineyardDetail.route) { backStackEntry ->
-            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
-            CustomerWineyardDetailScreen(
-                wineyardId = wineyardId,
+        composable(Screen.CustomerWineryDetail.route) { backStackEntry ->
+            val wineryId = backStackEntry.arguments?.getString("wineryId") ?: ""
+            CustomerWineryDetailScreen(
+                wineryId = wineryId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToWineDetail = { wineId ->
                     navController.navigate(Screen.WineDetail.createRoute(wineId))
@@ -177,11 +177,11 @@ fun AusgetrunkenNavigation(
         
         composable(Screen.OwnerProfile.route) { backStackEntry ->
             OwnerProfileScreen(
-                onNavigateToWineyardDetail = { wineyardId ->
-                    navController.navigate(Screen.WineyardDetail.createRoute(wineyardId))
+                onNavigateToWineryDetail = { wineryId ->
+                    navController.navigate(Screen.WineryDetail.createRoute(wineryId))
                 },
-                onNavigateToCreateWineyard = {
-                    navController.navigate(Screen.AddWineyard.route)
+                onNavigateToCreateWinery = {
+                    navController.navigate(Screen.AddWinery.route)
                 },
                 onNavigateToNotificationManagement = { ownerId ->
                     navController.navigate(Screen.NotificationManagement.createRoute(ownerId))
@@ -194,20 +194,20 @@ fun AusgetrunkenNavigation(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                newWineyardId = backStackEntry.savedStateHandle.get<String>("newWineyardId"),
-                updatedWineyardId = backStackEntry.savedStateHandle.get<String>("updatedWineyardId")
+                newWineryId = backStackEntry.savedStateHandle.get<String>("newWineryId"),
+                updatedWineryId = backStackEntry.savedStateHandle.get<String>("updatedWineryId")
             )
         }
         
-        composable(Screen.AddWineyard.route) { backStackEntry ->
+        composable(Screen.AddWinery.route) { backStackEntry ->
             // Get location result from savedStateHandle if available
             val locationResult = backStackEntry.savedStateHandle.get<Triple<Double, Double, String?>>("location_result")
 
-            AddWineyardScreen(
+            AddWineryScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateBackWithSuccess = { wineyardId ->
-                    println("🔥 AusgetrunkenNavigation: SUCCESS CALLBACK TRIGGERED! wineyardId: $wineyardId")
-                    navController.previousBackStackEntry?.savedStateHandle?.set("newWineyardId", wineyardId)
+                onNavigateBackWithSuccess = { wineryId ->
+                    println("🔥 AusgetrunkenNavigation: SUCCESS CALLBACK TRIGGERED! wineryId: $wineryId")
+                    navController.previousBackStackEntry?.savedStateHandle?.set("newWineryId", wineryId)
                     println("🔥 AusgetrunkenNavigation: About to call popBackStack()")
                     navController.popBackStack()
                     println("🔥 AusgetrunkenNavigation: popBackStack() called")
@@ -216,27 +216,27 @@ fun AusgetrunkenNavigation(
                     // Store current coordinates for location picker
                     navController.currentBackStackEntry?.savedStateHandle?.set("current_lat", currentLat)
                     navController.currentBackStackEntry?.savedStateHandle?.set("current_lng", currentLng)
-                    navController.navigate(Screen.AddWineyardLocationPicker.route)
+                    navController.navigate(Screen.AddWineryLocationPicker.route)
                 },
                 locationResult = locationResult
             )
         }
         
-        composable(Screen.CreateWineyard.route) {
+        composable(Screen.CreateWinery.route) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Create Wineyard Screen - To be implemented")
+                Text("Create Winery Screen - To be implemented")
             }
         }
         
         
         composable(Screen.AddWine.route) { backStackEntry ->
-            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
-            println("🔥 Navigation: AddWine with wineyardId: $wineyardId")
+            val wineryId = backStackEntry.arguments?.getString("wineryId") ?: ""
+            println("🔥 Navigation: AddWine with wineryId: $wineryId")
             AddWineScreen(
-                wineyardId = wineyardId,
+                wineryId = wineryId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateBackWithSuccess = { addedWineId ->
                     println("🔥 AddWine SUCCESS CALLBACK TRIGGERED with wineId: $addedWineId")
@@ -277,14 +277,14 @@ fun AusgetrunkenNavigation(
         }
         
         composable(Screen.LocationPicker.route) { backStackEntry ->
-            val wineyardId = backStackEntry.arguments?.getString("wineyardId") ?: ""
+            val wineryId = backStackEntry.arguments?.getString("wineryId") ?: ""
             // Get current coordinates from previous backstack entry if available
             val currentLat = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lat") ?: 0.0
             val currentLng = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lng") ?: 0.0
-            android.util.Log.d("Navigation", "🗺️ LocationPicker starting with: wineyardId=$wineyardId, lat=$currentLat, lng=$currentLng")
-            
+            android.util.Log.d("Navigation", "🗺️ LocationPicker starting with: wineryId=$wineryId, lat=$currentLat, lng=$currentLng")
+
             LocationPickerScreen(
-                wineyardId = wineyardId,
+                wineryId = wineryId,
                 initialLatitude = currentLat,
                 initialLongitude = currentLng,
                 onLocationSelected = { latitude, longitude, address ->
@@ -299,19 +299,19 @@ fun AusgetrunkenNavigation(
             )
         }
 
-        composable(Screen.AddWineyardLocationPicker.route) {
+        composable(Screen.AddWineryLocationPicker.route) {
             // Get current coordinates from previous backstack entry if available
             val currentLat = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lat") ?: 0.0
             val currentLng = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lng") ?: 0.0
-            android.util.Log.d("Navigation", "🗺️ AddWineyardLocationPicker starting with: lat=$currentLat, lng=$currentLng")
+            android.util.Log.d("Navigation", "🗺️ AddWineryLocationPicker starting with: lat=$currentLat, lng=$currentLng")
 
             LocationPickerScreen(
-                wineyardId = "add_wineyard", // Placeholder ID for add wineyard flow
+                wineryId = "add_winery", // Placeholder ID for add winery flow
                 initialLatitude = currentLat,
                 initialLongitude = currentLng,
                 onLocationSelected = { latitude, longitude, address ->
                     // CORRECT PATTERN: Set result in savedStateHandle and popBackStack()
-                    android.util.Log.d("Navigation", "🎯 Setting AddWineyard location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
+                    android.util.Log.d("Navigation", "🎯 Setting AddWinery location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("location_result", Triple(latitude, longitude, address))

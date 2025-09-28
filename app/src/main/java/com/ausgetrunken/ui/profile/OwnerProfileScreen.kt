@@ -65,11 +65,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.ausgetrunken.R
-import com.ausgetrunken.data.local.entities.WineyardEntity
+import com.ausgetrunken.data.local.entities.WineryEntity
 import com.ausgetrunken.ui.components.ImagePickerDialog
-import com.ausgetrunken.ui.profile.components.AddWineyardCard
+import com.ausgetrunken.ui.profile.components.AddWineryCard
 import com.ausgetrunken.ui.profile.components.ProfileHeader
-import com.ausgetrunken.ui.profile.components.WineyardCard
+import com.ausgetrunken.ui.profile.components.WineryCard
 import com.ausgetrunken.ui.theme.AusgetrunkenTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -82,13 +82,13 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OwnerProfileScreen(
-    onNavigateToWineyardDetail: (String) -> Unit,
-    onNavigateToCreateWineyard: () -> Unit,
+    onNavigateToWineryDetail: (String) -> Unit,
+    onNavigateToCreateWinery: () -> Unit,
     onNavigateToNotificationManagement: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     onLogoutSuccess: () -> Unit,
-    newWineyardId: String? = null,
-    updatedWineyardId: String? = null
+    newWineryId: String? = null,
+    updatedWineryId: String? = null
 ) {
     // Use shared ViewModel scope to persist data across navigation
     // Since OwnerProfileViewModel is a singleton in Koin, this will return the same instance
@@ -256,21 +256,21 @@ fun OwnerProfileScreen(
         }
     }
     
-    // Handle new wineyard creation - add to UI and trigger animation
-    LaunchedEffect(newWineyardId) {
-        newWineyardId?.let {
-            println("ProfileScreen: Received newWineyardId: $it")
-            // Add the new wineyard to UI state directly (no refetch needed)
-            viewModel.addNewWineyardToUI(it)
+    // Handle new winery creation - add to UI and trigger animation
+    LaunchedEffect(newWineryId) {
+        newWineryId?.let {
+            println("ProfileScreen: Received newWineryId: $it")
+            // Add the new winery to UI state directly (no refetch needed)
+            viewModel.addNewWineryToUI(it)
             // Wait for animation to complete then clear the saved state
             delay(2000) // 2 seconds
         }
     }
     
-    // Clear the updatedWineyardId after animation completes
-    LaunchedEffect(updatedWineyardId) {
-        updatedWineyardId?.let {
-            println("ProfileScreen: Received updatedWineyardId: $it")
+    // Clear the updatedWineryId after animation completes
+    LaunchedEffect(updatedWineryId) {
+        updatedWineryId?.let {
+            println("ProfileScreen: Received updatedWineryId: $it")
             // Wait for animation to complete then clear the saved state
             delay(2000) // 2 seconds
         }
@@ -475,8 +475,8 @@ fun OwnerProfileScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
 
-                            // Wineyard List Title (only show if there are wineyards)
-                            if (uiState.wineyards.isNotEmpty()) {
+                            // Winery List Title (only show if there are wineries)
+                            if (uiState.wineries.isNotEmpty()) {
                                 item {
                                     Row(
                                         modifier = Modifier
@@ -486,13 +486,13 @@ fun OwnerProfileScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = stringResource(R.string.your_wineyards),
+                                            text = stringResource(R.string.your_wineries),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = stringResource(R.string.wineyard_count_format, uiState.wineyards.size, uiState.maxWineyards),
+                                            text = stringResource(R.string.winery_count_format, uiState.wineries.size, uiState.maxWineries),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                         )
@@ -500,24 +500,24 @@ fun OwnerProfileScreen(
                                 }
                             }
 
-                            // Wineyard Cards
-                            items(uiState.wineyards) { wineyard ->
-                                WineyardCard(
-                                    wineyard = wineyard,
-                                    onWineyardClick = onNavigateToWineyardDetail,
-                                    isNewlyAdded = newWineyardId == wineyard.id,
-                                    isUpdated = updatedWineyardId == wineyard.id
+                            // Winery Cards
+                            items(uiState.wineries) { winery ->
+                                WineryCard(
+                                    winery = winery,
+                                    onWineryClick = onNavigateToWineryDetail,
+                                    isNewlyAdded = newWineryId == winery.id,
+                                    isUpdated = updatedWineryId == winery.id
                                 )
                             }
                     
-                            // Add Wineyard Card
-                            if (uiState.canAddMoreWineyards) {
+                            // Add Winery Card
+                            if (uiState.canAddMoreWineries) {
                                 item {
                                     Spacer(modifier = Modifier.height(16.dp))
                                 }
                                 item {
-                                    AddWineyardCard(
-                                        onAddWineyardClick = onNavigateToCreateWineyard
+                                    AddWineryCard(
+                                        onAddWineryClick = onNavigateToCreateWinery
                                     )
                                 }
                             }
@@ -653,7 +653,7 @@ private fun PullToRefreshAccordion(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Refreshing wineyards...",
+                                text = "Refreshing wineries...",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -681,16 +681,16 @@ fun OwnerProfileContent(
     userName: String,
     userEmail: String,
     profilePictureUrl: String?,
-    wineyards: List<WineyardEntity>,
-    maxWineyards: Int,
-    canAddMoreWineyards: Boolean,
-    newWineyardId: String? = null,
-    updatedWineyardId: String? = null,
+    wineries: List<WineryEntity>,
+    maxWineries: Int,
+    canAddMoreWineries: Boolean,
+    newWineryId: String? = null,
+    updatedWineryId: String? = null,
     onProfilePictureClick: () -> Unit = {},
     onNotificationCenterClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onWineyardClick: (String) -> Unit = {},
-    onAddWineyardClick: () -> Unit = {}
+    onWineryClick: (String) -> Unit = {},
+    onAddWineryClick: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -710,8 +710,8 @@ fun OwnerProfileContent(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Wineyard List Title (only show if there are wineyards)
-        if (wineyards.isNotEmpty()) {
+        // Winery List Title (only show if there are wineries)
+        if (wineries.isNotEmpty()) {
             item {
                 Row(
                     modifier = Modifier
@@ -721,13 +721,13 @@ fun OwnerProfileContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.your_wineyards),
+                        text = stringResource(R.string.your_wineries),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = stringResource(R.string.wineyard_count_format, wineyards.size, maxWineyards),
+                        text = stringResource(R.string.winery_count_format, wineries.size, maxWineries),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -735,24 +735,24 @@ fun OwnerProfileContent(
             }
         }
 
-        // Wineyard Cards
-        items(wineyards) { wineyard ->
-            WineyardCard(
-                wineyard = wineyard,
-                onWineyardClick = onWineyardClick,
-                isNewlyAdded = newWineyardId == wineyard.id,
-                isUpdated = updatedWineyardId == wineyard.id
+        // Winery Cards
+        items(wineries) { winery ->
+            WineryCard(
+                winery = winery,
+                onWineryClick = onWineryClick,
+                isNewlyAdded = newWineryId == winery.id,
+                isUpdated = updatedWineryId == winery.id
             )
         }
 
-        // Add Wineyard Card
-        if (canAddMoreWineyards) {
+        // Add Winery Card
+        if (canAddMoreWineries) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
             }
             item {
-                AddWineyardCard(
-                    onAddWineyardClick = onAddWineyardClick
+                AddWineryCard(
+                    onAddWineryClick = onAddWineryClick
                 )
             }
         }
@@ -763,8 +763,8 @@ fun OwnerProfileContent(
 class OwnerProfilePreviewParameterProvider : PreviewParameterProvider<OwnerProfilePreviewData> {
     override val values = sequenceOf(
         OwnerProfilePreviewData.EmptyProfile,
-        OwnerProfilePreviewData.SingleWineyard,
-        OwnerProfilePreviewData.MultipleWineyards,
+        OwnerProfilePreviewData.SingleVineyard,
+        OwnerProfilePreviewData.MultipleVineyards,
         OwnerProfilePreviewData.FullProfile
     )
 }
@@ -773,26 +773,26 @@ data class OwnerProfilePreviewData(
     val userName: String,
     val userEmail: String,
     val profilePictureUrl: String?,
-    val wineyards: List<WineyardEntity>,
-    val maxWineyards: Int,
-    val canAddMoreWineyards: Boolean
+    val wineries: List<WineryEntity>,
+    val maxWineries: Int,
+    val canAddMoreWineries: Boolean
 ) {
     companion object {
         val EmptyProfile = OwnerProfilePreviewData(
             userName = "John Winemaker",
             userEmail = "john@winemaker.com",
             profilePictureUrl = null,
-            wineyards = emptyList(),
-            maxWineyards = 3,
-            canAddMoreWineyards = true
+            wineries = emptyList(),
+            maxWineries = 3,
+            canAddMoreWineries = true
         )
 
-        val SingleWineyard = OwnerProfilePreviewData(
+        val SingleVineyard = OwnerProfilePreviewData(
             userName = "Maria Gonzalez",
             userEmail = "maria@vineyard.es",
             profilePictureUrl = null,
-            wineyards = listOf(
-                WineyardEntity(
+            wineries = listOf(
+                WineryEntity(
                     id = "1",
                     name = "Sunset Valley Vineyard",
                     description = "A beautiful vineyard with stunning sunset views and premium wine production.",
@@ -803,16 +803,16 @@ data class OwnerProfilePreviewData(
                     photos = listOf("https://example.com/vineyard1.jpg")
                 )
             ),
-            maxWineyards = 3,
-            canAddMoreWineyards = true
+            maxWineries = 3,
+            canAddMoreWineries = true
         )
 
-        val MultipleWineyards = OwnerProfilePreviewData(
+        val MultipleVineyards = OwnerProfilePreviewData(
             userName = "Francesco Rossi",
             userEmail = "francesco@tuscanwines.it",
             profilePictureUrl = null,
-            wineyards = listOf(
-                WineyardEntity(
+            wineries = listOf(
+                WineryEntity(
                     id = "1",
                     name = "Tuscan Hills Winery",
                     description = "Traditional Tuscan winemaking in the heart of Chianti.",
@@ -822,7 +822,7 @@ data class OwnerProfilePreviewData(
                     ownerId = "owner1",
                     photos = listOf("https://example.com/tuscany1.jpg")
                 ),
-                WineyardEntity(
+                WineryEntity(
                     id = "2",
                     name = "Mountain Peak Vineyard",
                     description = "High-altitude vineyard producing exceptional cool-climate wines.",
@@ -833,16 +833,16 @@ data class OwnerProfilePreviewData(
                     photos = listOf("https://example.com/mountain1.jpg")
                 )
             ),
-            maxWineyards = 3,
-            canAddMoreWineyards = true
+            maxWineries = 3,
+            canAddMoreWineries = true
         )
 
         val FullProfile = OwnerProfilePreviewData(
             userName = "Robert Mondavi",
             userEmail = "robert@mondavi.com",
             profilePictureUrl = null,
-            wineyards = listOf(
-                WineyardEntity(
+            wineries = listOf(
+                WineryEntity(
                     id = "1",
                     name = "Mondavi Estate Winery",
                     description = "World-renowned winery producing exceptional Cabernet Sauvignon and Chardonnay.",
@@ -852,7 +852,7 @@ data class OwnerProfilePreviewData(
                     ownerId = "owner1",
                     photos = listOf("https://example.com/mondavi1.jpg")
                 ),
-                WineyardEntity(
+                WineryEntity(
                     id = "2",
                     name = "Reserve Vineyard",
                     description = "Premium vineyard dedicated to reserve wine production.",
@@ -862,7 +862,7 @@ data class OwnerProfilePreviewData(
                     ownerId = "owner1",
                     photos = listOf("https://example.com/reserve1.jpg")
                 ),
-                WineyardEntity(
+                WineryEntity(
                     id = "3",
                     name = "Heritage Vineyard",
                     description = "Historic vineyard maintaining traditional winemaking methods.",
@@ -873,8 +873,8 @@ data class OwnerProfilePreviewData(
                     photos = listOf("https://example.com/heritage1.jpg")
                 )
             ),
-            maxWineyards = 3,
-            canAddMoreWineyards = false
+            maxWineries = 3,
+            canAddMoreWineries = false
         )
     }
 }
@@ -892,55 +892,55 @@ fun OwnerProfileContentPreview_Empty() {
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }
 }
 
-@Preview(name = "Single Wineyard", showBackground = true)
+@Preview(name = "Single Vineyard", showBackground = true)
 @Composable
 fun OwnerProfileContentPreview_Single() {
     AusgetrunkenTheme {
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
-            val data = OwnerProfilePreviewData.SingleWineyard
+            val data = OwnerProfilePreviewData.SingleVineyard
             OwnerProfileContent(
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }
 }
 
-@Preview(name = "Multiple Wineyards", showBackground = true)
+@Preview(name = "Multiple Vineyards", showBackground = true)
 @Composable
 fun OwnerProfileContentPreview_Multiple() {
     AusgetrunkenTheme {
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
-            val data = OwnerProfilePreviewData.MultipleWineyards
+            val data = OwnerProfilePreviewData.MultipleVineyards
             OwnerProfileContent(
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }
 }
 
-@Preview(name = "Full Profile (Max Wineyards)", showBackground = true)
+@Preview(name = "Full Profile (Max Vineyards)", showBackground = true)
 @Composable
 fun OwnerProfileContentPreview_Full() {
     AusgetrunkenTheme {
@@ -952,9 +952,9 @@ fun OwnerProfileContentPreview_Full() {
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }
@@ -973,9 +973,9 @@ fun OwnerProfileContentPreview_Parameterized(
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }
@@ -994,29 +994,29 @@ fun OwnerProfileContentPreview_Empty_Dark() {
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }
 }
 
-@Preview(name = "Multiple Wineyards - Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Multiple Vineyards - Dark", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun OwnerProfileContentPreview_Multiple_Dark() {
     AusgetrunkenTheme {
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
-            val data = OwnerProfilePreviewData.MultipleWineyards
+            val data = OwnerProfilePreviewData.MultipleVineyards
             OwnerProfileContent(
                 userName = data.userName,
                 userEmail = data.userEmail,
                 profilePictureUrl = data.profilePictureUrl,
-                wineyards = data.wineyards,
-                maxWineyards = data.maxWineyards,
-                canAddMoreWineyards = data.canAddMoreWineyards
+                wineries = data.wineries,
+                maxWineries = data.maxWineries,
+                canAddMoreWineries = data.canAddMoreWineries
             )
         }
     }

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Wine(
     @SerialName("id") val id: String,
-    @SerialName("wineyard_id") val wineyardId: String,
+    @SerialName("winery_id") val wineryId: String,
     @SerialName("name") val name: String,
     @SerialName("description") val description: String,
     @SerialName("wine_type") val wineType: String,

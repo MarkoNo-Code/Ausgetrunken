@@ -7,8 +7,8 @@ import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.NotificationService
 import com.ausgetrunken.domain.service.ProfilePictureService
-import com.ausgetrunken.domain.service.WineyardService
-import com.ausgetrunken.domain.usecase.GetWineyardSubscribersUseCase
+import com.ausgetrunken.domain.service.WineryService
+import com.ausgetrunken.domain.usecase.GetWinerySubscribersUseCase
 import com.ausgetrunken.notifications.FCMTokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,11 +18,11 @@ import kotlinx.coroutines.launch
 class OwnerProfileViewModel(
     private val authRepository: SupabaseAuthRepository,
     private val userRepository: UserRepository,
-    private val wineyardService: WineyardService,
+    private val wineryService: WineryService,
     private val authService: AuthService,
     private val notificationService: NotificationService,
     private val fcmTokenManager: FCMTokenManager,
-    private val getWineyardSubscribersUseCase: GetWineyardSubscribersUseCase,
+    private val getWinerySubscribersUseCase: GetWinerySubscribersUseCase,
     private val profilePictureService: ProfilePictureService
 ) : ViewModel() {
     
@@ -48,18 +48,18 @@ class OwnerProfileViewModel(
     fun loadIfNeeded() {
         // Only load if we don't have data or it's been a while
         val timeSinceLastLoad = System.currentTimeMillis() - lastLoadTime
-        val hasData = _uiState.value.wineyards.isNotEmpty()
+        val hasData = _uiState.value.wineries.isNotEmpty()
         
         if (!hasData || timeSinceLastLoad > CACHE_DURATION_MS) {
             println("🔄 ProfileViewModel: loadIfNeeded() triggered - hasData: $hasData, timeSinceLastLoad: ${timeSinceLastLoad}ms")
             loadUserProfile()
         } else {
-            println("✅ ProfileViewModel: Using cached data - ${_uiState.value.wineyards.size} wineyards")
+            println("✅ ProfileViewModel: Using cached data - ${_uiState.value.wineries.size} wineries")
         }
     }
     
     private fun loadUserProfileIfNeeded() {
-        // Simple approach: always load user info, but be smart about wineyard syncing
+        // Simple approach: always load user info, but be smart about winery syncing
         println("🔄 ProfileViewModel: Loading profile...")
         loadUserProfile()
     }
@@ -121,8 +121,8 @@ class OwnerProfileViewModel(
                         isLoading = false,
                         userName = "Unknown User",
                         userEmail = "Error loading user info",
-                        wineyards = emptyList(),
-                        canAddMoreWineyards = false,
+                        wineries = emptyList(),
+                        canAddMoreWineries = false,
                         errorMessage = "Unable to identify user. Please sign in again."
                     )
                     return@launch
@@ -138,40 +138,40 @@ class OwnerProfileViewModel(
                 
                 println("👤 ProfileViewModel: Resolved user name: '$userName' (from DB: '${userFromDb?.fullName}', email fallback: '${userEmail.substringBefore("@")}')")
                 
-                // Update UI state immediately with user info, even before wineyards load
+                // Update UI state immediately with user info, even before wineries load
                 _uiState.value = _uiState.value.copy(
                     userName = userName,
                     userEmail = userEmail,
                     profilePictureUrl = profilePictureUrl,
-                    isLoading = true // Keep loading true while fetching wineyards
+                    isLoading = true // Keep loading true while fetching wineries
                 )
                 
-                // Load wineyards using remote-first approach
+                // Load wineries using remote-first approach
                 try {
-                    println("🔄 ProfileViewModel: Loading wineyards using remote-first approach for user $userId...")
+                    println("🔄 ProfileViewModel: Loading wineries using remote-first approach for user $userId...")
                     
                     // Use remote-first approach to ensure we get the latest data from Supabase
-                    val wineyards = wineyardService.getWineyardsByOwnerRemoteFirst(userId)
-                    println("🏭 ProfileViewModel: Found ${wineyards.size} wineyards for owner $userId")
+                    val wineries = wineryService.getWinerysByOwnerRemoteFirst(userId)
+                    println("🏭 ProfileViewModel: Found ${wineries.size} wineries for owner $userId")
                     
                     _uiState.value = _uiState.value.copy(
-                        wineyards = wineyards,
-                        canAddMoreWineyards = wineyards.size < 5,
+                        wineries = wineries,
+                        canAddMoreWineries = wineries.size < 5,
                         isLoading = false
                     )
                     
                     lastLoadTime = System.currentTimeMillis()
-                    println("✅ ProfileViewModel: Successfully loaded wineyards using remote-first approach")
+                    println("✅ ProfileViewModel: Successfully loaded wineries using remote-first approach")
                     
                 } catch (e: Exception) {
-                    println("❌ ProfileViewModel: Error loading wineyards: ${e.message}")
+                    println("❌ ProfileViewModel: Error loading wineries: ${e.message}")
                     e.printStackTrace()
-                    // Still show user info even if wineyards fail to load
+                    // Still show user info even if wineries fail to load
                     _uiState.value = _uiState.value.copy(
-                        wineyards = emptyList(),
-                        canAddMoreWineyards = true,
+                        wineries = emptyList(),
+                        canAddMoreWineries = true,
                         isLoading = false,
-                        errorMessage = "Failed to load wineyards: ${e.message}"
+                        errorMessage = "Failed to load wineries: ${e.message}"
                     )
                 }
                 
@@ -182,8 +182,8 @@ class OwnerProfileViewModel(
                     isLoading = false,
                     userName = "Error",
                     userEmail = "Failed to load profile",
-                    wineyards = emptyList(),
-                    canAddMoreWineyards = false,
+                    wineries = emptyList(),
+                    canAddMoreWineries = false,
                     errorMessage = "Failed to load profile: ${e.message}"
                 )
             }
@@ -203,34 +203,34 @@ class OwnerProfileViewModel(
     }
     
     /**
-     * Finds the wineyard with the most active subscribers for notification management.
-     * Returns the first wineyard if none have subscribers or if there's an error.
+     * Finds the winery with the most active subscribers for notification management.
+     * Returns the first winery if none have subscribers or if there's an error.
      */
-    suspend fun findWineyardWithMostSubscribers(): String? {
-        val wineyards = _uiState.value.wineyards
-        if (wineyards.isEmpty()) return null
+    suspend fun findWineryWithMostSubscribers(): String? {
+        val wineries = _uiState.value.wineries
+        if (wineries.isEmpty()) return null
         
-        println("🔍 ProfileViewModel: Finding wineyard with most subscribers from ${wineyards.size} wineyards")
+        println("🔍 ProfileViewModel: Finding winery with most subscribers from ${wineries.size} wineries")
         
-        var bestWineyard: String? = null
+        var bestWinery: String? = null
         var maxSubscribers = 0
         
-        for (wineyard in wineyards) {
+        for (winery in wineries) {
             try {
-                val subscriberInfo = getWineyardSubscribersUseCase(wineyard.id)
-                println("📊 ProfileViewModel: Wineyard ${wineyard.name} (${wineyard.id}) has ${subscriberInfo.totalSubscribers} subscribers")
+                val subscriberInfo = getWinerySubscribersUseCase(winery.id)
+                println("📊 ProfileViewModel: Winery ${winery.name} (${winery.id}) has ${subscriberInfo.totalSubscribers} subscribers")
                 
                 if (subscriberInfo.totalSubscribers > maxSubscribers) {
                     maxSubscribers = subscriberInfo.totalSubscribers
-                    bestWineyard = wineyard.id
+                    bestWinery = winery.id
                 }
             } catch (e: Exception) {
-                println("⚠️ ProfileViewModel: Error checking subscribers for wineyard ${wineyard.id}: ${e.message}")
+                println("⚠️ ProfileViewModel: Error checking subscribers for winery ${winery.id}: ${e.message}")
             }
         }
         
-        val result = bestWineyard ?: wineyards.first().id
-        println("✅ ProfileViewModel: Selected wineyard for notifications: $result (subscribers: $maxSubscribers)")
+        val result = bestWinery ?: wineries.first().id
+        println("✅ ProfileViewModel: Selected winery for notifications: $result (subscribers: $maxSubscribers)")
         return result
     }
     
@@ -535,37 +535,37 @@ class OwnerProfileViewModel(
     }
     
     /**
-     * Add a newly created wineyard directly to the UI state without refetching all data
+     * Add a newly created winery directly to the UI state without refetching all data
      */
-    fun addNewWineyardToUI(wineyardId: String) {
+    fun addNewWineryToUI(wineryId: String) {
         viewModelScope.launch {
             try {
-                println("🏭 ProfileViewModel: Adding new wineyard $wineyardId to UI state...")
+                println("🏭 ProfileViewModel: Adding new winery $wineryId to UI state...")
                 
-                // Fetch the specific wineyard that was just created
-                val newWineyard = wineyardService.getWineyardByIdRemoteFirst(wineyardId)
+                // Fetch the specific winery that was just created
+                val newWinery = wineryService.getWineryByIdRemoteFirst(wineryId)
                 
-                if (newWineyard != null) {
-                    println("✅ ProfileViewModel: Found new wineyard: ${newWineyard.name}")
+                if (newWinery != null) {
+                    println("✅ ProfileViewModel: Found new winery: ${newWinery.name}")
                     
                     // Add to existing list and update UI state
-                    val updatedWineyards = _uiState.value.wineyards.toMutableList().apply {
-                        add(newWineyard)
+                    val updatedWineries = _uiState.value.wineries.toMutableList().apply {
+                        add(newWinery)
                     }
                     
                     _uiState.value = _uiState.value.copy(
-                        wineyards = updatedWineyards,
-                        canAddMoreWineyards = updatedWineyards.size < 5
+                        wineries = updatedWineries,
+                        canAddMoreWineries = updatedWineries.size < 5
                     )
                     
-                    println("✅ ProfileViewModel: Added wineyard to UI state. Total: ${updatedWineyards.size}")
+                    println("✅ ProfileViewModel: Added winery to UI state. Total: ${updatedWineries.size}")
                 } else {
-                    println("❌ ProfileViewModel: Could not find wineyard $wineyardId")
-                    // Fall back to full refresh if we can't find the specific wineyard
+                    println("❌ ProfileViewModel: Could not find winery $wineryId")
+                    // Fall back to full refresh if we can't find the specific winery
                     refreshProfile()
                 }
             } catch (e: Exception) {
-                println("❌ ProfileViewModel: Error adding new wineyard to UI: ${e.message}")
+                println("❌ ProfileViewModel: Error adding new winery to UI: ${e.message}")
                 // Fall back to full refresh on error
                 refreshProfile()
             }

@@ -93,10 +93,10 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
 
     private fun handleDataMessage(data: Map<String, String>) {
         val notificationType = data["notificationType"]
-        val wineyardId = data["wineyardId"]
+        val wineryId = data["wineryId"]
         val wineId = data["wineId"]
         
-        Log.d(TAG, "Notification type: $notificationType, Wineyard: $wineyardId, Wine: $wineId")
+        Log.d(TAG, "Notification type: $notificationType, Winery: $wineryId, Wine: $wineId")
         
         // You can add custom logic here based on notification type
         when (notificationType) {
@@ -130,7 +130,7 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 
                 // Add data to intent if needed
-                data["wineyardId"]?.let { putExtra("wineyardId", it) }
+                data["wineryId"]?.let { putExtra("wineryId", it) }
                 data["wineId"]?.let { putExtra("wineId", it) }
                 data["notificationType"]?.let { putExtra("notificationType", it) }
             }

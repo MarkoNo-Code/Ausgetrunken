@@ -8,8 +8,8 @@ import com.ausgetrunken.data.local.entities.WineType
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.domain.service.AuthService
 import com.ausgetrunken.domain.service.WineService
-import com.ausgetrunken.domain.service.WineyardService
-import com.ausgetrunken.domain.service.WinePhotoService
+import com.ausgetrunken.domain.service.WineryService
+import com.ausgetrunken.domain.service.SimpleWinePhotoService
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,8 +24,8 @@ class EditWineViewModel(
     private val wineService: WineService,
     private val authService: AuthService,
     private val userRepository: UserRepository,
-    private val wineyardService: WineyardService,
-    private val winePhotoService: WinePhotoService
+    private val wineryService: WineryService,
+    private val winePhotoService: SimpleWinePhotoService
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(EditWineUiState())
@@ -189,10 +189,9 @@ class EditWineViewModel(
 
     private fun loadWinePhotos(wineId: String) {
         viewModelScope.launch {
-            winePhotoService.getWinePhotosWithStatus(wineId).collect { photosWithStatus ->
-                val photosPaths = photosWithStatus.map { it.localPath }
-                winePhotos.value = photosPaths
-                println("✅ EditWineViewModel: Loaded ${photosPaths.size} photos for wine $wineId")
+            winePhotoService.getWinePhotos(wineId).collect { photoUrls ->
+                winePhotos.value = photoUrls
+                println("✅ EditWineViewModel: Loaded ${photoUrls.size} photos for wine $wineId")
             }
         }
     }
@@ -209,9 +208,9 @@ class EditWineViewModel(
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
                 winePhotoService.addPhoto(currentWineId, imageUri)
-                    .onSuccess { photoPath ->
+                    .onSuccess { remoteUrl ->
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ EditWineViewModel: Photo added successfully: $photoPath")
+                        println("✅ EditWineViewModel: Photo added successfully: $remoteUrl")
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -234,7 +233,7 @@ class EditWineViewModel(
         }
     }
 
-    fun removePhoto(photoPath: String) {
+    fun removePhoto(photoUrl: String) {
         val currentWineId = _uiState.value.wineId
         if (currentWineId.isEmpty()) {
             println("❌ EditWineViewModel: No wine ID available for removing photo")
@@ -245,10 +244,10 @@ class EditWineViewModel(
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-                winePhotoService.removePhoto(currentWineId, photoPath)
+                winePhotoService.removePhoto(currentWineId, photoUrl)
                     .onSuccess {
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ EditWineViewModel: Photo removed successfully: $photoPath")
+                        println("✅ EditWineViewModel: Photo removed successfully: $photoUrl")
                     }
                     .onFailure { exception ->
                         _uiState.update {

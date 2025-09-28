@@ -1,10 +1,10 @@
 # Ausgetrunken 🍷
 
-A sophisticated Android application connecting wine enthusiasts with local wineyards. Built with modern Android technologies including Jetpack Compose, Material3 design, and Firebase backend services.
+A sophisticated Android application connecting wine enthusiasts with local winerys. Built with modern Android technologies including Jetpack Compose, Material3 design, and Firebase backend services.
 
 ## Project Overview
 
-Ausgetrunken is a native Android app that bridges the gap between wineyard owners and wine lovers. The platform allows wineyard owners to showcase their products and manage inventory, while customers can discover local wineyards, browse wine catalogs, and receive notifications about their favorite wines.
+Ausgetrunken is a native Android app that bridges the gap between winery owners and wine lovers. The platform allows winery owners to showcase their products and manage inventory, while customers can discover local winerys, browse wine catalogs, and receive notifications about their favorite wines.
 
 ## Features
 
@@ -14,19 +14,19 @@ Ausgetrunken is a native Android app that bridges the gap between wineyard owner
 - **User Type Management**: Role-based access control
 
 ### 🏭 Wineyard Owner Features
-- **Profile Management**: Create and maintain wineyard information
-- **Photo Gallery**: Add up to 3 photos for wineyard showcase
+- **Profile Management**: Create and maintain winery information
+- **Photo Gallery**: Add up to 3 photos for winery showcase
 - **Product Catalog**: Comprehensive wine management system
 - **Wine Details**: Add descriptions, prices, discounted prices, vintage information
 - **Inventory Management**: Manual stock quantity adjustments
 - **Smart Notifications**: Automatic alerts when stock hits 20% threshold
-- **Location Services**: Add wineyard geographical location
+- **Location Services**: Add winery geographical location
 
 ### 🍷 Customer Features
-- **Discovery**: Search and browse local wineyards
-- **Detailed Views**: Explore wineyard profiles and wine catalogs
+- **Discovery**: Search and browse local winerys
+- **Detailed Views**: Explore winery profiles and wine catalogs
 - **Subscription System**: Subscribe to specific wines for stock notifications
-- **Interactive Map**: View all wineyards in the area with location-based services
+- **Interactive Map**: View all winerys in the area with location-based services
 - **Personalized Alerts**: Receive notifications when subscribed wines are low in stock
 
 ### 🎨 Design & User Experience
@@ -68,8 +68,8 @@ Ausgetrunken is a native Android app that bridges the gap between wineyard owner
 
 ### 🌍 Location & Mapping
 - **Google Play Services**: Location services integration
-- **Maps Integration**: Interactive wineyard discovery
-- **Proximity Search**: Find nearby wineyards
+- **Maps Integration**: Interactive winery discovery
+- **Proximity Search**: Find nearby winerys
 - **Location Permissions**: Fine and coarse location access
 
 ### 📊 Analytics & Monitoring
@@ -129,7 +129,7 @@ app/src/main/java/com/ausgetrunken/
 - [ ] Subscription management UI
 - [ ] Profile management screens
 - [ ] Stock management interface
-- [ ] Location-based wineyard discovery
+- [ ] Location-based winery discovery
 - [ ] Image upload and display system
 
 ## Getting Started

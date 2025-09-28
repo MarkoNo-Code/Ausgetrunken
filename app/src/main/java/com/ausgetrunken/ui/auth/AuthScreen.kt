@@ -79,7 +79,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AuthScreen(
-    onNavigateToWineyardList: () -> Unit,
+    onNavigateToVineyardList: () -> Unit,
     onNavigateToProfile: () -> Unit,
     initialEmail: String? = null,
     resetToken: String? = null,
@@ -97,11 +97,11 @@ fun AuthScreen(
             println("🚀 AuthScreen: Navigating based on user type: ${uiState.userType}")
             when (uiState.userType) {
                 UserType.CUSTOMER -> {
-                    println("🚀 AuthScreen: Navigating to WineyardList (CUSTOMER)")
-                    onNavigateToWineyardList()
+                    println("🚀 AuthScreen: Navigating to VineyardList (CUSTOMER)")
+                    onNavigateToVineyardList()
                 }
-                UserType.WINEYARD_OWNER -> {
-                    println("🚀 AuthScreen: Navigating to Profile (WINEYARD_OWNER)")
+                UserType.WINERY_OWNER -> {
+                    println("🚀 AuthScreen: Navigating to Profile (WINERY_OWNER)")
                     onNavigateToProfile()
                 }
                 null -> {
@@ -462,12 +462,12 @@ fun AuthScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         RadioButton(
-                                            selected = uiState.selectedUserType == UserType.WINEYARD_OWNER,
-                                            onClick = { viewModel.updateUserType(UserType.WINEYARD_OWNER) },
+                                            selected = uiState.selectedUserType == UserType.WINERY_OWNER,
+                                            onClick = { viewModel.updateUserType(UserType.WINERY_OWNER) },
                                             enabled = !uiState.isLoading
                                         )
                                         Text(
-                                            text = stringResource(R.string.wineyard_owner),
+                                            text = stringResource(R.string.winery_owner),
                                             modifier = Modifier.padding(start = 8.dp)
                                         )
                                     }

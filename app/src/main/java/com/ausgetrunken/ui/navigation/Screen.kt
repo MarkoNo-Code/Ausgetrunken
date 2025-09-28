@@ -9,21 +9,21 @@ sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
     data object Auth : Screen("auth")
     data object CustomerLanding : Screen("customer_landing")
-    data object WineyardDetail : Screen("wineyard_detail/{wineyardId}") {
-        fun createRoute(wineyardId: String) = "wineyard_detail/$wineyardId"
+    data object WineryDetail : Screen("winery_detail/{wineryId}") {
+        fun createRoute(wineryId: String) = "winery_detail/$wineryId"
     }
-    data object CustomerWineyardDetail : Screen("customer_wineyard_detail/{wineyardId}") {
-        fun createRoute(wineyardId: String) = "customer_wineyard_detail/$wineyardId"
+    data object CustomerWineryDetail : Screen("customer_winery_detail/{wineryId}") {
+        fun createRoute(wineryId: String) = "customer_winery_detail/$wineryId"
     }
     data object WineDetail : Screen("wine_detail/{wineId}") {
         fun createRoute(wineId: String) = "wine_detail/$wineId"
     }
     data object OwnerProfile : Screen("owner_profile")
     data object CustomerProfile : Screen("customer_profile")
-    data object CreateWineyard : Screen("create_wineyard")
-    data object AddWineyard : Screen("add_wineyard")
-    data object AddWine : Screen("add_wine/{wineyardId}") {
-        fun createRoute(wineyardId: String) = "add_wine/$wineyardId"
+    data object CreateWinery : Screen("create_winery")
+    data object AddWinery : Screen("add_winery")
+    data object AddWine : Screen("add_wine/{wineryId}") {
+        fun createRoute(wineryId: String) = "add_wine/$wineryId"
     }
     data object EditWine : Screen("edit_wine/{wineId}") {
         fun createRoute(wineId: String) = "edit_wine/$wineId"
@@ -31,10 +31,10 @@ sealed class Screen(val route: String) {
     data object NotificationManagement : Screen("notification_management/{ownerId}") {
         fun createRoute(ownerId: String) = "notification_management/$ownerId"
     }
-    data object LocationPicker : Screen("location_picker/{wineyardId}") {
-        fun createRoute(wineyardId: String) = "location_picker/$wineyardId"
+    data object LocationPicker : Screen("location_picker/{wineryId}") {
+        fun createRoute(wineryId: String) = "location_picker/$wineryId"
     }
-    data object AddWineyardLocationPicker : Screen("add_wineyard_location_picker")
+    data object AddWineryLocationPicker : Screen("add_winery_location_picker")
     data object Map : Screen("map")
     data object Settings : Screen("settings")
 }

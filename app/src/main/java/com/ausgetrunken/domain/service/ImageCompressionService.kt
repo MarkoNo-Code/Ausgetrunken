@@ -20,8 +20,8 @@ class ImageCompressionService(
     companion object {
         private const val TAG = "ImageCompressionService"
         
-        // Compression settings for wineyard photos
-        private const val MAX_WIDTH = 1200 // Max width in pixels for wineyard photos
+        // Compression settings for vineyard photos
+        private const val MAX_WIDTH = 1200 // Max width in pixels for vineyard photos
         private const val MAX_HEIGHT = 1200 // Max height in pixels
         private const val JPEG_QUALITY = 85 // JPEG compression quality (0-100)
         private const val MAX_FILE_SIZE_KB = 500 // Target maximum file size in KB

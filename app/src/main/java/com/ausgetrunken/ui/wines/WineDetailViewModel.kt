@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ausgetrunken.data.local.entities.WineEntity
 import com.ausgetrunken.domain.service.WineService
-import com.ausgetrunken.domain.service.WinePhotoService
+import com.ausgetrunken.domain.service.SimpleWinePhotoService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 class WineDetailViewModel(
     private val wineService: WineService,
-    private val winePhotoService: WinePhotoService
+    private val winePhotoService: SimpleWinePhotoService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WineDetailUiState())
@@ -53,10 +53,10 @@ class WineDetailViewModel(
 
     private fun loadWinePhotos(wineId: String) {
         viewModelScope.launch {
-            winePhotoService.getWinePhotosWithStatus(wineId).collect { photosWithStatus ->
-                val photosPaths = photosWithStatus.map { it.localPath }
-                winePhotos.value = photosPaths
-                println("✅ WineDetailViewModel: Loaded ${photosPaths.size} photos for wine $wineId")
+            winePhotoService.getWinePhotos(wineId).collect { photoUrls ->
+                winePhotos.value = photoUrls
+                println("✅ WineDetailViewModel: Loaded ${photoUrls.size} photos for wine $wineId")
+                println("✅ WineDetailViewModel: Photos: $photoUrls")
             }
         }
     }

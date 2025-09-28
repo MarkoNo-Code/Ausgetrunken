@@ -35,7 +35,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationPickerScreen(
-    wineyardId: String,
+    wineryId: String,
     initialLatitude: Double = 0.0,
     initialLongitude: Double = 0.0,
     onLocationSelected: (Double, Double, String?) -> Unit,

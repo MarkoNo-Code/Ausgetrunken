@@ -9,9 +9,9 @@ class SendNotificationUseCase(
     private val notificationService: NotificationService
 ) {
     
-    suspend fun sendLowStockNotification(wineyardId: String, wine: WineEntity): NotificationResult {
+    suspend fun sendLowStockNotification(wineryId: String, wine: WineEntity): NotificationResult {
         return try {
-            val result = notificationService.sendLowStockNotification(wineyardId, wine)
+            val result = notificationService.sendLowStockNotification(wineryId, wine)
             
             NotificationResult(
                 success = result.success,
@@ -27,9 +27,9 @@ class SendNotificationUseCase(
         }
     }
     
-    suspend fun sendCriticalStockNotification(wineyardId: String, wine: WineEntity): NotificationResult {
+    suspend fun sendCriticalStockNotification(wineryId: String, wine: WineEntity): NotificationResult {
         return try {
-            val result = notificationService.sendCriticalStockNotification(wineyardId, wine)
+            val result = notificationService.sendCriticalStockNotification(wineryId, wine)
             
             NotificationResult(
                 success = result.success,
@@ -45,9 +45,9 @@ class SendNotificationUseCase(
         }
     }
     
-    suspend fun sendLowStockNotificationsForWineyard(wineyardId: String): NotificationResult {
+    suspend fun sendLowStockNotificationsForWinery(wineryId: String): NotificationResult {
         return try {
-            val result = notificationService.sendLowStockNotificationsForWineyard(wineyardId)
+            val result = notificationService.sendLowStockNotificationsForWinery(wineryId)
             
             NotificationResult(
                 success = result.success,
@@ -64,7 +64,7 @@ class SendNotificationUseCase(
     }
     
     suspend fun sendCustomNotification(
-        wineyardId: String,
+        wineryId: String,
         title: String,
         message: String,
         notificationType: NotificationType,
@@ -72,7 +72,7 @@ class SendNotificationUseCase(
     ): NotificationResult {
         return try {
             val result = notificationService.sendCustomNotification(
-                wineyardId = wineyardId,
+                wineryId = wineryId,
                 title = title,
                 message = message,
                 notificationType = notificationType,

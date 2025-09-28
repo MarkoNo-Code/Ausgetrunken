@@ -34,14 +34,14 @@ import com.ausgetrunken.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import com.ausgetrunken.ui.customer.components.CustomerWineyardCard
+import com.ausgetrunken.ui.customer.components.CustomerWineryCard
 import com.ausgetrunken.ui.customer.components.CustomerWineCard
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerLandingScreen(
-    onWineyardClick: (String) -> Unit,
+    onWineryClick: (String) -> Unit,
     onWineClick: (String) -> Unit,
     onNavigateToProfile: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -96,7 +96,7 @@ fun CustomerLandingScreen(
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastVisibleIndex ->
                 val totalItems = when (uiState.currentTab) {
-                    CustomerTab.WINEYARDS -> uiState.wineyards.size
+                    CustomerTab.WINERIES -> uiState.wineries.size
                     CustomerTab.WINES -> uiState.wines.size
                 }
                 
@@ -152,13 +152,13 @@ fun CustomerLandingScreen(
                 contentColor = MaterialTheme.colorScheme.onSurface
             ) {
                 Tab(
-                    selected = uiState.currentTab == CustomerTab.WINEYARDS,
-                    onClick = { viewModel.switchTab(CustomerTab.WINEYARDS) },
-                    text = { 
+                    selected = uiState.currentTab == CustomerTab.WINERIES,
+                    onClick = { viewModel.switchTab(CustomerTab.WINERIES) },
+                    text = {
                         Text(
-                            text = stringResource(R.string.tab_wineyards),
-                            fontWeight = if (uiState.currentTab == CustomerTab.WINEYARDS) FontWeight.Bold else FontWeight.Normal
-                        ) 
+                            text = stringResource(R.string.tab_wineries),
+                            fontWeight = if (uiState.currentTab == CustomerTab.WINERIES) FontWeight.Bold else FontWeight.Normal
+                        )
                     }
                 )
                 Tab(
@@ -198,16 +198,16 @@ fun CustomerLandingScreen(
                 }
             ) {
                 when (uiState.currentTab) {
-                    CustomerTab.WINEYARDS -> {
-                        WineyardsList(
-                            wineyards = uiState.wineyards,
+                    CustomerTab.WINERIES -> {
+                        WineriesList(
+                            wineries = uiState.wineries,
                             isLoading = uiState.isLoading,
-                            hasMore = uiState.hasMoreWineyards,
-                            onWineyardClick = onWineyardClick,
-                            subscribedWineyardIds = uiState.subscribedWineyardIds,
+                            hasMore = uiState.hasMoreWineries,
+                            onWineryClick = onWineryClick,
+                            subscribedWineryIds = uiState.subscribedWineryIds,
                             subscriptionLoadingIds = uiState.subscriptionLoadingIds,
                             isSubscriptionDataLoading = uiState.isSubscriptionDataLoading,
-                            onSubscriptionToggle = viewModel::toggleWineyardSubscription,
+                            onSubscriptionToggle = viewModel::toggleWinerySubscription,
                             listState = listState
                         )
                     }
@@ -227,12 +227,12 @@ fun CustomerLandingScreen(
 }
 
 @Composable
-private fun WineyardsList(
-    wineyards: List<com.ausgetrunken.data.local.entities.WineyardEntity>,
+private fun WineriesList(
+    wineries: List<com.ausgetrunken.data.local.entities.WineryEntity>,
     isLoading: Boolean,
     @Suppress("UNUSED_PARAMETER") hasMore: Boolean,
-    onWineyardClick: (String) -> Unit,
-    subscribedWineyardIds: Set<String>,
+    onWineryClick: (String) -> Unit,
+    subscribedWineryIds: Set<String>,
     subscriptionLoadingIds: Set<String>,
     isSubscriptionDataLoading: Boolean,
     onSubscriptionToggle: (String) -> Unit,
@@ -243,12 +243,12 @@ private fun WineyardsList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(wineyards) { wineyard ->
-            CustomerWineyardCard(
-                wineyard = wineyard,
-                onWineyardClick = onWineyardClick,
-                isSubscribed = subscribedWineyardIds.contains(wineyard.id),
-                isLoading = isSubscriptionDataLoading || subscriptionLoadingIds.contains(wineyard.id),
+        items(wineries) { winery ->
+            CustomerWineryCard(
+                winery = winery,
+                onWineryClick = onWineryClick,
+                isSubscribed = subscribedWineryIds.contains(winery.id),
+                isLoading = isSubscriptionDataLoading || subscriptionLoadingIds.contains(winery.id),
                 onSubscriptionToggle = onSubscriptionToggle
             )
         }
@@ -266,7 +266,7 @@ private fun WineyardsList(
             }
         }
         
-        if (wineyards.isEmpty() && !isLoading) {
+        if (wineries.isEmpty() && !isLoading) {
             item {
                 Box(
                     modifier = Modifier
@@ -275,7 +275,7 @@ private fun WineyardsList(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.no_wineyards_found),
+                        text = stringResource(R.string.no_wineries_found),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -407,7 +407,7 @@ private fun PullToRefreshAccordion(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = when (currentTab) {
-                                    CustomerTab.WINEYARDS -> stringResource(R.string.wineyards_refreshed)
+                                    CustomerTab.WINERIES -> stringResource(R.string.wineries_refreshed)
                                     CustomerTab.WINES -> stringResource(R.string.wines_refreshed)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
@@ -429,7 +429,7 @@ private fun PullToRefreshAccordion(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = when (currentTab) {
-                                    CustomerTab.WINEYARDS -> stringResource(R.string.refreshing_wineyards)
+                                    CustomerTab.WINERIES -> stringResource(R.string.refreshing_wineries)
                                     CustomerTab.WINES -> stringResource(R.string.refreshing_wines)
                                 },
                                 style = MaterialTheme.typography.bodySmall,

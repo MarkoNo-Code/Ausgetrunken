@@ -3,8 +3,8 @@ package com.ausgetrunken.di
 import com.ausgetrunken.ui.auth.AuthViewModel
 import com.ausgetrunken.ui.profile.OwnerProfileViewModel
 import com.ausgetrunken.ui.splash.SplashViewModel
-import com.ausgetrunken.ui.wineyard.AddWineyardViewModel
-import com.ausgetrunken.ui.wineyard.WineyardDetailViewModel
+import com.ausgetrunken.ui.winery.AddWineryViewModel
+import com.ausgetrunken.ui.winery.WineryDetailViewModel
 import com.ausgetrunken.ui.wines.WineDetailViewModel
 import com.ausgetrunken.ui.wines.AddWineViewModel
 import com.ausgetrunken.ui.wines.EditWineViewModel
@@ -21,7 +21,7 @@ val viewModelModule = module {
     // Standard ViewModels - recreated on each navigation
     viewModel { AuthViewModel(get(), get()) }
     viewModel { SplashViewModel(get(), get()) }
-    viewModel { AddWineyardViewModel(get(), get(), get()) }
+    viewModel { AddWineryViewModel(get(), get(), get()) }
     viewModel { AddWineViewModel(get(), get(), get(), get(), get()) }
     viewModel { EditWineViewModel(get(), get(), get(), get(), get()) }
     viewModel { CustomerLandingViewModel(get(), get(), get(), get()) }
@@ -34,7 +34,7 @@ val viewModelModule = module {
     // FIXED: Changed from singleton to regular viewModel to prevent stale logout state
     viewModel { OwnerProfileViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     
-    // WineyardDetailViewModel should create new instance per navigation (not singleton)
-    // because it needs to load different wineyards based on wineyardId parameter
-    viewModel { WineyardDetailViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), androidContext()) }
+    // WineryDetailViewModel should create new instance per navigation (not singleton)
+    // because it needs to load different wineries based on wineryId parameter
+    viewModel { WineryDetailViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), androidContext()) }
 }

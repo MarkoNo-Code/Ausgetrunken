@@ -6,11 +6,11 @@ import com.ausgetrunken.domain.service.WineService
 class GetLowStockWinesUseCase(
     private val wineService: WineService
 ) {
-    suspend operator fun invoke(wineyardId: String, threshold: Int = 20): List<WineEntity> {
+    suspend operator fun invoke(wineryId: String, threshold: Int = 20): List<WineEntity> {
         return try {
-            println("🔍 GetLowStockWinesUseCase: Checking low stock wines for wineyard: $wineyardId")
-            // Get wines from Supabase for the wineyard and filter by low stock
-            val wines = wineService.getWinesByWineyardFromSupabase(wineyardId)
+            println("🔍 GetLowStockWinesUseCase: Checking low stock wines for winery: $wineryId")
+            // Get wines from Supabase for the winery and filter by low stock
+            val wines = wineService.getWinesByWineryFromSupabase(wineryId)
             println("🔍 GetLowStockWinesUseCase: Found ${wines.size} wines total")
             
             val lowStockWines = wines.filter { wine ->

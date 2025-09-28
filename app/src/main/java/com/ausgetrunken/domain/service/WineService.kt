@@ -11,8 +11,8 @@ class WineService(
         return wineRepository.getAllWines()
     }
 
-    fun getWinesByWineyard(wineyardId: String): Flow<List<WineEntity>> {
-        return wineRepository.getWinesByWineyard(wineyardId)
+    fun getWinesByWinery(wineryId: String): Flow<List<WineEntity>> {
+        return wineRepository.getWinesByWinery(wineryId)
     }
 
     fun getWineById(wineId: String): Flow<WineEntity?> {
@@ -35,8 +35,8 @@ class WineService(
         return wineRepository.syncWinesFromSupabase()
     }
 
-    suspend fun getWinesByWineyardFromSupabase(wineyardId: String): List<WineEntity> {
-        return wineRepository.getWinesByWineyardFromSupabase(wineyardId)
+    suspend fun getWinesByWineryFromSupabase(wineryId: String): List<WineEntity> {
+        return wineRepository.getWinesByWineryFromSupabase(wineryId)
     }
 
     suspend fun getAllWinesPaginated(limit: Int, offset: Int): List<WineEntity> {
