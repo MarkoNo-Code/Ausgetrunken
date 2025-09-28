@@ -27,4 +27,10 @@ interface WinePhotoDao {
 
     @Query("SELECT * FROM wine_photos WHERE id = :photoId")
     suspend fun getPhotoById(photoId: String): WinePhotoEntity?
+
+    @Query("DELETE FROM wine_photos WHERE wine_id = :wineId AND remote_url = :remoteUrl")
+    suspend fun deletePhotoByRemoteUrl(wineId: String, remoteUrl: String)
+
+    @Query("SELECT * FROM wine_photos WHERE wine_id = :wineId AND remote_url = :remoteUrl")
+    suspend fun getPhotoByRemoteUrl(wineId: String, remoteUrl: String): WinePhotoEntity?
 }

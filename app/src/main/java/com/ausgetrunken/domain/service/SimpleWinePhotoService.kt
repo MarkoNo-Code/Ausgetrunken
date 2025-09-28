@@ -210,19 +210,55 @@ class SimpleWinePhotoService(
     suspend fun removePhoto(wineId: String, photoUrl: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Removing wine photo: $photoUrl")
+                Log.d(TAG, "🗑️ Removing wine photo: $photoUrl from wine: $wineId")
+
+                // Get photo info from local database first
+                val photoEntity = winePhotoDao.getPhotoByRemoteUrl(wineId, photoUrl)
+                if (photoEntity == null) {
+                    Log.w(TAG, "Photo not found in local database for URL: $photoUrl")
+                } else {
+                    Log.d(TAG, "Found photo entity with ID: ${photoEntity.id}")
+                }
 
                 // Remove from local database
-                // Note: We'd need a query by remote_url for this to work properly
-                // For now, just log it
-                Log.d(TAG, "TODO: Remove from local database by remote URL")
+                winePhotoDao.deletePhotoByRemoteUrl(wineId, photoUrl)
+                Log.d(TAG, "✅ Removed photo from local database")
 
-                // TODO: Remove from Supabase database
-                // TODO: Remove from Supabase storage
+                // Remove from Supabase database
+                try {
+                    postgrest.from("wine_photos")
+                        .delete {
+                            filter {
+                                eq("wine_id", wineId)
+                                eq("remote_url", photoUrl)
+                            }
+                        }
+                    Log.d(TAG, "✅ Removed photo from Supabase database")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to remove from Supabase database: ${e.message}")
+                    // Continue anyway - local removal is more important for UI
+                }
 
+                // Remove from Supabase storage
+                try {
+                    if (photoUrl.startsWith("http")) {
+                        unifiedPhotoUploadService.deletePhoto(photoUrl, "wine-photos")
+                            .onSuccess {
+                                Log.d(TAG, "✅ Removed photo from Supabase storage")
+                            }
+                            .onFailure { error ->
+                                Log.e(TAG, "❌ Failed to remove from Supabase storage: ${error.message}")
+                            }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Failed to remove from Supabase storage: ${e.message}")
+                    // Continue anyway - database removal is sufficient
+                }
+
+                Log.d(TAG, "✅ Wine photo removal completed")
                 Result.success(Unit)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to remove wine photo", e)
+                Log.e(TAG, "❌ Failed to remove wine photo: ${e.message}", e)
                 Result.failure(e)
             }
         }
