@@ -11,13 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
@@ -46,7 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.zIndex
 import android.util.Log
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
+import java.io.File
 import com.ausgetrunken.R
 import com.ausgetrunken.ui.components.WineryMapComponent
 import com.ausgetrunken.ui.components.WineryMapPlaceholder
@@ -113,149 +120,200 @@ fun CustomerWineryDetailScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        uiState.winery?.name ?: stringResource(R.string.winery_details)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                actions = {
-                    // Subscription button - only for customers (non-editors)
-                    if (uiState.winery != null && !uiState.canEdit) {
-                        IconButton(
-                            onClick = { viewModel.toggleWinerySubscription() },
-                            enabled = !uiState.isSubscriptionLoading,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            if (uiState.isSubscriptionLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = if (uiState.isSubscribed)
-                                        Icons.Filled.Notifications
-                                    else
-                                        Icons.Outlined.Notifications,
-                                    contentDescription = if (uiState.isSubscribed)
-                                        stringResource(R.string.cd_unsubscribe)
-                                    else
-                                        stringResource(R.string.cd_subscribe),
-                                    modifier = Modifier.size(18.dp),
-                                    tint = if (uiState.isSubscribed)
-                                        MaterialTheme.colorScheme.primary
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(50.dp),
-                    color = MaterialTheme.colorScheme.primary
+            }
+
+            uiState.winery == null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Winery not found",
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            else -> {
+                CustomerWineryDetailContent(
+                    winery = uiState.winery!!,
+                    wines = uiState.wines,
+                    photos = uiState.photos,
+                    onNavigateToWineDetail = onNavigateToWineDetail,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
-        } else {
-            uiState.winery?.let { winery ->
-                // Convert database entities to UI data classes
-                val wineryUiData = CustomerWineryUiData(
-                    id = winery.id,
-                    name = winery.name,
-                    description = winery.description,
-                    address = winery.address,
-                    latitude = winery.latitude,
-                    longitude = winery.longitude
+        }
+
+        // Floating action buttons
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(16.dp)
+                .zIndex(10f),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Subscription button - only for customers (non-editors)
+            if (uiState.winery != null && !uiState.canEdit) {
+                IconButton(
+                    onClick = { viewModel.toggleWinerySubscription() },
+                    enabled = !uiState.isSubscriptionLoading,
+                    modifier = Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.3f),
+                            shape = CircleShape
+                        )
+                        .size(40.dp)
+                ) {
+                    if (uiState.isSubscriptionLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (uiState.isSubscribed)
+                                Icons.Filled.Notifications
+                            else
+                                Icons.Outlined.Notifications,
+                            contentDescription = if (uiState.isSubscribed)
+                                stringResource(R.string.cd_unsubscribe)
+                            else
+                                stringResource(R.string.cd_subscribe),
+                            modifier = Modifier.size(18.dp),
+                            tint = if (uiState.isSubscribed)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                Color.White
+                        )
+                    }
+                }
+            }
+        }
+
+        // Floating back button
+        IconButton(
+            onClick = onNavigateBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(16.dp)
+                .zIndex(10f)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack,
+                contentDescription = stringResource(R.string.cd_back),
+                tint = Color.White,
+                modifier = Modifier
+                    .background(
+                        Color.Black.copy(alpha = 0.3f),
+                        shape = CircleShape
+                    )
+                    .padding(8.dp)
+            )
+        }
+
+        // Snackbar host
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun CustomerWineryDetailContent(
+    winery: com.ausgetrunken.data.local.entities.WineryEntity,
+    wines: List<com.ausgetrunken.data.local.entities.WineEntity>,
+    photos: List<String>,
+    onNavigateToWineDetail: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Convert database entities to UI data classes
+    val wineryUiData = CustomerWineryUiData(
+        id = winery.id,
+        name = winery.name,
+        description = winery.description,
+        address = winery.address,
+        latitude = winery.latitude,
+        longitude = winery.longitude
+    )
+
+    val winesUiData = wines.map { wine ->
+        CustomerWineUiData(
+            id = wine.id,
+            name = wine.name,
+            wineType = wine.wineType.name,
+            vintage = wine.vintage,
+            price = wine.price,
+            discountedPrice = wine.discountedPrice,
+            stockQuantity = wine.stockQuantity,
+            lowStockThreshold = wine.lowStockThreshold
+        )
+    }
+
+    Box(modifier = modifier) {
+        // Full-screen scrollable content with photos at top
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Full-screen winery photos at the top
+            CustomerPhotosFullscreenCarousel(
+                photos = photos,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Content below photos with padding
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Beautiful description section
+                CustomerDescriptionSection(
+                    wineryData = wineryUiData,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                val winesUiData = uiState.wines.map { wine ->
-                    CustomerWineUiData(
-                        id = wine.id,
-                        name = wine.name,
-                        wineType = wine.wineType.name,
-                        vintage = wine.vintage,
-                        price = wine.price,
-                        discountedPrice = wine.discountedPrice,
-                        stockQuantity = wine.stockQuantity,
-                        lowStockThreshold = wine.lowStockThreshold
-                    )
-                }
+                // Wine list section
+                CustomerWineListSection(
+                    wines = winesUiData,
+                    onWineClick = onNavigateToWineDetail
+                )
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-                    // Full-width photo carousel
-                    item {
-                        CustomerPhotosCarousel(
-                            photos = uiState.photos,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        )
-                    }
-
-                    // Beautiful description section
-                    item {
-                        CustomerDescriptionSection(
-                            wineryData = wineryUiData,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-
-                    // Wine list section
-                    item {
-                        CustomerWineListSection(
-                            wines = winesUiData,
-                            onWineClick = onNavigateToWineDetail
-                        )
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
-                }
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
 }
 
 @Composable
-private fun CustomerPhotosCarousel(
+private fun CustomerPhotosFullscreenCarousel(
     photos: List<String>,
     modifier: Modifier = Modifier
 ) {
     if (photos.isEmpty()) {
+        // Show placeholder when no photos
         Box(
-            modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -271,21 +329,27 @@ private fun CustomerPhotosCarousel(
                 Text(
                     text = stringResource(R.string.no_photos_yet),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
             }
         }
     } else {
         val pagerState = rememberPagerState(pageCount = { photos.size })
 
-        Box(modifier = modifier) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(300.dp)
+        ) {
+            // Full-screen photo pager
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(photos[page])
+                        .data(if (photos[page].startsWith("http")) photos[page] else File(photos[page]))
                         .crossfade(true)
                         .build(),
                     contentDescription = stringResource(R.string.winery_photo),
@@ -294,7 +358,22 @@ private fun CustomerPhotosCarousel(
                 )
             }
 
-            // Page indicator
+            // Top gradient overlay for navigation bar visibility
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Dot indicators at bottom
             if (photos.size > 1) {
                 Row(
                     modifier = Modifier
@@ -306,12 +385,13 @@ private fun CustomerPhotosCarousel(
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(CircleShape)
                                 .background(
-                                    if (index == pagerState.currentPage)
+                                    color = if (index == pagerState.currentPage) {
                                         Color.White
-                                    else
+                                    } else {
                                         Color.White.copy(alpha = 0.5f)
+                                    }
                                 )
                         )
                     }
@@ -327,9 +407,7 @@ private fun CustomerDescriptionSection(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(

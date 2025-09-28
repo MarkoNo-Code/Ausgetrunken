@@ -1,13 +1,20 @@
 package com.ausgetrunken.ui.wines
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +26,94 @@ import coil.compose.AsyncImage
 import com.ausgetrunken.R
 import coil.request.ImageRequest
 import java.io.File
+
+@Composable
+fun WinePhotosFullscreenCarousel(
+    photos: List<String>,
+    modifier: Modifier = Modifier
+) {
+    if (photos.isEmpty()) {
+        // Show placeholder when no photos
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.no_photos_available),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    } else {
+        val pagerState = rememberPagerState(pageCount = { photos.size })
+
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(300.dp)
+        ) {
+            // Full-screen photo pager
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(if (photos[page].startsWith("http")) photos[page] else File(photos[page]))
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Wine Photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            // Top gradient overlay for navigation bar visibility
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Dot indicators at bottom
+            if (photos.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(photos.size) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    color = if (index == pagerState.currentPage) {
+                                        Color.White
+                                    } else {
+                                        Color.White.copy(alpha = 0.5f)
+                                    }
+                                )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun WinePhotosCarousel(
@@ -106,5 +201,93 @@ private fun WinePhotoItem(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
+    }
+}
+
+@Composable
+fun WineryPhotosFullscreenCarousel(
+    photos: List<String>,
+    modifier: Modifier = Modifier
+) {
+    if (photos.isEmpty()) {
+        // Show placeholder when no photos
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.no_photos_available),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    } else {
+        val pagerState = rememberPagerState(pageCount = { photos.size })
+
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(300.dp)
+        ) {
+            // Full-screen photo pager
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(if (photos[page].startsWith("http")) photos[page] else File(photos[page]))
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Winery Photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            // Top gradient overlay for navigation bar visibility
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Dot indicators at bottom
+            if (photos.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(photos.size) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    color = if (index == pagerState.currentPage) {
+                                        Color.White
+                                    } else {
+                                        Color.White.copy(alpha = 0.5f)
+                                    }
+                                )
+                        )
+                    }
+                }
+            }
+        }
     }
 }
