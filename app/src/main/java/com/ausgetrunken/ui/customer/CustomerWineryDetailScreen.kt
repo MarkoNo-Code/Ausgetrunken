@@ -67,6 +67,18 @@ import com.ausgetrunken.ui.components.WineryMapComponent
 import com.ausgetrunken.ui.components.WineryMapPlaceholder
 import com.ausgetrunken.ui.winery.WineryDetailViewModel
 import org.koin.androidx.compose.koinViewModel
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
+import android.content.Intent
+import android.net.Uri
+import androidx.core.net.toUri
 
 // UI data classes to avoid passing database entities to composables
 data class CustomerWineryUiData(
@@ -422,37 +434,68 @@ private fun CustomerDescriptionSection(
         }
 
         if (wineryData.address.isNotBlank()) {
-
-            // Map component
-            if (wineryData.latitude != 0.0 && wineryData.longitude != 0.0) {
-                WineryMapComponent(
-                    latitude = wineryData.latitude,
-                    longitude = wineryData.longitude,
-                    address = wineryData.address,
-                    wineryName = wineryData.name,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                WineryMapPlaceholder(
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
+            // Address and map in horizontal layout
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = wineryData.address,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Address section
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Address",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Text(
+                        text = wineryData.address,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Compact map component
+                if (wineryData.latitude != 0.0 && wineryData.longitude != 0.0) {
+                    CompactWineryMap(
+                        latitude = wineryData.latitude,
+                        longitude = wineryData.longitude,
+                        wineryName = wineryData.name,
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(80.dp)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(80.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -465,9 +508,7 @@ private fun CustomerWineListSection(
     onWineClick: (String) -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Row(
@@ -593,6 +634,82 @@ private fun CustomerWineCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CompactWineryMap(
+    latitude: Double,
+    longitude: Double,
+    wineryName: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val location = LatLng(latitude, longitude)
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(location, 14f)
+    }
+
+    // Function to open Google Maps
+    val openGoogleMaps = {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            "geo:$latitude,$longitude?q=$latitude,$longitude($wineryName)".toUri()
+        )
+        intent.setPackage("com.google.android.apps.maps")
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            // Fallback to web version
+            val webIntent = Intent(
+                Intent.ACTION_VIEW,
+                "https://maps.google.com/?q=$latitude,$longitude".toUri()
+            )
+            context.startActivity(webIntent)
+        }
+    }
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = false,
+                    scrollGesturesEnabled = false,
+                    zoomGesturesEnabled = false,
+                    rotationGesturesEnabled = false,
+                    tiltGesturesEnabled = false,
+                    myLocationButtonEnabled = false,
+                    mapToolbarEnabled = false
+                ),
+                properties = MapProperties(
+                    mapType = MapType.NORMAL
+                ),
+                onMapClick = { openGoogleMaps() }
+            ) {
+                Marker(
+                    state = MarkerState(position = location),
+                    title = wineryName
+                )
+            }
+
+            // Invisible clickable overlay to ensure clicks are captured
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { openGoogleMaps() }
+            )
         }
     }
 }
