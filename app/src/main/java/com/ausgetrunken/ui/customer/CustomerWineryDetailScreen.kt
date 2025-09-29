@@ -76,6 +76,8 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.ausgetrunken.ui.components.WineItemCard
+import com.ausgetrunken.data.local.entities.WineType
 import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
@@ -547,8 +549,15 @@ private fun CustomerWineListSection(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 wines.forEach { wine ->
-                    CustomerWineCard(
-                        wine = wine,
+                    WineItemCard(
+                        wineName = wine.name,
+                        wineType = WineType.valueOf(wine.wineType),
+                        vintage = wine.vintage,
+                        price = wine.price,
+                        discountedPrice = wine.discountedPrice,
+                        description = null, // CustomerWineUiData doesn't have description
+                        stockQuantity = wine.stockQuantity,
+                        lowStockThreshold = wine.lowStockThreshold,
                         onClick = { onWineClick(wine.id) }
                     )
                 }
@@ -557,86 +566,6 @@ private fun CustomerWineListSection(
     }
 }
 
-@Composable
-private fun CustomerWineCard(
-    wine: CustomerWineUiData,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = wine.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = "${wine.wineType} • ${wine.vintage}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "€${wine.price}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    wine.discountedPrice?.let { discountedPrice ->
-                        Text(
-                            text = "€${discountedPrice}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
-
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.in_stock, wine.stockQuantity),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (wine.stockQuantity <= wine.lowStockThreshold) {
-                    Text(
-                        text = stringResource(R.string.low_stock),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun CompactWineryMap(

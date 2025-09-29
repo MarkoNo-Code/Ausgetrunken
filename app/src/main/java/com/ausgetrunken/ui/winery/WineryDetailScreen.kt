@@ -111,6 +111,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import coil.compose.SubcomposeAsyncImage
 import com.ausgetrunken.ui.components.WineryMapComponent
 import com.ausgetrunken.ui.components.WineryMapPlaceholder
+import com.ausgetrunken.ui.components.WineItemCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -995,12 +996,19 @@ private fun WinesSection(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     wines.forEach { wine ->
-                        WineManagementItem(
-                            wine = wine,
-                            canEdit = canEdit,
-                            onWineClick = { onNavigateToWineDetail(wine.id) },
-                            onEditWine = { onNavigateToEditWine(wine.id) },
-                            onDeleteWine = onDeleteWine
+                        WineItemCard(
+                            wineName = wine.name,
+                            wineType = wine.wineType,
+                            vintage = wine.vintage,
+                            price = wine.price,
+                            discountedPrice = wine.discountedPrice,
+                            description = wine.description.takeIf { it.isNotBlank() },
+                            stockQuantity = wine.stockQuantity,
+                            lowStockThreshold = wine.lowStockThreshold,
+                            onClick = { onNavigateToWineDetail(wine.id) },
+                            onEditClick = if (canEdit) ({ onNavigateToEditWine(wine.id) }) else null,
+                            onDeleteClick = if (canEdit) ({ onDeleteWine(wine.id) }) else null,
+                            showManagementActions = canEdit
                         )
                     }
                     
@@ -1011,120 +1019,6 @@ private fun WinesSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun WineManagementItem(
-    wine: WineEntity,
-    canEdit: Boolean,
-    onWineClick: () -> Unit,
-    onEditWine: () -> Unit,
-    onDeleteWine: (String) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = { 
-            if (canEdit) {
-                onEditWine()
-            } else {
-                onWineClick()
-            }
-        },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = wine.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    Text(
-                        text = "${wine.wineType} • ${wine.vintage}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    if (wine.description.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = wine.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 2,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(
-                        text = "€${wine.price}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    if (wine.discountedPrice != null && wine.discountedPrice < wine.price) {
-                        Text(
-                            text = "€${wine.discountedPrice}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.stock_count, wine.stockQuantity),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (wine.stockQuantity <= wine.lowStockThreshold) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    fontWeight = if (wine.stockQuantity <= wine.lowStockThreshold) {
-                        FontWeight.Medium
-                    } else {
-                        FontWeight.Normal
-                    }
-                )
-                
-                if (canEdit) {
-                    TextButton(
-                        onClick = { onDeleteWine(wine.id) }
-                    ) {
-                        Text(
-                            text = stringResource(R.string.delete),
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun WineryImageCarousel(
