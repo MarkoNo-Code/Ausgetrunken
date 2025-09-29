@@ -27,7 +27,6 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.ausgetrunken.R
-import android.util.Log
 import kotlinx.coroutines.tasks.await
 import org.koin.compose.koinInject
 import java.util.*
@@ -159,7 +158,6 @@ fun LocationPickerScreen(
                     IconButton(
                         onClick = {
                             if (!uiState.isUpdating) {
-                                Log.d("LocationPicker", "🗺️ Location selected: lat=${selectedLocation.latitude}, lng=${selectedLocation.longitude}, address=$selectedAddress")
                                 onLocationSelected(
                                     selectedLocation.latitude,
                                     selectedLocation.longitude,

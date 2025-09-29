@@ -136,7 +136,7 @@ sealed class AppResult<out T> {
                 throw e
             } catch (e: Throwable) {
                 // Don't convert side effect errors to AppResult failures
-                println("Side effect error in onSuccess: ${e.message}")
+                // Removed println: "Side effect error in onSuccess: ${e.message}"
             }
         }
         return this
@@ -153,7 +153,7 @@ sealed class AppResult<out T> {
                 throw e
             } catch (e: Throwable) {
                 // Don't convert side effect errors to AppResult failures
-                println("Side effect error in onFailure: ${e.message}")
+                // Removed println: "Side effect error in onFailure: ${e.message}"
             }
         }
         return this

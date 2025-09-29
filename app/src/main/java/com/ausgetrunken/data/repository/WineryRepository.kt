@@ -71,10 +71,10 @@ class WineryRepository(
                         )
                     }
                     
-                    println("✅ WineryRepository: Fetched ${entities.size} wineries from Supabase")
+                    // Removed println: "✅ WineryRepository: Fetched ${entities.size} wineries from Supabase"
                     Result.success(entities)
                 } catch (e: Exception) {
-                    println("❌ WineryRepository: Supabase fetch failed: ${e.message}")
+                    // Removed println: "❌ WineryRepository: Supabase fetch failed: ${e.message}"
                     Result.failure(e)
                 }
             },
@@ -124,7 +124,7 @@ class WineryRepository(
                                 jsonObject["remote_url"]?.jsonPrimitive?.content
                             }
                         } catch (e: Exception) {
-                            println("⚠️ WineryRepository: Failed to fetch photos for winery ${wineryData.id}: ${e.message}")
+                            // Removed println: "⚠️ WineryRepository: Failed to fetch photos for winery ${wineryData.id}: ${e.message}"
                             emptyList<String>()
                         }
                         
@@ -142,10 +142,10 @@ class WineryRepository(
                         )
                     }
                     
-                    println("✅ WineryRepository: Fetched ${entities.size} wineries for owner $ownerId from Supabase")
+                    // Removed println: "✅ WineryRepository: Fetched ${entities.size} wineries for owner $ownerId from Supabase"
                     Result.success(entities)
                 } catch (e: Exception) {
-                    println("❌ WineryRepository: Supabase fetch failed for owner $ownerId: ${e.message}")
+                    // Removed println: "❌ WineryRepository: Supabase fetch failed for owner $ownerId: ${e.message}"
                     Result.failure(e)
                 }
             },
@@ -193,10 +193,10 @@ class WineryRepository(
                         )
                     }
                     
-                    println("✅ WineryRepository: Fetched winery $wineryId from Supabase: ${entity?.name ?: "not found"}")
+                    // Removed println: "✅ WineryRepository: Fetched winery $wineryId from Supabase: ${entity?.name ?: "not found"}"
                     Result.success(entity)
                 } catch (e: Exception) {
-                    println("❌ WineryRepository: Supabase fetch failed for winery $wineryId: ${e.message}")
+                    // Removed println: "❌ WineryRepository: Supabase fetch failed for winery $wineryId: ${e.message}"
                     Result.failure(e)
                 }
             },
@@ -265,15 +265,15 @@ class WineryRepository(
                         }
                     }
                 
-                println("✅ WineryRepository: Supabase update successful for winery ${winery.id}")
+                // Removed println: "✅ WineryRepository: Supabase update successful for winery ${winery.id}"
                 
                 // LOCAL SECOND: Only update local database AFTER successful remote update
                 wineryDao.updateWinery(winery)
-                println("✅ WineryRepository: Local database updated for winery ${winery.id}")
+                // Removed println: "✅ WineryRepository: Local database updated for winery ${winery.id}"
                 
                 Result.success(Unit)
             } catch (e: Exception) {
-                println("❌ WineryRepository: Winery update failed: ${e.message}")
+                // Removed println: "❌ WineryRepository: Winery update failed: ${e.message}"
                 Result.failure(e)
             }
         }
@@ -333,7 +333,7 @@ class WineryRepository(
                             jsonObject["remote_url"]?.jsonPrimitive?.content
                         }
                     } catch (e: Exception) {
-                        println("⚠️ WineryRepository: Failed to fetch photos for winery ${wineryData.id}: ${e.message}")
+                        // Removed println: "⚠️ WineryRepository: Failed to fetch photos for winery ${wineryData.id}: ${e.message}"
                         emptyList<String>()
                     }
 
@@ -357,10 +357,10 @@ class WineryRepository(
                     println("💾 WineryRepository: Saved winery to local database: ${entity.name} with ${entity.photos.size} photos")
                 }
                 
-                println("✅ WineryRepository: Sync completed successfully")
+                // Removed println: "✅ WineryRepository: Sync completed successfully"
                 Result.success(Unit)
             } catch (e: Exception) {
-                println("❌ WineryRepository: Sync failed: ${e.message}")
+                // Removed println: "❌ WineryRepository: Sync failed: ${e.message}"
                 e.printStackTrace()
                 Result.failure(e)
             }

@@ -128,10 +128,10 @@ class NotificationRepositoryImpl(
                     }
                 }
             
-            println("✅ NotificationRepositoryImpl: FCM token cleared successfully for user: $userId")
+            // Removed println: "✅ NotificationRepositoryImpl: FCM token cleared successfully for user: $userId"
                 Result.success(Unit)
             } catch (e: Exception) {
-                println("❌ NotificationRepositoryImpl: Failed to clear FCM token for user: $userId - Error: ${e.message}")
+                // Removed println: "❌ NotificationRepositoryImpl: Failed to clear FCM token for user: $userId - Error: ${e.message}"
                 e.printStackTrace()
                 Result.failure(e)
             }
@@ -158,7 +158,7 @@ class NotificationRepositoryImpl(
                 println("🔧 NotificationRepository: Found ${userResult.size} users with ID: $userId")
                 
                 if (userResult.isEmpty()) {
-                    println("❌ NotificationRepository: User not found in user_profiles table!")
+                    // Removed println: "❌ NotificationRepository: User not found in user_profiles table!"
                     throw Exception("User not found in user_profiles table")
                 }
                 
@@ -180,7 +180,7 @@ class NotificationRepositoryImpl(
                         }
                     }
                 
-                println("✅ NotificationRepository: FCM token update completed for user: $userId")
+                // Removed println: "✅ NotificationRepository: FCM token update completed for user: $userId"
                 
                 // Verify the update worked
                 val verifyResult = supabaseClient.postgrest.from("user_profiles")
@@ -196,23 +196,23 @@ class NotificationRepositoryImpl(
                     println("🔧 NotificationRepository: Verification - Updated token: ${updatedToken?.take(20) ?: "NULL"}...")
                     
                     if (updatedToken == fcmToken) {
-                        println("✅ NotificationRepository: Token update verification successful!")
+                        // Removed println: "✅ NotificationRepository: Token update verification successful!"
                     } else {
-                        println("⚠️ NotificationRepository: Token update verification failed - tokens don't match")
+                        // Removed println: "⚠️ NotificationRepository: Token update verification failed - tokens don't match"
                     }
                 }
                 
                 Unit // Return Unit to satisfy the Result.success requirement
                 
             } catch (e: Exception) {
-                println("❌ NotificationRepository: Failed to update FCM token for user: $userId")
-                println("❌ NotificationRepository: Error type: ${e::class.simpleName}")
-                println("❌ NotificationRepository: Error message: ${e.message}")
+                // Removed println: "❌ NotificationRepository: Failed to update FCM token for user: $userId"
+                // Removed println: "❌ NotificationRepository: Error type: ${e::class.simpleName}"
+                // Removed println: "❌ NotificationRepository: Error message: ${e.message}"
                 e.printStackTrace()
                 throw e
             })
         }.getOrElse { error ->
-            println("❌ NotificationRepository: Session validation failed for FCM token update: ${error.message}")
+            // Removed println: "❌ NotificationRepository: Session validation failed for FCM token update: ${error.message}"
             throw Exception("Session validation failed: ${error.message}")
         }
     }

@@ -21,7 +21,7 @@ abstract class BaseRepository(
         return try {
             apiCall()
         } catch (e: Exception) {
-            println("❌ BaseRepository: API call failed: ${e.message}")
+            // Removed println: "❌ BaseRepository: API call failed: ${e.message}"
             Result.failure(e)
         }
     }
@@ -36,7 +36,7 @@ abstract class BaseRepository(
         return try {
             apiCall()
         } catch (e: Exception) {
-            println("❌ BaseRepository: List API call failed: ${e.message}")
+            // Removed println: "❌ BaseRepository: List API call failed: ${e.message}"
             emptyList()
         }
     }

@@ -36,11 +36,11 @@ class AuthViewModel(
                 .onSuccess { user ->
                     println("🔄 AuthViewModel: RestoreSession result - user = ${user?.email ?: "NULL"}")
                     if (user != null) {
-                        println("✅ AuthViewModel: User authenticated, getting user type...")
+                        // Removed println: "✅ AuthViewModel: User authenticated, getting user type..."
                         // User is authenticated, get their type
                         authService.checkUserType(user.id)
                             .onSuccess { userType ->
-                                println("✅ AuthViewModel: User type = $userType")
+                                // Removed println: "✅ AuthViewModel: User type = $userType"
                                 
                                 // REMOVED: Animation delays don't belong in AuthViewModel
                                 // These delays were causing 5-second flashing cycles
@@ -51,17 +51,17 @@ class AuthViewModel(
                                     isLoginSuccessful = true,
                                     userType = userType
                                 )
-                                println("✅ AuthViewModel: Navigation should happen now")
+                                // Removed println: "✅ AuthViewModel: Navigation should happen now"
                                 
                                 // Update FCM token AFTER setting success state
                                 try {
                                     fcmTokenManager.updateTokenForUser(user.id)
                                 } catch (fcmError: Exception) {
-                                    println("⚠️ AuthViewModel: FCM token update failed during session restore: ${fcmError.message}")
+                                    // Removed println: "⚠️ AuthViewModel: FCM token update failed during session restore: ${fcmError.message}"
                                 }
                             }
                             .onFailure { error ->
-                                println("❌ AuthViewModel: Failed to get user type: ${error.message}")
+                                // Removed println: "❌ AuthViewModel: Failed to get user type: ${error.message}"
                                 
                                 // REMOVED: Animation delays
                                 
@@ -73,7 +73,7 @@ class AuthViewModel(
                                 )
                             }
                     } else {
-                        println("❌ AuthViewModel: No valid session found, showing login")
+                        // Removed println: "❌ AuthViewModel: No valid session found, showing login"
                         
                         // REMOVED: Animation delays
                         
@@ -85,7 +85,7 @@ class AuthViewModel(
                     }
                 }
                 .onFailure { error ->
-                    println("❌ AuthViewModel: Session restoration failed: ${error.message}")
+                    // Removed println: "❌ AuthViewModel: Session restoration failed: ${error.message}"
                     
                     // REMOVED: Animation delays
                     
@@ -94,17 +94,17 @@ class AuthViewModel(
                     when {
                         // Valid session but no UserInfo - extract user data and proceed
                         errorMessage.startsWith("VALID_SESSION_NO_USER:") -> {
-                            println("✅ AuthViewModel: Valid session without UserInfo, extracting data...")
+                            // Removed println: "✅ AuthViewModel: Valid session without UserInfo, extracting data..."
                             val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                             if (parts.size >= 2) {
                                 val userId = parts[0]
                                 val userEmail = parts[1]
-                                println("✅ AuthViewModel: Extracted userId: $userId, email: $userEmail")
+                                // Removed println: "✅ AuthViewModel: Extracted userId: $userId, email: $userEmail"
                                 
                                 // Determine user type and navigate accordingly
                                 authService.checkUserType(userId)
                                     .onSuccess { userType ->
-                                        println("✅ AuthViewModel: User type determined: $userType")
+                                        // Removed println: "✅ AuthViewModel: User type determined: $userType"
                                         
                                         _uiState.value = _uiState.value.copy(
                                             isCheckingSession = false,
@@ -112,17 +112,17 @@ class AuthViewModel(
                                             isLoginSuccessful = true,
                                             userType = userType
                                         )
-                                        println("✅ AuthViewModel: Authentication successful with valid session")
+                                        // Removed println: "✅ AuthViewModel: Authentication successful with valid session"
                                         
                                         // Update FCM token AFTER setting success state
                                         try {
                                             fcmTokenManager.updateTokenForUser(userId)
                                         } catch (fcmError: Exception) {
-                                            println("⚠️ AuthViewModel: FCM token update failed for valid session: ${fcmError.message}")
+                                            // Removed println: "⚠️ AuthViewModel: FCM token update failed for valid session: ${fcmError.message}"
                                         }
                                     }
                                     .onFailure { typeError ->
-                                        println("❌ AuthViewModel: Failed to determine user type: ${typeError.message}")
+                                        // Removed println: "❌ AuthViewModel: Failed to determine user type: ${typeError.message}"
                                         _uiState.value = _uiState.value.copy(
                                             isCheckingSession = false,
                                             isAuthenticated = false,
@@ -130,7 +130,7 @@ class AuthViewModel(
                                         )
                                     }
                             } else {
-                                println("❌ AuthViewModel: Invalid VALID_SESSION_NO_USER format: $errorMessage")
+                                // Removed println: "❌ AuthViewModel: Invalid VALID_SESSION_NO_USER format: $errorMessage"
                                 _uiState.value = _uiState.value.copy(
                                     isCheckingSession = false,
                                     isAuthenticated = false,
@@ -285,9 +285,9 @@ class AuthViewModel(
                             // Update FCM token AFTER setting login success (don't block login completion)
                             try {
                                 fcmTokenManager.updateTokenForUser(user.id)
-                                println("✅ AuthViewModel.login: FCM token update initiated")
+                                // Removed println: "✅ AuthViewModel.login: FCM token update initiated"
                             } catch (fcmError: Exception) {
-                                println("⚠️ AuthViewModel.login: FCM token update failed: ${fcmError.message}")
+                                // Removed println: "⚠️ AuthViewModel.login: FCM token update failed: ${fcmError.message}"
                                 // Don't fail login if FCM update fails
                             }
                         }

@@ -1,7 +1,6 @@
 package com.ausgetrunken.ui.customer.components
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -110,7 +109,6 @@ fun CustomerWineryCard(
             // Background winery image
             if (winery.photos.isNotEmpty()) {
                 val imageUrl = winery.photos.first()
-                Log.d("CustomerWineryCard", "Loading backdrop image for ${winery.name}: $imageUrl")
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(
@@ -129,19 +127,16 @@ fun CustomerWineryCard(
                     contentScale = ContentScale.Crop,
                     loading = {
                         // Show pulsating animation while loading
-                        Log.d("CustomerWineryCard", "Backdrop image loading for ${winery.name}")
                         PulsatingPlaceholder(modifier = Modifier.fillMaxSize())
                     },
                     error = {
                         // Show static placeholder on error
-                        Log.e("CustomerWineryCard", "Backdrop image failed to load for ${winery.name}: $imageUrl")
                         WineryPlaceholderImage(
                             modifier = Modifier.fillMaxSize(),
                             aspectRatio = 16f / 9f
                         )
                     },
                     success = { state ->
-                        Log.d("CustomerWineryCard", "Backdrop image loaded successfully for ${winery.name}")
                         Image(
                             painter = state.painter,
                             contentDescription = "Winery ${winery.name} backdrop",
@@ -152,7 +147,6 @@ fun CustomerWineryCard(
                 )
             } else {
                 // Fallback to placeholder when no photos available
-                Log.d("CustomerWineryCard", "No photos available for ${winery.name}")
                 WineryPlaceholderImage(
                     modifier = Modifier.fillMaxSize(),
                     aspectRatio = 16f / 9f

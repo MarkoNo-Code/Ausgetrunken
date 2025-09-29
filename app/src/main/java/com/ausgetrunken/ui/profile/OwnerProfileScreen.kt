@@ -259,7 +259,7 @@ fun OwnerProfileScreen(
     // Handle new winery creation - add to UI and trigger animation
     LaunchedEffect(newWineryId) {
         newWineryId?.let {
-            println("ProfileScreen: Received newWineryId: $it")
+            // Removed println: "ProfileScreen: Received newWineryId: $it"
             // Add the new winery to UI state directly (no refetch needed)
             viewModel.addNewWineryToUI(it)
             // Wait for animation to complete then clear the saved state
@@ -270,7 +270,7 @@ fun OwnerProfileScreen(
     // Clear the updatedWineryId after animation completes
     LaunchedEffect(updatedWineryId) {
         updatedWineryId?.let {
-            println("ProfileScreen: Received updatedWineryId: $it")
+            // Removed println: "ProfileScreen: Received updatedWineryId: $it"
             // Wait for animation to complete then clear the saved state
             delay(2000) // 2 seconds
         }

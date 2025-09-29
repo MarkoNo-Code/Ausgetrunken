@@ -15,7 +15,7 @@ class GetWinerySubscribersUseCase(
             val supabaseResult = winerySubscriptionService.getActiveSubscriptionsForWineryFromSupabase(wineryId)
             
             val subscriptions = supabaseResult.getOrElse { error ->
-                println("⚠️ GetWinerySubscribersUseCase: Supabase fetch failed, falling back to local: ${error.message}")
+                // Removed println: "⚠️ GetWinerySubscribersUseCase: Supabase fetch failed, falling back to local: ${error.message}"
                 // Fallback to local database
                 winerySubscriptionService.getActiveSubscriptionsForWinery(wineryId)
             }
@@ -27,10 +27,10 @@ class GetWinerySubscribersUseCase(
             val specialOfferSubscribers = subscriptions.count { it.specialOfferNotifications }
             
             println("📊 GetWinerySubscribersUseCase: Found $totalSubscribers total subscribers")
-            println("   - Low stock: $lowStockSubscribers")
-            println("   - General: $generalSubscribers")
-            println("   - New release: $newReleaseSubscribers")
-            println("   - Special offers: $specialOfferSubscribers")
+            // Removed println: "   - Low stock: $lowStockSubscribers"
+            // Removed println: "   - General: $generalSubscribers"
+            // Removed println: "   - New release: $newReleaseSubscribers"
+            // Removed println: "   - Special offers: $specialOfferSubscribers"
             
             SubscriberInfo(
                 totalSubscribers = totalSubscribers,
@@ -40,7 +40,7 @@ class GetWinerySubscribersUseCase(
                 specialOfferSubscribers = specialOfferSubscribers
             )
         } catch (e: Exception) {
-            println("❌ GetWinerySubscribersUseCase: Error fetching subscribers: ${e.message}")
+            // Removed println: "❌ GetWinerySubscribersUseCase: Error fetching subscribers: ${e.message}"
             e.printStackTrace()
             SubscriberInfo(
                 totalSubscribers = 0,

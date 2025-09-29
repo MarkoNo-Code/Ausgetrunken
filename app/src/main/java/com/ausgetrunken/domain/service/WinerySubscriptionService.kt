@@ -45,7 +45,7 @@ class WinerySubscriptionService(
             println("🌐 WinerySubscriptionService: Attempting Supabase query...")
             val supabaseResult = subscriptionRepository.getUserSubscriptionsFromSupabase(userId)
             supabaseResult.onSuccess { subscriptions ->
-                println("✅ WinerySubscriptionService: Supabase query succeeded with ${subscriptions.size} subscriptions")
+                // Removed println: "✅ WinerySubscriptionService: Supabase query succeeded with ${subscriptions.size} subscriptions"
                 subscriptions.forEach { sub ->
                     println("   📝 Subscription: wineryId=${sub.wineryId}, isActive=${sub.isActive}")
                 }
@@ -53,7 +53,7 @@ class WinerySubscriptionService(
                 println("🎯 WinerySubscriptionService: Supabase check result for winery $wineryId: $isSubscribed")
                 return isSubscribed
             }.onFailure { error ->
-                println("❌ WinerySubscriptionService: Supabase query failed: ${error.message}")
+                // Removed println: "❌ WinerySubscriptionService: Supabase query failed: ${error.message}"
                 println("📱 WinerySubscriptionService: Falling back to local database...")
             }
             
@@ -72,7 +72,7 @@ class WinerySubscriptionService(
             
             isSubscribed
         } catch (e: Exception) {
-            println("❌ WinerySubscriptionService: Error checking subscription: ${e.message}")
+            // Removed println: "❌ WinerySubscriptionService: Error checking subscription: ${e.message}"
             e.printStackTrace()
             false
         }

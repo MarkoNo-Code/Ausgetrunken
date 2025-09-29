@@ -7,6 +7,7 @@ import android.net.Uri
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import com.ausgetrunken.domain.logging.AusgetrunkenLogger
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -93,7 +94,7 @@ fun AddWineryScreen(
     // Handle location selection result
     LaunchedEffect(locationResult) {
         locationResult?.let { (latitude, longitude, address) ->
-            android.util.Log.d("AddWineryScreen", "🎯 Processing location result: lat=$latitude, lng=$longitude, address=$address")
+            AusgetrunkenLogger.d("AddWineryScreen", "Processing location result: lat=$latitude, lng=$longitude, address=$address")
 
             // Update the viewModel with the selected location
             address?.let { viewModel.onAddressChanged(it) }
@@ -118,7 +119,7 @@ fun AddWineryScreen(
             .collect { event ->
                 when (event) {
                     is AddWineryNavigationEvent.NavigateBackWithSuccess -> {
-                        println("AddWineryScreen: Channel navigation event received, wineryId: ${event.wineryId}")
+                        // Removed println: "AddWineryScreen: Channel navigation event received, wineryId: ${event.wineryId}"
                         viewModel.onNavigateBackWithSuccess { wineryId ->
                             onNavigateBackWithSuccess(wineryId)
                         }
@@ -249,7 +250,7 @@ fun AddWineryScreen(
                     )
                     cameraLauncher.launch(photoUri!!)
                 } catch (e: Exception) {
-                    println("Error creating camera file: ${e.message}")
+                    // Removed println: "Error creating camera file: ${e.message}"
                     showImagePickerDialog = false
                 }
             },

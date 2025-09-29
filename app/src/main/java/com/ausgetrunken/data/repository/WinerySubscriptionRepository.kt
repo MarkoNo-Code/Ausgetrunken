@@ -56,7 +56,7 @@ class WinerySubscriptionRepository(
                     }
                     .decodeList<WinerySubscription>()
             } catch (e: Exception) {
-                println("❌ WinerySubscriptionRepository: Failed to check Supabase: ${e.message}")
+                // Removed println: "❌ WinerySubscriptionRepository: Failed to check Supabase: ${e.message}"
                 emptyList()
             }
             
@@ -67,7 +67,7 @@ class WinerySubscriptionRepository(
                 println("🔍 WinerySubscriptionRepository: Existing subscription found - ID: ${existingSubscription.id}, Active: ${existingSubscription.isActive}")
                 
                 if (existingSubscription.isActive) {
-                    println("⚠️ WinerySubscriptionRepository: Subscription is already active")
+                    // Removed println: "⚠️ WinerySubscriptionRepository: Subscription is already active"
                     return@execute Result.failure(Exception("Already subscribed to this winery"))
                 }
                 
@@ -101,7 +101,7 @@ class WinerySubscriptionRepository(
                 )
                 winerySubscriptionDao.insertSubscription(localSubscription)
                 
-                println("✅ WinerySubscriptionRepository: Successfully reactivated existing subscription")
+                // Removed println: "✅ WinerySubscriptionRepository: Successfully reactivated existing subscription"
                 return@execute Result.success(localSubscription)
             }
             
@@ -165,27 +165,27 @@ class WinerySubscriptionRepository(
                     }
                     .decodeList<WinerySubscription>()
             } catch (e: Exception) {
-                println("⚠️ Failed to check Supabase, falling back to local: ${e.message}")
+                // Removed println: "⚠️ Failed to check Supabase, falling back to local: ${e.message}"
                 emptyList()
             }
             
             if (supabaseSubscriptions.isNotEmpty()) {
-                println("✅ Found active subscription in Supabase, proceeding with unsubscribe")
+                // Removed println: "✅ Found active subscription in Supabase, proceeding with unsubscribe"
             } else {
                 // Fallback to local check
                 val existingSubscription = winerySubscriptionDao.getSubscription(userId, wineryId)
                 if (existingSubscription?.isActive != true) {
-                    println("⚠️ No active subscription found in Supabase or local database")
+                    // Removed println: "⚠️ No active subscription found in Supabase or local database"
                     return Result.failure(Exception("No active subscription found"))
                 } else {
-                    println("✅ Found active subscription in local database, proceeding with unsubscribe")
+                    // Removed println: "✅ Found active subscription in local database, proceeding with unsubscribe"
                 }
             }
             
             // Deactivate locally
             println("💾 Deactivating subscription in local database...")
             winerySubscriptionDao.deactivateSubscription(userId, wineryId)
-            println("✅ Local database deactivation successful")
+            // Removed println: "✅ Local database deactivation successful"
             
             try {
                 println("🌐 Updating subscription status in Supabase...")
@@ -202,10 +202,10 @@ class WinerySubscriptionRepository(
                             eq("winery_id", wineryId)
                         }
                     }
-                println("✅ Supabase update successful")
+                // Removed println: "✅ Supabase update successful"
                 println("🎉 Unsubscribed successfully!")
             } catch (supabaseError: Exception) {
-                println("❌ Supabase update failed: ${supabaseError.message}")
+                // Removed println: "❌ Supabase update failed: ${supabaseError.message}"
                 supabaseError.printStackTrace()
                 
                 // Rollback local change
@@ -216,7 +216,7 @@ class WinerySubscriptionRepository(
             
             Result.success(Unit)
         } catch (e: Exception) {
-            println("❌ UNEXPECTED ERROR in unsubscribeFromWinery: ${e.message}")
+            // Removed println: "❌ UNEXPECTED ERROR in unsubscribeFromWinery: ${e.message}"
             e.printStackTrace()
             Result.failure(e)
         }
@@ -313,10 +313,10 @@ class WinerySubscriptionRepository(
                 winerySubscriptionDao.insertSubscription(subscription)
             }
             
-            println("✅ WinerySubscriptionRepository: Full sync completed successfully")
+            // Removed println: "✅ WinerySubscriptionRepository: Full sync completed successfully"
             Result.success(subscriptions)
         } catch (e: Exception) {
-            println("❌ WinerySubscriptionRepository: Sync failed: ${e.message}")
+            // Removed println: "❌ WinerySubscriptionRepository: Sync failed: ${e.message}"
             e.printStackTrace()
             Result.failure(e)
         }
@@ -357,10 +357,10 @@ class WinerySubscriptionRepository(
                 )
             }
             
-            println("✅ WinerySubscriptionRepository: Real-time fetch completed successfully")
+            // Removed println: "✅ WinerySubscriptionRepository: Real-time fetch completed successfully"
             Result.success(subscriptions)
         } catch (e: Exception) {
-            println("❌ WinerySubscriptionRepository: Real-time fetch failed: ${e.message}")
+            // Removed println: "❌ WinerySubscriptionRepository: Real-time fetch failed: ${e.message}"
             e.printStackTrace()
             Result.failure(e)
         }
@@ -395,7 +395,7 @@ class WinerySubscriptionRepository(
                     }
                     .decodeSingle<Map<String, String>>()
             } catch (e: Exception) {
-                println("⚠️ WinerySubscriptionRepository: Could not fetch winery owner: ${e.message}")
+                // Removed println: "⚠️ WinerySubscriptionRepository: Could not fetch winery owner: ${e.message}"
                 null
             }
             
@@ -424,10 +424,10 @@ class WinerySubscriptionRepository(
                 )
             }
             
-            println("✅ WinerySubscriptionRepository: Found ${subscriptions.size} active subscribers for winery $wineryId (excluding owner)")
+            // Removed println: "✅ WinerySubscriptionRepository: Found ${subscriptions.size} active subscribers for winery $wineryId (excluding owner")
             Result.success(subscriptions)
         } catch (e: Exception) {
-            println("❌ WinerySubscriptionRepository: Failed to fetch winery subscribers: ${e.message}")
+            // Removed println: "❌ WinerySubscriptionRepository: Failed to fetch winery subscribers: ${e.message}"
             e.printStackTrace()
             Result.failure(e)
         }

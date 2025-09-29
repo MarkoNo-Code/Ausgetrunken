@@ -97,7 +97,6 @@ import java.util.*
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.compose.material3.AlertDialog
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -169,10 +168,8 @@ fun WineryDetailScreen(
                 }
             }
             
-            Log.d("WineryDetail", "Image copied to internal storage: ${destFile.absolutePath}")
             destFile.absolutePath
         } catch (e: Exception) {
-            Log.e("WineryDetail", "Failed to copy image to internal storage", e)
             null
         }
     }
@@ -195,8 +192,6 @@ fun WineryDetailScreen(
     fun checkAndLogPermissions() {
         val cameraPermission = getCameraPermission()
         val storagePermission = getStoragePermission()
-        Log.d("WineryDetail", "Camera permission ($cameraPermission): ${hasPermission(cameraPermission)}")
-        Log.d("WineryDetail", "Storage permission ($storagePermission): ${hasPermission(storagePermission)}")
     }
     
     // Gallery launcher
@@ -204,27 +199,21 @@ fun WineryDetailScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
-            Log.d("WineryDetail", "Gallery URI selected: $selectedUri")
             
             // Try two approaches: first copy to internal storage, then try using original URI as backup
             val internalPath = copyImageToInternalStorage(selectedUri)
-            Log.d("WineryDetail", "Internal path result: $internalPath")
             
             if (internalPath != null) {
-                Log.d("WineryDetail", "Adding internal path to viewModel: $internalPath")
                 
                 // Verify file exists
                 val file = File(internalPath)
-                Log.d("WineryDetail", "File exists: ${file.exists()}, Size: ${file.length()} bytes")
                 
                 if (file.exists() && file.length() > 0) {
                     viewModel.addPhoto(internalPath)
                 } else {
-                    Log.w("WineryDetail", "Internal file invalid, trying original URI: $selectedUri")
                     viewModel.addPhoto(selectedUri.toString())
                 }
             } else {
-                Log.e("WineryDetail", "Failed to save to internal storage, using original URI: $selectedUri")
                 viewModel.addPhoto(selectedUri.toString())
             }
         }
@@ -237,14 +226,12 @@ fun WineryDetailScreen(
     ) { success: Boolean ->
         if (success) {
             photoUri?.let { uri ->
-                Log.d("WineryDetail", "Camera URI captured: $uri")
                 
                 // Copy image to internal storage for persistence
                 val internalPath = copyImageToInternalStorage(uri)
                 if (internalPath != null) {
                     viewModel.addPhoto(internalPath)
                 } else {
-                    Log.e("WineryDetail", "Failed to save camera image")
                 }
             }
         }
@@ -295,21 +282,16 @@ fun WineryDetailScreen(
     }
     
     LaunchedEffect(wineryId) {
-        Log.d("WineryDetailScreen", "🏭 OWNER WineryDetailScreen loaded for wineryId: $wineryId")
-        Log.d("WineryDetailScreen", "🏭 This is the OWNER view, not customer view!")
         viewModel.loadWinery(wineryId)
     }
     
     // Handle location selection result from savedStateHandle (PROPER PATTERN)
     // Wait for winery to be loaded before updating location
     LaunchedEffect(locationResult, uiState.winery) {
-        Log.d("WineryDetailScreen", "🔍 Location update check: locationResult=$locationResult, winery=${uiState.winery?.name}")
         
         if (locationResult != null && uiState.winery != null) {
             val (latitude, longitude, address) = locationResult
             val winery = uiState.winery
-            Log.d("WineryDetailScreen", "🎯 Processing location result from savedStateHandle: lat=$latitude, lng=$longitude, address=$address")
-            Log.d("WineryDetailScreen", "🎯 Winery loaded: ${winery?.name} (id: ${winery?.id})")
             
             // Update location now that winery is loaded
             viewModel.updateWineryLocation(latitude, longitude)
@@ -320,9 +302,7 @@ fun WineryDetailScreen(
             // PROPER CLEANUP: Remove result after successful processing
             onLocationProcessed()
             
-            Log.d("WineryDetailScreen", "✅ Location updated and result cleaned up")
         } else if (locationResult != null) {
-            Log.d("WineryDetailScreen", "⏳ Location data available but waiting for winery to load...")
         }
     }
     
@@ -331,7 +311,7 @@ fun WineryDetailScreen(
     LaunchedEffect(addedWineId, editedWineId) {
         val shouldRefresh = addedWineId != null || editedWineId != null
         if (shouldRefresh) {
-            println("WineryDetailScreen: Refreshing wines after add/edit")
+            // Removed println: "WineryDetailScreen: Refreshing wines after add/edit"
             viewModel.loadWinery(wineryId)
         }
     }
@@ -567,13 +547,11 @@ fun WineryDetailScreen(
             onGalleryClick = {
                 val storagePermission = getStoragePermission()
                 val hasStoragePermission = hasPermission(storagePermission)
-                Log.d("WineryDetail", "Storage permission ($storagePermission): $hasStoragePermission")
 
                 if (hasStoragePermission) {
                     galleryLauncher.launch("image/*")
                     showImagePickerDialog = false
                 } else {
-                    Log.d("WineryDetail", "Requesting storage permission: $storagePermission")
                     storagePermissionLauncher.launch(storagePermission)
                 }
             },
@@ -731,7 +709,6 @@ private fun WineryInfoCard(
             // In edit mode, only update address if it changed (likely from location selection)
             // but preserve user's manual edits to name and description
             if (editAddress != winery.address && winery.address.isNotBlank()) {
-                Log.d("WineryDetailScreen", "📍 Updating address field in edit mode: ${winery.address}")
                 editAddress = winery.address
             }
         }
@@ -1158,7 +1135,6 @@ private fun WineryImageCarousel(
     onRemovePhoto: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Log.d("WineryImageCarousel", "Rendering carousel with ${images.size} images: $images")
     val pagerState = rememberPagerState(pageCount = { images.size })
     
     Box(
@@ -1190,7 +1166,6 @@ private fun WineryImageCarousel(
                 
                 // Then overlay the actual image on top with skeleton loading
                 val imageUrl = images[page]
-                Log.d("WineryImageCarousel", "Loading image at page $page: $imageUrl")
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(
@@ -1205,22 +1180,15 @@ private fun WineryImageCarousel(
                         .diskCachePolicy(CachePolicy.ENABLED)
                         .listener(
                             onStart = { 
-                                Log.d("WineryImageCarousel", "Started loading: $imageUrl")
                                 if (imageUrl.startsWith("/")) {
                                     val file = File(imageUrl)
-                                    Log.d("WineryImageCarousel", "File check - exists: ${file.exists()}, size: ${file.length()}")
                                 }
                             },
                             onSuccess = { _, result -> 
-                                Log.d("WineryImageCarousel", "Successfully loaded: $imageUrl")
-                                Log.d("WineryImageCarousel", "Result drawable: ${result.drawable}")
                             },
                             onError = { _, error -> 
-                                Log.e("WineryImageCarousel", "Failed to load $imageUrl: ${error.throwable}")
-                                Log.e("WineryImageCarousel", "Error message: ${error.throwable.message}")
                                 if (imageUrl.startsWith("/")) {
                                     val file = File(imageUrl)
-                                    Log.e("WineryImageCarousel", "File debug - path: ${file.absolutePath}, exists: ${file.exists()}, readable: ${file.canRead()}")
                                 }
                             }
                         )
@@ -1455,13 +1423,10 @@ private fun PhotoThumbnail(
                     .diskCachePolicy(CachePolicy.ENABLED)
                     .listener(
                         onStart = { 
-                            Log.d("PhotoThumbnail", "Started loading thumbnail: $photoUrl")
                         },
                         onSuccess = { _, _ -> 
-                            Log.d("PhotoThumbnail", "Successfully loaded thumbnail: $photoUrl")
                         },
                         onError = { _, error -> 
-                            Log.e("PhotoThumbnail", "Failed to load thumbnail $photoUrl: ${error.throwable}")
                         }
                     )
                     .build(),
@@ -1643,7 +1608,6 @@ private fun UnifiedPhotosSection(
                 )
             } else {
                 // Photos carousel for viewing
-                Log.d("UnifiedPhotosSection", "Rendering carousel with ${photos.size} photos: $photos")
                 val pagerState = rememberPagerState(pageCount = { photos.size })
                 
                 Box(

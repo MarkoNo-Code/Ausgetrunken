@@ -55,7 +55,7 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
         
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Starting migration...")
+                // Migration logging removed for performance
                 
                 // Create winery_photos table
                 val createTableSQL = """
@@ -74,43 +74,43 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
                     )
                 """.trimIndent()
                 
-                android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Executing SQL: $createTableSQL")
+                // Migration logging removed for performance
                 database.execSQL(createTableSQL)
                 
                 // Create index for winery_id for faster queries
                 val createIndexSQL = "CREATE INDEX IF NOT EXISTS `index_winery_photos_winery_id` ON `winery_photos` (`winery_id`)"
-                android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Creating index: $createIndexSQL")
+                // Migration logging removed for performance
                 database.execSQL(createIndexSQL)
                 
-                android.util.Log.d("DatabaseMigration", "MIGRATION 3->4: Migration completed successfully!")
+                // Migration logging removed for performance
             }
         }
         
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                android.util.Log.d("DatabaseMigration", "MIGRATION 4->5: Starting migration...")
+                // Migration logging removed for performance
                 
                 // Add fullName column to users table
                 database.execSQL("ALTER TABLE users ADD COLUMN fullName TEXT")
                 
-                android.util.Log.d("DatabaseMigration", "MIGRATION 4->5: Migration completed successfully!")
+                // Migration logging removed for performance
             }
         }
         
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                android.util.Log.d("DatabaseMigration", "MIGRATION 5->6: Starting migration...")
+                // Migration logging removed for performance
 
                 // Add profilePictureUrl column to users table
                 database.execSQL("ALTER TABLE users ADD COLUMN profilePictureUrl TEXT")
 
-                android.util.Log.d("DatabaseMigration", "MIGRATION 5->6: Migration completed successfully!")
+                // Migration logging removed for performance
             }
         }
 
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Starting migration...")
+                // Migration logging removed for performance
 
                 // Create wine_photos table
                 val createTableSQL = """
@@ -129,15 +129,15 @@ abstract class AusgetrunkenDatabase : RoomDatabase() {
                     )
                 """.trimIndent()
 
-                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Executing SQL: $createTableSQL")
+                // Migration logging removed for performance
                 database.execSQL(createTableSQL)
 
                 // Create index for wine_id for faster queries
                 val createIndexSQL = "CREATE INDEX IF NOT EXISTS `index_wine_photos_wine_id` ON `wine_photos` (`wine_id`)"
-                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Creating index: $createIndexSQL")
+                // Migration logging removed for performance
                 database.execSQL(createIndexSQL)
 
-                android.util.Log.d("DatabaseMigration", "MIGRATION 6->7: Migration completed successfully!")
+                // Migration logging removed for performance
             }
         }
     }

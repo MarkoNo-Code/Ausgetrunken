@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 println("🔗 MainActivity: Valid reset token found: $accessToken")
                 resetToken = accessToken
             } else {
-                println("⚠️ MainActivity: Invalid or missing reset token in deep link")
+                // Removed println: "⚠️ MainActivity: Invalid or missing reset token in deep link"
             }
         }
     }

@@ -1,7 +1,6 @@
 package com.ausgetrunken
 
 import android.app.Application
-import android.util.Log
 import com.ausgetrunken.di.*
 import com.ausgetrunken.domain.service.WineryPhotoService
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +19,6 @@ class AusgetrunkenApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        Log.d("AusgetrunkenApp", "Application starting up...")
         
         startKoin {
             androidLogger()
@@ -42,12 +40,9 @@ class AusgetrunkenApplication : Application() {
     private fun initializePhotoValidation() {
         applicationScope.launch {
             try {
-                Log.d("AusgetrunkenApp", "Starting photo validation on app startup...")
                 val photoService: WineryPhotoService by inject()
                 photoService.validateAndMigratePhotos()
-                Log.d("AusgetrunkenApp", "Photo validation completed")
             } catch (e: Exception) {
-                Log.e("AusgetrunkenApp", "Error during photo validation", e)
             }
         }
     }

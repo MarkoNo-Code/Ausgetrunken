@@ -1,6 +1,5 @@
 package com.ausgetrunken.ui.winery
 
-import android.util.Log
 import com.ausgetrunken.data.local.entities.UserType
 import com.ausgetrunken.data.repository.UserRepository
 import com.ausgetrunken.data.repository.WineryRepository
@@ -70,11 +69,11 @@ class WineryDetailViewModel(
                             println("🔍 WineryDetailViewModel: Successfully got userType: $userType")
                         }
                         .onFailure { error ->
-                            println("❌ WineryDetailViewModel: Failed to get userType: ${error.message}")
+                            // Removed println: "❌ WineryDetailViewModel: Failed to get userType: ${error.message}"
                         }
                         .getOrNull() == UserType.WINERY_OWNER
                 } else {
-                    println("❌ WineryDetailViewModel: currentUserId is null from TokenStorage, cannot check permissions")
+                    // Removed println: "❌ WineryDetailViewModel: currentUserId is null from TokenStorage, cannot check permissions"
                     false
                 }
                 
@@ -157,26 +156,18 @@ class WineryDetailViewModel(
     }
     
     fun updateWineryLocation(latitude: Double, longitude: Double) {
-        Log.d("WineryDetailViewModel", "📍 Updating winery location: lat=$latitude, lng=$longitude")
-        Log.d("WineryDetailViewModel", "📍 Current UI state winery: ${_uiState.value.winery?.name} (id: ${_uiState.value.winery?.id})")
-        
+
         _uiState.value.winery?.let { winery ->
-            Log.d("WineryDetailViewModel", "📍 Original winery coordinates: lat=${winery.latitude}, lng=${winery.longitude}")
             val updatedWinery = winery.copy(latitude = latitude, longitude = longitude)
             _uiState.value = _uiState.value.copy(winery = updatedWinery)
-            Log.d("WineryDetailViewModel", "✅ Winery updated in UI state: ${updatedWinery.name} at $latitude, $longitude")
-        } ?: Log.e("WineryDetailViewModel", "❌ No winery in state to update!")
+        }
     }
     
     fun addPhoto(photoPath: String) {
-        Log.d("WineryDetailViewModel", "🚀 ADD_PHOTO CALLED: $photoPath")
-        Log.d("WineryDetailViewModel", "🚀 Current winery: ${_uiState.value.winery?.id}")
-        Log.d("WineryDetailViewModel", "🚀 Can edit: ${_uiState.value.canEdit}")
         
         val winery = _uiState.value.winery ?: return
         
         if (!_uiState.value.canEdit) {
-            Log.w("WineryDetailViewModel", "Cannot add photo: no edit permission")
             return
         }
 
@@ -184,7 +175,6 @@ class WineryDetailViewModel(
 
         execute("addPhoto") {
             AppResult.catchingSuspend {
-                Log.d("WineryDetailViewModel", "Starting photo add process for: $photoPath")
                 
                 val result = when {
                     photoPath.startsWith("content://") -> {
@@ -195,14 +185,12 @@ class WineryDetailViewModel(
                     }
                     else -> {
                         // Fallback for existing URLs or other formats
-                        Log.w("WineryDetailViewModel", "Unsupported photo path format: $photoPath")
                         Result.failure(Exception("Unsupported photo path format"))
                     }
                 }
                 
                 result.fold(
                     onSuccess = { localPath ->
-                        Log.d("WineryDetailViewModel", "Photo added successfully: $localPath")
                         
                         // DEBUG: Inspect database after photo add
                         viewModelScope.launch {
@@ -215,14 +203,12 @@ class WineryDetailViewModel(
                         if (!currentPhotos.contains(localPath)) {
                             currentPhotos.add(localPath)
                             _uiState.value = _uiState.value.copy(photos = currentPhotos)
-                            Log.d("WineryDetailViewModel", "Immediately updated UI state with new photo: $localPath")
                         }
                         
                         _uiState.value = _uiState.value.copy(isUpdating = false)
                         Unit
                     },
                     onFailure = { error ->
-                        Log.e("WineryDetailViewModel", "Failed to add photo: $error")
                         _uiState.value = _uiState.value.copy(isUpdating = false)
                         throw error
                     }
@@ -234,7 +220,6 @@ class WineryDetailViewModel(
     
     fun removePhoto(photoUrl: String) {
         if (!_uiState.value.canEdit) {
-            Log.w("WineryDetailViewModel", "Cannot remove photo: no edit permission")
             return
         }
 
@@ -242,13 +227,11 @@ class WineryDetailViewModel(
 
         execute("removePhoto") {
             AppResult.catchingSuspend {
-                Log.d("WineryDetailViewModel", "Starting photo removal process for: $photoUrl")
                 
                 val result = wineryPhotoService.removePhoto(photoUrl)
                 
                 result.fold(
                     onSuccess = {
-                        Log.d("WineryDetailViewModel", "Photo removed successfully: $photoUrl")
                         
                         // Immediately remove photo from UI state
                         val currentPhotos = _uiState.value.photos.toMutableList()
@@ -258,11 +241,9 @@ class WineryDetailViewModel(
                             isUpdating = false
                         )
                         
-                        Log.d("WineryDetailViewModel", "Updated UI state - removed photo: $photoUrl")
                         Unit
                     },
                     onFailure = { error ->
-                        Log.e("WineryDetailViewModel", "Failed to remove photo: $error")
                         _uiState.value = _uiState.value.copy(isUpdating = false)
                         throw error
                     }
@@ -272,17 +253,13 @@ class WineryDetailViewModel(
     }
     
     fun saveWinery() {
-        Log.d("WineryDetailViewModel", "💾 saveWinery() called")
         val winery = _uiState.value.winery ?: run {
-            Log.e("WineryDetailViewModel", "❌ No winery to save!")
             return
         }
         if (!_uiState.value.canEdit) {
-            Log.e("WineryDetailViewModel", "❌ Cannot edit - user has no permission!")
             return
         }
         
-        Log.d("WineryDetailViewModel", "🚀 Saving winery: ${winery.name} at ${winery.latitude}, ${winery.longitude}")
         execute("saveWinery") {
             AppResult.catchingSuspend {
                 // Set updating state
@@ -371,25 +348,18 @@ class WineryDetailViewModel(
         viewModelScope.launch {
             try {
                 if (USE_NEW_PHOTO_SERVICE) {
-                    Log.d("WineryDetailViewModel", "Using NEW photo service for winery: $wineryId")
                     // Start upload service if not already running
                     newWineryPhotoService.startUploadService()
                     
                     newWineryPhotoService.getWineryPhotos(wineryId).collect { photos ->
-                        Log.d("WineryDetailViewModel", "NEW SERVICE: Photo list updated: ${photos.size} photos - $photos")
                         _uiState.value = _uiState.value.copy(photos = photos)
-                        Log.d("WineryDetailViewModel", "NEW SERVICE: Updated UI state with photos: $photos")
                     }
                 } else {
-                    Log.d("WineryDetailViewModel", "Using LEGACY photo service for winery: $wineryId")
                     wineryPhotoService.getWineryPhotos(wineryId).collect { photos ->
-                        Log.d("WineryDetailViewModel", "LEGACY SERVICE: Photo list updated: ${photos.size} photos - $photos")
                         _uiState.value = _uiState.value.copy(photos = photos)
-                        Log.d("WineryDetailViewModel", "LEGACY SERVICE: Updated UI state with photos: $photos")
                     }
                 }
             } catch (e: Exception) {
-                Log.e("WineryDetailViewModel", "Error loading photos", e)
             }
         }
     }
@@ -398,7 +368,6 @@ class WineryDetailViewModel(
         execute("syncPhotos", showLoading = false) {
             AppResult.catchingSuspend {
                 wineryPhotoService.syncPhotosWithSupabase(wineryId, remotePhotos)
-                Log.d("WineryDetailViewModel", "Photo sync completed for winery: $wineryId")
                 Unit
             }
         }
@@ -492,14 +461,12 @@ class WineryDetailViewModel(
                 wineService.syncWines()
                 val wines = wineService.getWinesByWinery(wineryId).first()
                 _uiState.value = _uiState.value.copy(wines = wines)
-                
+
                 // Force refresh photos from Supabase (for pull-to-refresh)
-                Log.d("WineryDetailViewModel", "🔄 Syncing photos from Supabase...")
                 wineryPhotoService.syncPhotosFromSupabase(wineryId)
-                
-                Log.d("WineryDetailViewModel", "🔄 Force refreshing photos from Supabase...")
+
                 wineryPhotoService.refreshPhotosFromSupabase(wineryId)
-                
+
                 wines
             }
         }

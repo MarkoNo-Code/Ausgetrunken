@@ -39,7 +39,7 @@ class SessionMonitor(
                     println("🔍 SessionMonitor: Monitoring cancelled")
                     break
                 } catch (e: Exception) {
-                    println("❌ SessionMonitor: Error during session check: ${e.message}")
+                    // Removed println: "❌ SessionMonitor: Error during session check: ${e.message}"
                     // Continue monitoring even if one check fails
                     delay(CHECK_INTERVAL_MS)
                 }
@@ -79,14 +79,14 @@ class SessionMonitor(
                 .decodeSingleOrNull<UserProfile>()
             
             if (userProfile == null) {
-                println("❌ SessionMonitor: User profile not found - session invalid")
+                // Removed println: "❌ SessionMonitor: User profile not found - session invalid"
                 triggerSessionInvalidation()
                 return
             }
             
             // Check if user is flagged for deletion
             if (userProfile.flaggedForDeletion) {
-                println("❌ SessionMonitor: User account flagged for deletion - invalidating session")
+                // Removed println: "❌ SessionMonitor: User account flagged for deletion - invalidating session"
                 triggerSessionInvalidation()
                 return
             }
@@ -98,7 +98,7 @@ class SessionMonitor(
             when {
                 // Perfect match - session is valid
                 storedSessionId != null && dbSessionId != null && storedSessionId == dbSessionId -> {
-                    println("✅ SessionMonitor: Session is valid (IDs match)")
+                    // Removed println: "✅ SessionMonitor: Session is valid (IDs match")
                 }
                 
                 // Database doesn't have session tracking - allow (legacy)
@@ -113,20 +113,20 @@ class SessionMonitor(
                 
                 // Session ID mismatch - user logged in elsewhere
                 storedSessionId != null && dbSessionId != null && storedSessionId != dbSessionId -> {
-                    println("❌ SessionMonitor: Session ID mismatch - user logged in elsewhere")
-                    println("❌ SessionMonitor: Stored: $storedSessionId, DB: $dbSessionId")
+                    // Removed println: "❌ SessionMonitor: Session ID mismatch - user logged in elsewhere"
+                    // Removed println: "❌ SessionMonitor: Stored: $storedSessionId, DB: $dbSessionId"
                     triggerSessionInvalidation()
                     return
                 }
                 
                 // Default case - allow but log
                 else -> {
-                    println("⚠️ SessionMonitor: Session validation unclear - allowing session")
+                    // Removed println: "⚠️ SessionMonitor: Session validation unclear - allowing session"
                 }
             }
             
         } catch (e: Exception) {
-            println("❌ SessionMonitor: Failed to check session validity: ${e.message}")
+            // Removed println: "❌ SessionMonitor: Failed to check session validity: ${e.message}"
             // Don't invalidate session on network errors - continue monitoring
         }
     }
@@ -139,9 +139,9 @@ class SessionMonitor(
         scope.launch {
             try {
                 tokenStorage.clearSession()
-                println("✅ SessionMonitor: Local session cleared")
+                // Removed println: "✅ SessionMonitor: Local session cleared"
             } catch (e: Exception) {
-                println("❌ SessionMonitor: Failed to clear local session: ${e.message}")
+                // Removed println: "❌ SessionMonitor: Failed to clear local session: ${e.message}"
             }
         }
         

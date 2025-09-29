@@ -40,8 +40,8 @@ class TokenStorage(context: Context) {
             apply()
         }
         
-        println("✅ TokenStorage: Session saved successfully to SharedPreferences")
-        println("✅ TokenStorage: Verification - can retrieve userId: ${preferences.getString(KEY_USER_ID, null)}")
+        // Removed println: "✅ TokenStorage: Session saved successfully to SharedPreferences"
+        // Removed println: "✅ TokenStorage: Verification - can retrieve userId: ${preferences.getString(KEY_USER_ID, null}")
         _isLoggedIn.value = true
     }
     
@@ -100,7 +100,7 @@ class TokenStorage(context: Context) {
         }
         
         _isLoggedIn.value = false
-        println("✅ TokenStorage: All session data cleared")
+        // Removed println: "✅ TokenStorage: All session data cleared"
     }
     
     // DEBUG FUNCTION: Force clear all app data for testing
@@ -108,7 +108,7 @@ class TokenStorage(context: Context) {
         println("🚨 TokenStorage: DEBUG - Clearing ALL SharedPreferences data")
         preferences.edit().clear().apply()
         _isLoggedIn.value = false
-        println("✅ TokenStorage: ALL app data cleared for testing")
+        // Removed println: "✅ TokenStorage: ALL app data cleared for testing"
     }
     
     fun getSessionInfo(): SessionInfo? {
@@ -134,7 +134,7 @@ class TokenStorage(context: Context) {
             println("🔄 TokenStorage: Token valid = $isValid")
             
             if (isValid) {
-                println("✅ TokenStorage: Valid tokens found, creating SessionInfo")
+                // Removed println: "✅ TokenStorage: Valid tokens found, creating SessionInfo"
                 return SessionInfo(
                     accessToken = accessToken,
                     refreshToken = refreshToken,
@@ -144,12 +144,12 @@ class TokenStorage(context: Context) {
                     sessionId = preferences.getString(KEY_SESSION_ID, null)
                 )
             } else {
-                println("❌ TokenStorage: Tokens found but expired - allowing for potential refresh")
+                // Removed println: "❌ TokenStorage: Tokens found but expired - allowing for potential refresh"
                 // Don't clear session here - let the caller decide what to do with expired tokens
                 return null
             }
         } else {
-            println("❌ TokenStorage: Missing required tokens")
+            // Removed println: "❌ TokenStorage: Missing required tokens"
             return null
         }
     }

@@ -1,7 +1,6 @@
 package com.ausgetrunken.domain.service
 
 import android.content.Context
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -54,7 +53,6 @@ class PhotoUploadStatusStorage(private val context: Context) {
         progress: Float = 0f,
         errorMessage: String? = null
     ) {
-        Log.d(TAG, "Updating upload status for $localPath: $status")
         
         try {
             val key = stringPreferencesKey("upload_${localPath.hashCode()}")
@@ -71,9 +69,7 @@ class PhotoUploadStatusStorage(private val context: Context) {
                 preferences[key] = json.encodeToString(uploadInfo)
             }
             
-            Log.d(TAG, "✅ Upload status updated: $status")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to update upload status", e)
         }
     }
     
@@ -104,7 +100,6 @@ class PhotoUploadStatusStorage(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to get upload status for $localPath", e)
             PhotoUploadInfo(localPath = localPath, status = UploadStatus.PENDING)
         }
     }
@@ -137,7 +132,6 @@ class PhotoUploadStatusStorage(private val context: Context) {
                     
                     statusMap[path] = uploadInfo
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse upload status for $path", e)
                     statusMap[path] = PhotoUploadInfo(localPath = path, status = UploadStatus.PENDING)
                 }
             }
@@ -172,15 +166,12 @@ class PhotoUploadStatusStorage(private val context: Context) {
                             pendingUploads.add(uploadInfo)
                         }
                     } catch (e: Exception) {
-                        Log.w(TAG, "Failed to parse upload info", e)
                     }
                 }
             }
             
-            Log.d(TAG, "Found ${pendingUploads.size} pending uploads")
             pendingUploads.sortedBy { it.lastAttempt } // Oldest first
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to get pending uploads", e)
             emptyList()
         }
     }
@@ -194,9 +185,7 @@ class PhotoUploadStatusStorage(private val context: Context) {
             dataStore.edit { preferences ->
                 preferences.remove(key)
             }
-            Log.d(TAG, "✅ Removed upload status for $localPath")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to remove upload status", e)
         }
     }
     
@@ -206,20 +195,15 @@ class PhotoUploadStatusStorage(private val context: Context) {
     suspend fun logUploadStatuses() {
         try {
             val allData = dataStore.data.first()
-            Log.d(TAG, "=== UPLOAD STATUS STATE ===")
             allData.asMap().forEach { (key, value) ->
                 if (key.name.startsWith("upload_")) {
                     try {
                         val info = json.decodeFromString<SerializableUploadInfo>(value as String)
-                        Log.d(TAG, "${info.localPath}: ${info.status} (cloud: ${info.cloudUrl})")
                     } catch (e: Exception) {
-                        Log.w(TAG, "Could not parse upload status for key ${key.name}")
                     }
                 }
             }
-            Log.d(TAG, "=== END UPLOAD STATUS STATE ===")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to log upload statuses", e)
         }
     }
 }

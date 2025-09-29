@@ -70,7 +70,7 @@ class NotificationManagementViewModel(
                             val wineries = wineryService.getWinerysByOwnerRemoteFirst(ownerId)
                             wineries.find { it.id == wineryId }?.name ?: "Unknown Winery"
                         } catch (e: Exception) {
-                            println("⚠️ NotificationManagementViewModel: Could not get winery name for $wineryId: ${e.message}")
+                            // Removed println: "⚠️ NotificationManagementViewModel: Could not get winery name for $wineryId: ${e.message}"
                             "Winery $wineryId"
                         }
                         
@@ -84,9 +84,9 @@ class NotificationManagementViewModel(
                             )
                         )
                         
-                        println("✅ NotificationManagementViewModel: Winery '$wineryName' has ${subscriberInfo.totalSubscribers} total subscribers")
+                        // Removed println: "✅ NotificationManagementViewModel: Winery '$wineryName' has ${subscriberInfo.totalSubscribers} total subscribers"
                     } catch (e: Exception) {
-                        println("❌ NotificationManagementViewModel: Error getting subscribers for winery $wineryId: ${e.message}")
+                        // Removed println: "❌ NotificationManagementViewModel: Error getting subscribers for winery $wineryId: ${e.message}"
                     }
                 }
                 
@@ -97,10 +97,10 @@ class NotificationManagementViewModel(
                     winerySubscriberInfo = winerySubscriberInfo
                 )
                 
-                println("✅ NotificationManagementViewModel: Loaded ${regularLowStockWines.size} regular low stock and ${criticalStockWines.size} critical stock wines for owner")
+                // Removed println: "✅ NotificationManagementViewModel: Loaded ${regularLowStockWines.size} regular low stock and ${criticalStockWines.size} critical stock wines for owner"
 
             } catch (e: Exception) {
-                println("❌ NotificationManagementViewModel: Error loading owner data: ${e.message}")
+                // Removed println: "❌ NotificationManagementViewModel: Error loading owner data: ${e.message}"
                 e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -209,7 +209,7 @@ class NotificationManagementViewModel(
                 )
 
             } catch (e: Exception) {
-                println("❌ NotificationViewModel: Exception sending notification: ${e.message}")
+                // Removed println: "❌ NotificationViewModel: Exception sending notification: ${e.message}"
                 e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

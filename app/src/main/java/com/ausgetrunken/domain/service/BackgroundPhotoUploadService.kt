@@ -1,7 +1,6 @@
 package com.ausgetrunken.domain.service
 
 import android.content.Context
-import android.util.Log
 import com.ausgetrunken.domain.model.UploadStatus
 import kotlinx.coroutines.*
 import java.io.File
@@ -32,12 +31,10 @@ class BackgroundPhotoUploadService(
      */
     fun startUploadService() {
         if (isRunning.compareAndSet(false, true)) {
-            Log.d(TAG, "🚀 Starting background photo upload service")
             uploadScope.launch {
                 runUploadLoop()
             }
         } else {
-            Log.d(TAG, "Upload service already running")
         }
     }
     
@@ -46,7 +43,6 @@ class BackgroundPhotoUploadService(
      */
     fun stopUploadService() {
         if (isRunning.compareAndSet(true, false)) {
-            Log.d(TAG, "🛑 Stopping background photo upload service")
             uploadScope.cancel()
         }
     }
@@ -55,7 +51,6 @@ class BackgroundPhotoUploadService(
      * Queue a photo for upload immediately
      */
     fun queuePhotoForUpload(localPath: String) {
-        Log.d(TAG, "📤 Queueing photo for upload: $localPath")
         
         uploadScope.launch {
             try {
@@ -68,7 +63,6 @@ class BackgroundPhotoUploadService(
                 // Trigger upload loop
                 processUploadQueue()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to queue photo for upload", e)
             }
         }
     }
@@ -77,7 +71,6 @@ class BackgroundPhotoUploadService(
      * Force retry failed uploads
      */
     fun retryFailedUploads() {
-        Log.d(TAG, "🔄 Retrying failed uploads")
         
         uploadScope.launch {
             try {
@@ -92,10 +85,8 @@ class BackgroundPhotoUploadService(
                     )
                 }
                 
-                Log.d(TAG, "Marked ${failedUploads.size} failed uploads for retry")
                 processUploadQueue()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to retry failed uploads", e)
             }
         }
     }
@@ -104,19 +95,16 @@ class BackgroundPhotoUploadService(
      * Main upload loop that processes the queue
      */
     private suspend fun runUploadLoop() {
-        Log.d(TAG, "📋 Starting upload loop")
         
         while (isRunning.get()) {
             try {
                 processUploadQueue()
                 delay(10000) // Check queue every 10 seconds
             } catch (e: Exception) {
-                Log.e(TAG, "Error in upload loop", e)
                 delay(5000) // Wait before retrying
             }
         }
         
-        Log.d(TAG, "Upload loop stopped")
     }
     
     /**
@@ -136,7 +124,6 @@ class BackgroundPhotoUploadService(
                 return
             }
             
-            Log.d(TAG, "Processing ${eligibleUploads.size} eligible uploads (${activeUploads.size} active)")
             
             // Start uploads up to the concurrency limit
             val availableSlots = MAX_CONCURRENT_UPLOADS - activeUploads.size
@@ -148,7 +135,6 @@ class BackgroundPhotoUploadService(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error processing upload queue", e)
         }
     }
     
@@ -157,16 +143,13 @@ class BackgroundPhotoUploadService(
      */
     private suspend fun uploadPhoto(localPath: String) {
         if (!activeUploads.add(localPath)) {
-            Log.w(TAG, "Upload already in progress for: $localPath")
             return
         }
         
         try {
-            Log.d(TAG, "📤 Starting upload: $localPath")
             
             val file = File(localPath)
             if (!file.exists()) {
-                Log.w(TAG, "File no longer exists: $localPath")
                 uploadStatusStorage.updateUploadStatus(
                     localPath, 
                     UploadStatus.FAILED,
@@ -183,7 +166,6 @@ class BackgroundPhotoUploadService(
             
             result.fold(
                 onSuccess = { cloudUrl ->
-                    Log.d(TAG, "✅ Upload successful: $localPath -> $cloudUrl")
                     uploadStatusStorage.updateUploadStatus(
                         localPath,
                         UploadStatus.COMPLETED,
@@ -192,7 +174,6 @@ class BackgroundPhotoUploadService(
                     )
                 },
                 onFailure = { error ->
-                    Log.e(TAG, "❌ Upload failed: $localPath", error)
                     uploadStatusStorage.updateUploadStatus(
                         localPath,
                         UploadStatus.FAILED,
@@ -202,7 +183,6 @@ class BackgroundPhotoUploadService(
             )
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Upload exception: $localPath", e)
             uploadStatusStorage.updateUploadStatus(
                 localPath,
                 UploadStatus.FAILED,
@@ -234,7 +214,6 @@ class BackgroundPhotoUploadService(
                 completed = allUploads.count { it.status == UploadStatus.COMPLETED }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get upload stats", e)
             UploadStats(0, 0, 0, 0)
         }
     }

@@ -43,7 +43,7 @@ class GetLowStockWinesForOwnerUseCase(
             
             allLowStockWines
         } catch (e: Exception) {
-            println("❌ GetLowStockWinesForOwnerUseCase: Error getting low stock wines for owner: ${e.message}")
+            // Removed println: "❌ GetLowStockWinesForOwnerUseCase: Error getting low stock wines for owner: ${e.message}"
             e.printStackTrace()
             emptyList()
         }

@@ -54,7 +54,7 @@ class OwnerProfileViewModel(
             println("🔄 ProfileViewModel: loadIfNeeded() triggered - hasData: $hasData, timeSinceLastLoad: ${timeSinceLastLoad}ms")
             loadUserProfile()
         } else {
-            println("✅ ProfileViewModel: Using cached data - ${_uiState.value.wineries.size} wineries")
+            // Removed println: "✅ ProfileViewModel: Using cached data - ${_uiState.value.wineries.size} wineries"
         }
     }
     
@@ -72,7 +72,7 @@ class OwnerProfileViewModel(
                 
                 // Check if we have a valid session first
                 if (!authRepository.hasValidSession()) {
-                    println("❌ ProfileViewModel: No valid session found")
+                    // Removed println: "❌ ProfileViewModel: No valid session found"
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         userName = "Unknown User",
@@ -88,24 +88,24 @@ class OwnerProfileViewModel(
                 var userEmailFromSession: String? = null
                 
                 if (currentUser == null) {
-                    println("⚠️ ProfileViewModel: No Supabase UserInfo, attempting session restoration...")
+                    // Removed println: "⚠️ ProfileViewModel: No Supabase UserInfo, attempting session restoration..."
                     // Try to restore session to get user info
                     authService.restoreSession()
                         .onSuccess { user ->
                             if (user != null) {
                                 currentUser = user
-                                println("✅ ProfileViewModel: Session restored successfully")
+                                // Removed println: "✅ ProfileViewModel: Session restored successfully"
                             }
                         }
                         .onFailure { error ->
                             val errorMessage = error.message ?: ""
                             if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                                println("✅ ProfileViewModel: Valid session without UserInfo, extracting data...")
+                                // Removed println: "✅ ProfileViewModel: Valid session without UserInfo, extracting data..."
                                 val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                                 if (parts.size >= 2) {
                                     userIdFromSession = parts[0]
                                     userEmailFromSession = parts[1]
-                                    println("✅ ProfileViewModel: Extracted userId: $userIdFromSession, email: $userEmailFromSession")
+                                    // Removed println: "✅ ProfileViewModel: Extracted userId: $userIdFromSession, email: $userEmailFromSession"
                                 }
                             }
                         }
@@ -116,7 +116,7 @@ class OwnerProfileViewModel(
                 val userEmail = currentUser?.email ?: userEmailFromSession ?: ""
                 
                 if (userId.isNullOrEmpty()) {
-                    println("❌ ProfileViewModel: Unable to determine user ID")
+                    // Removed println: "❌ ProfileViewModel: Unable to determine user ID"
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         userName = "Unknown User",
@@ -161,10 +161,10 @@ class OwnerProfileViewModel(
                     )
                     
                     lastLoadTime = System.currentTimeMillis()
-                    println("✅ ProfileViewModel: Successfully loaded wineries using remote-first approach")
+                    // Removed println: "✅ ProfileViewModel: Successfully loaded wineries using remote-first approach"
                     
                 } catch (e: Exception) {
-                    println("❌ ProfileViewModel: Error loading wineries: ${e.message}")
+                    // Removed println: "❌ ProfileViewModel: Error loading wineries: ${e.message}"
                     e.printStackTrace()
                     // Still show user info even if wineries fail to load
                     _uiState.value = _uiState.value.copy(
@@ -176,7 +176,7 @@ class OwnerProfileViewModel(
                 }
                 
             } catch (e: Exception) {
-                println("❌ ProfileViewModel: Critical error in loadUserProfile: ${e.message}")
+                // Removed println: "❌ ProfileViewModel: Critical error in loadUserProfile: ${e.message}"
                 e.printStackTrace()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -225,12 +225,12 @@ class OwnerProfileViewModel(
                     bestWinery = winery.id
                 }
             } catch (e: Exception) {
-                println("⚠️ ProfileViewModel: Error checking subscribers for winery ${winery.id}: ${e.message}")
+                // Removed println: "⚠️ ProfileViewModel: Error checking subscribers for winery ${winery.id}: ${e.message}"
             }
         }
         
         val result = bestWinery ?: wineries.first().id
-        println("✅ ProfileViewModel: Selected winery for notifications: $result (subscribers: $maxSubscribers)")
+        // Removed println: "✅ ProfileViewModel: Selected winery for notifications: $result (subscribers: $maxSubscribers")
         return result
     }
     
@@ -260,23 +260,23 @@ class OwnerProfileViewModel(
                 var userIdFromSession: String? = null
                 
                 if (currentUser == null) {
-                    println("⚠️ ProfileViewModel: No currentUser for profile picture upload, attempting session restoration...")
+                    // Removed println: "⚠️ ProfileViewModel: No currentUser for profile picture upload, attempting session restoration..."
                     // Try to restore session to get user info
                     authService.restoreSession()
                         .onSuccess { user ->
                             if (user != null) {
                                 currentUser = user
-                                println("✅ ProfileViewModel: Session restored successfully for profile picture upload")
+                                // Removed println: "✅ ProfileViewModel: Session restored successfully for profile picture upload"
                             }
                         }
                         .onFailure { error ->
                             val errorMessage = error.message ?: ""
                             if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                                println("✅ ProfileViewModel: Valid session without UserInfo for profile picture upload, extracting data...")
+                                // Removed println: "✅ ProfileViewModel: Valid session without UserInfo for profile picture upload, extracting data..."
                                 val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                                 if (parts.isNotEmpty()) {
                                     userIdFromSession = parts[0]
-                                    println("✅ ProfileViewModel: Extracted userId for profile picture upload: $userIdFromSession")
+                                    // Removed println: "✅ ProfileViewModel: Extracted userId for profile picture upload: $userIdFromSession"
                                 }
                             }
                         }
@@ -293,7 +293,7 @@ class OwnerProfileViewModel(
                 
                 if (uploadResult.isSuccess) {
                     val supabaseUrl = uploadResult.getOrThrow()
-                    println("✅ ProfileViewModel: Profile picture uploaded to Supabase: $supabaseUrl")
+                    // Removed println: "✅ ProfileViewModel: Profile picture uploaded to Supabase: $supabaseUrl"
                     
                     // Update profile picture URL in database
                     val updateResult = userRepository.updateProfilePictureUrl(currentUserId, supabaseUrl)
@@ -304,7 +304,7 @@ class OwnerProfileViewModel(
                             profilePictureUrl = supabaseUrl,
                             isLoading = false
                         )
-                        println("✅ ProfileViewModel: Profile picture URL saved to database and UI updated")
+                        // Removed println: "✅ ProfileViewModel: Profile picture URL saved to database and UI updated"
                     } else {
                         throw updateResult.exceptionOrNull() ?: Exception("Failed to update profile picture URL in database")
                     }
@@ -313,7 +313,7 @@ class OwnerProfileViewModel(
                 }
                 
             } catch (e: Exception) {
-                println("❌ ProfileViewModel: Error updating profile picture: ${e.message}")
+                // Removed println: "❌ ProfileViewModel: Error updating profile picture: ${e.message}"
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = "Failed to update profile picture: ${e.message}"
@@ -342,23 +342,23 @@ class OwnerProfileViewModel(
                 var userIdFromSession: String? = null
                 
                 if (currentUser == null) {
-                    println("⚠️ ProfileViewModel: No currentUser for name update, attempting session restoration...")
+                    // Removed println: "⚠️ ProfileViewModel: No currentUser for name update, attempting session restoration..."
                     // Try to restore session to get user info
                     authService.restoreSession()
                         .onSuccess { user ->
                             if (user != null) {
                                 currentUser = user
-                                println("✅ ProfileViewModel: Session restored successfully for name update")
+                                // Removed println: "✅ ProfileViewModel: Session restored successfully for name update"
                             }
                         }
                         .onFailure { error ->
                             val errorMessage = error.message ?: ""
                             if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                                println("✅ ProfileViewModel: Valid session without UserInfo for name update, extracting data...")
+                                // Removed println: "✅ ProfileViewModel: Valid session without UserInfo for name update, extracting data..."
                                 val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                                 if (parts.isNotEmpty()) {
                                     userIdFromSession = parts[0]
-                                    println("✅ ProfileViewModel: Extracted userId for name update: $userIdFromSession")
+                                    // Removed println: "✅ ProfileViewModel: Extracted userId for name update: $userIdFromSession"
                                 }
                             }
                         }
@@ -381,13 +381,13 @@ class OwnerProfileViewModel(
                         isUpdatingName = false,
                         errorMessage = null
                     )
-                    println("✅ ProfileViewModel: User name successfully updated in database")
+                    // Removed println: "✅ ProfileViewModel: User name successfully updated in database"
                 } else {
                     throw result.exceptionOrNull() ?: Exception("Unknown error")
                 }
                 
             } catch (e: Exception) {
-                println("❌ ProfileViewModel: Error updating user name: ${e.message}")
+                // Removed println: "❌ ProfileViewModel: Error updating user name: ${e.message}"
                 _uiState.value = _uiState.value.copy(
                     isUpdatingName = false,
                     showEditNameDialog = false,
@@ -413,7 +413,7 @@ class OwnerProfileViewModel(
                         isUpdatingEmail = false,
                         successMessage = message
                     )
-                    println("✅ ProfileViewModel: Email update result: $message")
+                    // Removed println: "✅ ProfileViewModel: Email update result: $message"
 
                     // If email was updated immediately, refresh user profile
                     if (!message.contains("confirmation")) {
@@ -424,7 +424,7 @@ class OwnerProfileViewModel(
                 }
 
             } catch (e: Exception) {
-                println("❌ ProfileViewModel: Error updating email: ${e.message}")
+                // Removed println: "❌ ProfileViewModel: Error updating email: ${e.message}"
                 _uiState.value = _uiState.value.copy(
                     isUpdatingEmail = false,
                     errorMessage = e.message ?: "Failed to update email"
@@ -529,7 +529,7 @@ class OwnerProfileViewModel(
             
             null
         } catch (e: Exception) {
-            println("❌ ProfileViewModel: Error getting current owner ID: ${e.message}")
+            // Removed println: "❌ ProfileViewModel: Error getting current owner ID: ${e.message}"
             null
         }
     }
@@ -546,7 +546,7 @@ class OwnerProfileViewModel(
                 val newWinery = wineryService.getWineryByIdRemoteFirst(wineryId)
                 
                 if (newWinery != null) {
-                    println("✅ ProfileViewModel: Found new winery: ${newWinery.name}")
+                    // Removed println: "✅ ProfileViewModel: Found new winery: ${newWinery.name}"
                     
                     // Add to existing list and update UI state
                     val updatedWineries = _uiState.value.wineries.toMutableList().apply {
@@ -558,14 +558,14 @@ class OwnerProfileViewModel(
                         canAddMoreWineries = updatedWineries.size < 5
                     )
                     
-                    println("✅ ProfileViewModel: Added winery to UI state. Total: ${updatedWineries.size}")
+                    // Removed println: "✅ ProfileViewModel: Added winery to UI state. Total: ${updatedWineries.size}"
                 } else {
-                    println("❌ ProfileViewModel: Could not find winery $wineryId")
+                    // Removed println: "❌ ProfileViewModel: Could not find winery $wineryId"
                     // Fall back to full refresh if we can't find the specific winery
                     refreshProfile()
                 }
             } catch (e: Exception) {
-                println("❌ ProfileViewModel: Error adding new winery to UI: ${e.message}")
+                // Removed println: "❌ ProfileViewModel: Error adding new winery to UI: ${e.message}"
                 // Fall back to full refresh on error
                 refreshProfile()
             }

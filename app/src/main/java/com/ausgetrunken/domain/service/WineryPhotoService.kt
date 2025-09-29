@@ -2,7 +2,6 @@ package com.ausgetrunken.domain.service
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import com.ausgetrunken.data.local.dao.WineryPhotoDao
 import com.ausgetrunken.data.local.entities.WineryPhotoEntity
 import com.ausgetrunken.data.local.entities.PhotoUploadStatus
@@ -63,9 +62,7 @@ class WineryPhotoService(
         directory.apply {
             if (!exists()) {
                 val created = mkdirs()
-                Log.d(TAG, "Created photos directory: $absolutePath (success: $created)")
             }
-            Log.d(TAG, "Using photos directory: $absolutePath (persistent: true)")
         }
     }
     
@@ -78,16 +75,12 @@ class WineryPhotoService(
      * Get photos for a winery, checking local cache first, then downloading from Supabase if needed
      */
     fun getWineryPhotos(wineryId: String): Flow<List<String>> {
-        Log.d(TAG, "=== GET VINEYARD PHOTOS START ===")
-        Log.d(TAG, "QUERY: Loading photos for wineryId: $wineryId")
-        Log.d(TAG, "STORAGE: Current photos directory: ${photosDirectory.absolutePath}")
         
         // Auto-fix problematic photos in background
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 fixMisuploadedPhotos(wineryId)
             } catch (e: Exception) {
-                Log.w(TAG, "Background photo fix failed", e)
             }
         }
         
@@ -97,48 +90,37 @@ class WineryPhotoService(
                 // CRITICAL DEBUG: Compare what's actually in database vs what we're querying for
                 try {
                     val allPhotos = wineryPhotoDao.getPhotosByUploadStatus(PhotoUploadStatus.UPLOADED)
-                    Log.d(TAG, "DEBUG: Total UPLOADED photos in database: ${allPhotos.size}")
                     allPhotos.forEach { photo ->
-                        Log.d(TAG, "DEBUG: UPLOADED photo - id=${photo.id}, wineryId='${photo.wineryId}', query_wineryId='$wineryId', match=${photo.wineryId == wineryId}")
                     }
                     
                     val syncResult = wineryPhotoDao.getPhotosByWineryIdSync(wineryId)
-                    Log.d(TAG, "DEBUG: Sync query returned ${syncResult.size} photos for wineryId: $wineryId")
                 } catch (e: Exception) {
-                    Log.e(TAG, "DEBUG: Error in comparison queries", e)
                 }
                 
-                Log.d(TAG, "DATABASE: Retrieved ${photoEntities.size} photo entities for winery $wineryId")
                 photoEntities.forEach { entity ->
-                    Log.d(TAG, "DATABASE: Photo entity - id=${entity.id}, localPath=${entity.localPath}, remoteUrl=${entity.remoteUrl}, status=${entity.uploadStatus}")
                 }
                 
                 val photoUrls = mutableListOf<String>()
                 
                 // REMOTE-FIRST PHOTO LOADING WITH LOCAL CACHE
                 for (photo in photoEntities.sortedBy { it.displayOrder }) {
-                    Log.d(TAG, "Processing photo: id=${photo.id}, localPath=${photo.localPath}, remoteUrl=${photo.remoteUrl}")
                     
                     when {
                         // Priority 1: Use local file if it exists and is valid
                         photo.localPath != null -> {
                             val file = File(photo.localPath)
                             if (file.exists() && file.length() > 0) {
-                                Log.d(TAG, "✅ Using cached local photo: ${photo.localPath}")
                                 photoUrls.add(photo.localPath)
                             } else {
-                                Log.w(TAG, "⚠️ Local cache missing: ${photo.localPath}")
                                 // Local cache is missing - download from Supabase if available
                                 if (photo.remoteUrl != null && photo.remoteUrl.startsWith("https://")) {
                                     val cleanRemoteUrl = photo.remoteUrl.replace(Regex("\\s+"), "").trim()
-                                    Log.d(TAG, "📥 Downloading from Supabase: $cleanRemoteUrl")
                                     photoUrls.add(cleanRemoteUrl)
                                     // Start background download to restore local cache
                                     CoroutineScope(Dispatchers.IO).launch {
                                         downloadPhotoInBackground(photo.id, cleanRemoteUrl)
                                     }
                                 } else {
-                                    Log.e(TAG, "❌ No valid remote URL for missing local file: ${photo.id}")
                                 }
                             }
                         }
@@ -147,7 +129,6 @@ class WineryPhotoService(
                         photo.remoteUrl != null && photo.remoteUrl.startsWith("https://") -> {
                             // Clean the remote URL before adding
                             val cleanRemoteUrl = photo.remoteUrl.replace(Regex("\\s+"), "").trim()
-                            Log.d(TAG, "📥 Using remote photo: $cleanRemoteUrl")
                             photoUrls.add(cleanRemoteUrl)
                             // Start background download to create local cache
                             CoroutineScope(Dispatchers.IO).launch {
@@ -156,18 +137,15 @@ class WineryPhotoService(
                         }
                         
                         else -> {
-                            Log.w(TAG, "❌ Photo ${photo.id} has no valid local or remote path")
                         }
                     }
                 }
                 
                 // No more hardcoded URLs - using real sync now!
                 
-                Log.d(TAG, "FINAL RESULT: Returning ${photoUrls.size} photo URLs: $photoUrls")
                 photoUrls
             }
         } catch (e: Exception) {
-            Log.e(TAG, "ERROR in getWineryPhotos: Database query failed", e)
             // Return empty flow if database query fails
             return kotlinx.coroutines.flow.flowOf(emptyList())
         }
@@ -179,8 +157,6 @@ class WineryPhotoService(
      */
     suspend fun fixMisuploadedPhotos(wineryId: String): Result<Int> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== FIXING MISUPLOADED PHOTOS ===")
-            Log.d(TAG, "Checking photos for winery: $wineryId")
             
             val photos = wineryPhotoDao.getPhotosByWineryIdSync(wineryId)
             val problematicPhotos = photos.filter { photo ->
@@ -189,28 +165,21 @@ class WineryPhotoService(
                 !photo.remoteUrl.startsWith("https://") // Local path instead of URL
             }
             
-            Log.d(TAG, "Found ${problematicPhotos.size} photos with incorrect remoteUrl")
             
             var fixedCount = 0
             for (photo in problematicPhotos) {
-                Log.d(TAG, "Fixing photo: ${photo.id}")
-                Log.d(TAG, "  Current remoteUrl: ${photo.remoteUrl}")
-                Log.d(TAG, "  Local path: ${photo.localPath}")
                 
                 val localFile = File(photo.localPath ?: continue)
                 if (!localFile.exists()) {
-                    Log.w(TAG, "  Local file no longer exists: ${photo.localPath}")
                     continue
                 }
                 
                 try {
                     // Re-upload to Supabase with proper URL
-                    Log.d(TAG, "  Re-uploading to Supabase...")
                     val uploadResult = imageUploadService.uploadWineryImage(wineryId, localFile)
                     
                     uploadResult.fold(
                         onSuccess = { remoteUrl ->
-                            Log.d(TAG, "  ✅ Re-upload successful: $remoteUrl")
                             
                             // Update database with correct remote URL
                             val updatedPhoto = photo.copy(
@@ -220,10 +189,8 @@ class WineryPhotoService(
                             wineryPhotoDao.updatePhoto(updatedPhoto)
                             fixedCount++
                             
-                            Log.d(TAG, "  ✅ Database updated with correct URL")
                         },
                         onFailure = { error ->
-                            Log.e(TAG, "  ❌ Re-upload failed: ${error.message}")
                             
                             // Mark as failed so it can be retried later
                             val failedPhoto = photo.copy(
@@ -234,15 +201,12 @@ class WineryPhotoService(
                         }
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "  ❌ Exception during re-upload", e)
                 }
             }
             
-            Log.d(TAG, "=== FIXING COMPLETED: $fixedCount/${problematicPhotos.size} photos fixed ===")
             Result.success(fixedCount)
             
         } catch (e: Exception) {
-            Log.e(TAG, "=== FIXING FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -252,43 +216,31 @@ class WineryPhotoService(
      */
     suspend fun addPhoto(wineryId: String, imageUri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== STARTING PHOTO ADD PROCESS ===")
-            Log.d(TAG, "Adding photo to winery $wineryId from URI: $imageUri")
-            Log.d(TAG, "Photos directory: ${photosDirectory.absolutePath}")
-            Log.d(TAG, "Photos directory exists: ${photosDirectory.exists()}")
             
             // Check photo limit
             val currentPhotoCount = wineryPhotoDao.getPhotoCountForWinery(wineryId)
-            Log.d(TAG, "Current photo count for winery: $currentPhotoCount")
             
             if (currentPhotoCount >= MAX_PHOTOS_PER_VINEYARD) {
-                Log.w(TAG, "Photo limit reached: $currentPhotoCount >= $MAX_PHOTOS_PER_VINEYARD")
                 return@withContext Result.failure(Exception("Maximum of $MAX_PHOTOS_PER_VINEYARD photos allowed per winery"))
             }
             
             // REMOTE-FIRST: Upload to Supabase FIRST
-            Log.d(TAG, "Starting remote-first photo upload...")
             
             // Copy to temporary local storage for upload
             val localFile = copyUriToLocalStorage(imageUri, wineryId)
             if (localFile == null) {
-                Log.e(TAG, "Failed to copy URI to local storage")
                 return@withContext Result.failure(Exception("Failed to save photo locally"))
             }
-            Log.d(TAG, "Successfully copied to local file: ${localFile.absolutePath}, size: ${localFile.length()}")
             
             // Create deterministic photo ID based on content and winery
             val photoId = generatePhotoId(wineryId, localFile)
             
             // Upload to Supabase FIRST
-            Log.d(TAG, "Uploading photo to Supabase storage...")
             val uploadResult = imageUploadService.uploadWineryImage(wineryId, localFile)
             
             val remoteUrl = uploadResult.getOrElse { error ->
-                Log.e(TAG, "Failed to upload photo to Supabase: ${error.message}")
                 return@withContext Result.failure(Exception("Failed to upload photo: ${error.message}"))
             }
-            Log.d(TAG, "Successfully uploaded photo to Supabase: $remoteUrl")
             
             // CREATE PHOTO ENTITY
             val photoEntity = WineryPhotoEntity(
@@ -300,10 +252,8 @@ class WineryPhotoService(
                 uploadStatus = PhotoUploadStatus.UPLOADED,
                 fileSize = localFile.length()
             )
-            Log.d(TAG, "Created photo entity with remote URL: $photoEntity")
             
             // SAVE TO SUPABASE winery_photos TABLE
-            Log.d(TAG, "Inserting photo record into Supabase winery_photos table...")
             try {
                 val supabasePhoto = SupabaseWineryPhoto(
                     id = photoEntity.id,
@@ -318,27 +268,19 @@ class WineryPhotoService(
                 )
                 
                 postgrest.from("winery_photos").insert(supabasePhoto)
-                Log.d(TAG, "✅ Successfully inserted photo record into Supabase table")
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Failed to insert photo record into Supabase table: ${e.message}")
                 // Don't fail the entire operation - local database is still updated
-                Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
             }
             
             // SAVE TO LOCAL DATABASE
-            Log.d(TAG, "Saving photo reference to local database...")
             val saveSuccess = savePhotoToDatabase(photoEntity)
             if (!saveSuccess) {
-                Log.e(TAG, "DATABASE SAVE FAILED - photo uploaded but not saved locally")
                 return@withContext Result.failure(Exception("Photo uploaded but failed to save reference"))
             }
-            Log.d(TAG, "DATABASE SAVE SUCCESS - Photo entity saved with remote URL")
             
-            Log.d(TAG, "=== PHOTO ADD PROCESS COMPLETED SUCCESSFULLY ===")
             Result.success(localFile.absolutePath)
             
         } catch (e: Exception) {
-            Log.e(TAG, "=== PHOTO ADD PROCESS FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -353,7 +295,6 @@ class WineryPhotoService(
                 return@withContext Result.failure(Exception("Source file does not exist: $filePath"))
             }
             
-            Log.d(TAG, "Adding photo to winery $wineryId from file: $filePath")
             
             // Check photo limit
             val currentPhotoCount = wineryPhotoDao.getPhotoCountForWinery(wineryId)
@@ -362,7 +303,6 @@ class WineryPhotoService(
             }
             
             // REMOTE-FIRST: Upload to Supabase FIRST (file path version)
-            Log.d(TAG, "Starting remote-first photo upload from file path...")
             
             // If file is already in our photos directory, use it directly
             val finalFile = if (sourceFile.parent == photosDirectory.absolutePath) {
@@ -376,14 +316,11 @@ class WineryPhotoService(
             val photoId = generatePhotoId(wineryId, finalFile)
             
             // Upload to Supabase FIRST
-            Log.d(TAG, "Uploading photo file to Supabase storage...")
             val uploadResult = imageUploadService.uploadWineryImage(wineryId, finalFile)
             
             val remoteUrl = uploadResult.getOrElse { error ->
-                Log.e(TAG, "Failed to upload photo file to Supabase: ${error.message}")
                 return@withContext Result.failure(Exception("Failed to upload photo: ${error.message}"))
             }
-            Log.d(TAG, "Successfully uploaded photo file to Supabase: $remoteUrl")
             
             // CREATE PHOTO ENTITY
             val photoEntity = WineryPhotoEntity(
@@ -397,7 +334,6 @@ class WineryPhotoService(
             )
             
             // SAVE TO SUPABASE winery_photos TABLE
-            Log.d(TAG, "Inserting photo record into Supabase winery_photos table (file path)...")
             try {
                 val supabasePhoto = SupabaseWineryPhoto(
                     id = photoEntity.id,
@@ -412,25 +348,19 @@ class WineryPhotoService(
                 )
                 
                 postgrest.from("winery_photos").insert(supabasePhoto)
-                Log.d(TAG, "✅ Successfully inserted photo record into Supabase table (file path)")
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Failed to insert photo record into Supabase table (file path): ${e.message}")
                 // Don't fail the entire operation - local database is still updated
-                Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
             }
             
             // SAVE TO LOCAL DATABASE
             val saveSuccess = savePhotoToDatabase(photoEntity)
             if (!saveSuccess) {
-                Log.e(TAG, "DATABASE SAVE FAILED - photo uploaded but not saved locally")
                 return@withContext Result.failure(Exception("Photo uploaded but failed to save reference"))
             }
-            Log.d(TAG, "PHOTO SAVED TO DATABASE (FILE): Photo entity saved with remote URL")
             
             Result.success(finalFile.absolutePath)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to add photo from file", e)
             Result.failure(e)
         }
     }
@@ -440,34 +370,25 @@ class WineryPhotoService(
      */
     suspend fun removePhoto(photoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== REMOVING PHOTO START ===")
-            Log.d(TAG, "Photo path to remove: $photoPath")
             
             // Find photo entity by local path or remote URL
             val photoEntity = wineryPhotoDao.getPhotoByLocalPath(photoPath) 
                 ?: wineryPhotoDao.getPhotoByRemoteUrl(photoPath)
             
-            Log.d(TAG, "Found photo entity: ${photoEntity?.id}")
-            Log.d(TAG, "Photo entity local path: ${photoEntity?.localPath}")
-            Log.d(TAG, "Photo entity remote URL: ${photoEntity?.remoteUrl?.replace("\n", "\\n")}")
             
             if (photoEntity != null) {
                 // Delete from Supabase if it has a remote URL
                 photoEntity.remoteUrl?.let { remoteUrl ->
                     try {
-                        Log.d(TAG, "Attempting to delete from Supabase: $remoteUrl")
                         val supabaseResult = imageUploadService.deleteWineryImage(remoteUrl)
                         supabaseResult.fold(
                             onSuccess = {
-                                Log.d(TAG, "✅ Successfully deleted photo from Supabase: $remoteUrl")
                             },
                             onFailure = { error ->
-                                Log.e(TAG, "❌ Failed to delete photo from Supabase: $remoteUrl", error)
                                 // Continue with local deletion even if Supabase deletion fails
                             }
                         )
                     } catch (e: Exception) {
-                        Log.w(TAG, "Exception while deleting from Supabase: $remoteUrl", e)
                         // Continue with local deletion even if Supabase deletion fails
                     }
                 }
@@ -477,21 +398,15 @@ class WineryPhotoService(
                     val localFile = File(localPath)
                     if (localFile.exists()) {
                         val deleted = localFile.delete()
-                        Log.d(TAG, "Local file deletion result: $deleted for path: $localPath")
                     } else {
-                        Log.d(TAG, "Local file does not exist: $localPath")
                     }
                 }
                 
                 // Remove from local database
-                Log.d(TAG, "Deleting photo entity from local database: ${photoEntity.id}")
                 wineryPhotoDao.deletePhoto(photoEntity)
-                Log.d(TAG, "✅ Successfully removed photo entity from local database: ${photoEntity.id}")
                 
                 // Remove from Supabase database
                 try {
-                    Log.d(TAG, "Deleting photo entity from Supabase database: ${photoEntity.id}")
-                    Log.d(TAG, "Supabase delete query: DELETE FROM winery_photos WHERE id = '${photoEntity.id}'")
                     
                     val deleteResult = postgrest.from("winery_photos").delete {
                         filter {
@@ -499,37 +414,26 @@ class WineryPhotoService(
                         }
                     }
                     
-                    Log.d(TAG, "Supabase delete result: $deleteResult")
-                    Log.d(TAG, "✅ Successfully removed photo entity from Supabase database: ${photoEntity.id}")
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Failed to delete photo from Supabase database: ${photoEntity.id}", e)
-                    Log.e(TAG, "❌ Exception details: ${e.message}")
-                    Log.e(TAG, "❌ Exception class: ${e.javaClass.simpleName}")
                     // Continue - local deletion was successful, Supabase deletion failed but won't affect app functionality
                 }
                 
-                Log.d(TAG, "=== PHOTO REMOVAL COMPLETED SUCCESSFULLY ===")
                 Result.success(Unit)
             } else {
-                Log.w(TAG, "Photo entity not found for path: $photoPath")
                 
                 // Fallback: try to delete by path directly
                 val file = File(photoPath)
                 if (file.exists()) {
                     file.delete()
-                    Log.d(TAG, "Deleted orphaned photo file: $photoPath")
                 }
                 
                 // Try to delete from database by local path
                 wineryPhotoDao.deletePhotoByLocalPath(photoPath)
-                Log.d(TAG, "Attempted database cleanup by local path: $photoPath")
                 
-                Log.d(TAG, "=== PHOTO REMOVAL COMPLETED (FALLBACK) ===")
                 Result.success(Unit)
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "=== PHOTO REMOVAL FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -540,8 +444,6 @@ class WineryPhotoService(
      */
     suspend fun syncPhotosFromSupabase(wineryId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== SYNCING PHOTOS FROM SUPABASE ===")
-            Log.d(TAG, "Discovering photos for winery: $wineryId")
             
             // Get the winery from Supabase to check its photos array
             try {
@@ -553,18 +455,14 @@ class WineryPhotoService(
                         }
                     }.decodeList<SupabaseWineryPhoto>()
                 
-                Log.d(TAG, "Found ${photosResponse.size} photos in Supabase winery_photos table")
                 
                 val localPhotos = wineryPhotoDao.getPhotosByWineryIdSync(wineryId)
                 val localPhotoIds = localPhotos.map { it.id }.toSet()
                 
-                Log.d(TAG, "Local Room database has ${localPhotos.size} photo records")
-                Log.d(TAG, "Remote Supabase has ${photosResponse.size} photos")
                 
                 var syncedCount = 0
                 photosResponse.forEach { supabasePhoto ->
                     if (supabasePhoto.id !in localPhotoIds) {
-                        Log.d(TAG, "Syncing missing photo to Room: ${supabasePhoto.id}")
                         
                         // Convert Supabase photo to Room entity
                         val roomPhoto = WineryPhotoEntity(
@@ -582,22 +480,17 @@ class WineryPhotoService(
                         // Insert the converted photo into local Room database
                         wineryPhotoDao.insertPhoto(roomPhoto)
                         syncedCount++
-                        Log.d(TAG, "✅ Synced photo to Room database: ${supabasePhoto.id}")
                     } else {
-                        Log.d(TAG, "Photo already exists in Room: ${supabasePhoto.id}")
                     }
                 }
                 
-                Log.d(TAG, "=== SYNC COMPLETED: $syncedCount new photo records created ===")
                 Result.success(Unit)
                 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to fetch winery from Supabase: ${e.message}")
                 Result.failure(e)
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "=== SYNC FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -608,16 +501,12 @@ class WineryPhotoService(
      */
     suspend fun refreshPhotosFromSupabase(wineryId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== FORCE REFRESH FROM SUPABASE ===")
-            Log.d(TAG, "Refreshing photos for winery: $wineryId")
             
             val localPhotos = wineryPhotoDao.getPhotosByWineryIdSync(wineryId)
-            Log.d(TAG, "Found ${localPhotos.size} local photo records")
             
             var refreshCount = 0
             for (photo in localPhotos) {
                 if (photo.remoteUrl != null && photo.remoteUrl.startsWith("https://")) {
-                    Log.d(TAG, "Force downloading: ${photo.remoteUrl}")
                     
                     // Download to new file (force refresh)
                     val cachedFile = getCachedFileFromUrl(photo.remoteUrl)
@@ -629,20 +518,15 @@ class WineryPhotoService(
                         )
                         wineryPhotoDao.updatePhoto(updatedPhoto)
                         refreshCount++
-                        Log.d(TAG, "✅ Refreshed photo cache: ${photo.id}")
                     } else {
-                        Log.w(TAG, "❌ Failed to refresh photo: ${photo.id}")
                     }
                 } else {
-                    Log.w(TAG, "⚠️ Photo ${photo.id} has no valid remote URL for refresh")
                 }
             }
             
-            Log.d(TAG, "=== REFRESH COMPLETED: $refreshCount/${localPhotos.size} photos refreshed ===")
             Result.success(Unit)
             
         } catch (e: Exception) {
-            Log.e(TAG, "=== REFRESH FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -652,7 +536,6 @@ class WineryPhotoService(
      */
     suspend fun syncPhotosWithSupabase(wineryId: String, remotePhotos: List<String>) = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Syncing photos for winery $wineryId with ${remotePhotos.size} remote photos")
             
             val localPhotos = wineryPhotoDao.getPhotosByWineryIdSync(wineryId)
             val localRemoteUrls = localPhotos.mapNotNull { it.remoteUrl }.toSet()
@@ -660,7 +543,6 @@ class WineryPhotoService(
             // Download new remote photos that we don't have locally
             remotePhotos.forEachIndexed { index, remoteUrl ->
                 if (remoteUrl !in localRemoteUrls) {
-                    Log.d(TAG, "Downloading new remote photo: $remoteUrl")
                     downloadAndSavePhoto(wineryId, remoteUrl, index)
                 }
             }
@@ -680,35 +562,27 @@ class WineryPhotoService(
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to sync photos with Supabase", e)
         }
     }
 
     private suspend fun copyUriToLocalStorage(uri: Uri, wineryId: String): File? {
         return try {
-            Log.d(TAG, "=== STARTING IMAGE COMPRESSION AND COPY ===")
             
             // Create deterministic filename based on URI content hash and timestamp
             val contentHash = generateContentHash(uri)
             val fileName = "winery_${wineryId}_${contentHash}.jpg"
             val destFile = File(photosDirectory, fileName)
             
-            Log.d(TAG, "Target file: ${destFile.absolutePath}")
             
             // Compress image from URI directly to destination file
             val compressionResult = imageCompressionService.compressImage(uri, destFile)
             
             compressionResult.fold(
                 onSuccess = { finalSize ->
-                    Log.d(TAG, "✅ Image compressed successfully")
-                    Log.d(TAG, "Final compressed size: ${finalSize / 1024}KB")
-                    Log.d(TAG, "Compressed file path: ${destFile.absolutePath}")
                     destFile
                 },
                 onFailure = { error ->
-                    Log.e(TAG, "❌ Image compression failed: ${error.message}")
                     // Fallback to original copy method for compatibility
-                    Log.d(TAG, "Falling back to original copy without compression...")
                     
                     context.contentResolver.openInputStream(uri)?.use { inputStream ->
                         FileOutputStream(destFile).use { outputStream ->
@@ -717,31 +591,25 @@ class WineryPhotoService(
                     }
                     
                     if (destFile.exists() && destFile.length() > 0) {
-                        Log.d(TAG, "Fallback copy successful: ${destFile.absolutePath}")
                         destFile
                     } else {
-                        Log.e(TAG, "Fallback copy failed - file is empty or doesn't exist")
                         null
                     }
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy URI to local storage", e)
             null
         }
     }
 
     private suspend fun copyFileToLocalStorage(sourceFile: File, wineryId: String): File? {
         return try {
-            Log.d(TAG, "=== STARTING FILE COMPRESSION AND COPY ===")
             
             // Create deterministic filename based on file content hash
             val contentHash = generateFileHash(sourceFile)
             val fileName = "winery_${wineryId}_${contentHash}.jpg"
             val destFile = File(photosDirectory, fileName)
             
-            Log.d(TAG, "Source file: ${sourceFile.absolutePath} (${sourceFile.length() / 1024}KB)")
-            Log.d(TAG, "Target file: ${destFile.absolutePath}")
             
             // First copy file to destination
             sourceFile.copyTo(destFile, overwrite = true)
@@ -752,22 +620,17 @@ class WineryPhotoService(
                 
                 compressionResult.fold(
                     onSuccess = { finalSize ->
-                        Log.d(TAG, "✅ File compressed successfully")
-                        Log.d(TAG, "Final compressed size: ${finalSize / 1024}KB")
                         destFile
                     },
                     onFailure = { error ->
-                        Log.w(TAG, "⚠️ File compression failed, using uncompressed version: ${error.message}")
                         // File was already copied, so we can still use it
                         destFile
                     }
                 )
             } else {
-                Log.e(TAG, "Failed to copy file - destination is empty or doesn't exist")
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy file to local storage", e)
             null
         }
     }
@@ -778,7 +641,6 @@ class WineryPhotoService(
         val fileName = "cached_${urlHash}.jpg"
         
         val cachedFile = File(photosDirectory, fileName)
-        Log.d(TAG, "Generated cached file path for URL $url: ${cachedFile.absolutePath}")
         
         return cachedFile
     }
@@ -791,12 +653,9 @@ class WineryPhotoService(
                 if (downloadFile(remoteUrl, cachedFile)) {
                     // Update database with local path
                     updatePhotoLocalPath(photoId, cachedFile.absolutePath)
-                    Log.d(TAG, "Successfully downloaded and cached photo: $remoteUrl")
                 } else {
-                    Log.w(TAG, "Failed to download photo: $remoteUrl")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error downloading photo in background", e)
             }
         }
     }
@@ -819,10 +678,8 @@ class WineryPhotoService(
                 )
                 
                 wineryPhotoDao.insertPhoto(photoEntity)
-                Log.d(TAG, "Successfully downloaded and saved remote photo: $remoteUrl")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to download and save photo: $remoteUrl", e)
         }
     }
 
@@ -830,8 +687,6 @@ class WineryPhotoService(
         return try {
             // Clean the URL - remove any whitespace, line breaks, or carriage returns
             val cleanUrl = url.replace(Regex("\\s+"), "").trim()
-            Log.d(TAG, "Attempting to download: $cleanUrl")
-            Log.d(TAG, "Original URL length: ${url.length}, Clean URL length: ${cleanUrl.length}")
             
             val response = httpClient.get(cleanUrl) {
                 // Add Supabase headers for authentication
@@ -840,7 +695,6 @@ class WineryPhotoService(
                     append("Authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqbGJ5cHpoaXhlcXZrc3huaWxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2OTQ4MjEsImV4cCI6MjA2ODI3MDgyMX0.PrcrF1pA4KB30VlOJm2MYkOLlgf3e3SPn2Uo_eiDKfc")
                 }
             }
-            Log.d(TAG, "HTTP Response status: ${response.status}")
             
             if (response.status.value in 200..299) {
                 val bytes = response.readBytes()
@@ -849,11 +703,9 @@ class WineryPhotoService(
                 }
                 destFile.exists() && destFile.length() > 0
             } else {
-                Log.w(TAG, "HTTP error downloading file: ${response.status}")
                 false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception downloading file: $url", e)
             false
         }
     }
@@ -861,7 +713,6 @@ class WineryPhotoService(
     private suspend fun uploadPhotoInBackground(photoId: String, file: File) {
         withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Starting background upload for photo $photoId")
                 
                 // Update status to uploading
                 wineryPhotoDao.updatePhotoUploadStatus(photoId, PhotoUploadStatus.UPLOADING, null)
@@ -870,16 +721,13 @@ class WineryPhotoService(
                 
                 result.fold(
                     onSuccess = { remoteUrl ->
-                        Log.d(TAG, "Successfully uploaded photo $photoId to: $remoteUrl")
                         wineryPhotoDao.updatePhotoUploadStatus(photoId, PhotoUploadStatus.UPLOADED, remoteUrl)
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to upload photo $photoId", error)
                         wineryPhotoDao.updatePhotoUploadStatus(photoId, PhotoUploadStatus.UPLOAD_FAILED, null)
                     }
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during background upload", e)
                 wineryPhotoDao.updatePhotoUploadStatus(photoId, PhotoUploadStatus.UPLOAD_FAILED, null)
             }
         }
@@ -893,7 +741,6 @@ class WineryPhotoService(
                 wineryPhotoDao.updatePhoto(updatedPhoto)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update photo local path", e)
         }
     }
 
@@ -901,38 +748,28 @@ class WineryPhotoService(
      * Find a valid photo path, trying migration strategies if the original path is broken
      */
     private suspend fun findValidPhotoPath(photo: WineryPhotoEntity): String? {
-        Log.d(TAG, "findValidPhotoPath: Checking photo ${photo.id}")
         
         // First, check if the current local path is valid
         if (photo.localPath != null) {
             val file = File(photo.localPath)
-            Log.d(TAG, "findValidPhotoPath: Checking stored path: ${photo.localPath}")
-            Log.d(TAG, "findValidPhotoPath: File exists: ${file.exists()}, size: ${if (file.exists()) file.length() else "N/A"}")
             
             if (file.exists() && file.length() > 0) {
-                Log.d(TAG, "Photo ${photo.id} has valid local path: ${photo.localPath}")
                 return photo.localPath
             } else {
-                Log.w(TAG, "Photo ${photo.id} local path is broken: ${photo.localPath}")
             }
         } else {
-            Log.d(TAG, "findValidPhotoPath: Photo ${photo.id} has no stored local path")
         }
         
         // Try to find the file in different possible locations
         val possiblePaths = generatePossiblePaths(photo)
-        Log.d(TAG, "findValidPhotoPath: Checking ${possiblePaths.size} possible paths: $possiblePaths")
         
         for (path in possiblePaths) {
             val file = File(path)
-            Log.d(TAG, "findValidPhotoPath: Checking $path - exists: ${file.exists()}, size: ${if (file.exists()) file.length() else "N/A"}")
             if (file.exists() && file.length() > 0) {
-                Log.d(TAG, "Found migrated photo for ${photo.id} at: $path")
                 return path
             }
         }
         
-        Log.w(TAG, "Could not find valid local path for photo ${photo.id}")
         return null
     }
     
@@ -986,25 +823,16 @@ class WineryPhotoService(
     suspend fun validateAndMigratePhotos() {
         withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "=== STARTING PHOTO VALIDATION AND MIGRATION ===")
                 
                 // Force directory initialization and log the path
                 val directory = photosDirectory
-                Log.d(TAG, "STORAGE: Photos will be stored at: ${directory.absolutePath}")
-                Log.d(TAG, "STORAGE: Directory exists: ${directory.exists()}")
-                Log.d(TAG, "STORAGE: Directory is writable: ${directory.canWrite()}")
-                Log.d(TAG, "STORAGE: Directory is readable: ${directory.canRead()}")
-                Log.d(TAG, "STORAGE: Directory parent: ${directory.parentFile?.absolutePath}")
                 
                 // List actual files in the directory
                 if (directory.exists()) {
                     val files = directory.listFiles()
-                    Log.d(TAG, "STORAGE: Files in directory: ${files?.size ?: 0}")
                     files?.forEach { file ->
-                        Log.d(TAG, "STORAGE: File found: ${file.name} (size: ${file.length()}, readable: ${file.canRead()})")
                     }
                 } else {
-                    Log.w(TAG, "STORAGE: Directory does not exist!")
                 }
                 
                 // Check ALL photos in database regardless of status
@@ -1014,26 +842,17 @@ class WineryPhotoService(
                 val allSyncedPhotos = wineryPhotoDao.getPhotosByUploadStatus(PhotoUploadStatus.SYNCED)
                 
                 val totalPhotos = allLocalOnlyPhotos.size + allUploadedPhotos.size + allUploadingPhotos.size + allSyncedPhotos.size
-                Log.d(TAG, "DATABASE: Total photos in database: $totalPhotos")
-                Log.d(TAG, "DATABASE: LOCAL_ONLY photos: ${allLocalOnlyPhotos.size}")
-                Log.d(TAG, "DATABASE: UPLOADED photos: ${allUploadedPhotos.size}")
-                Log.d(TAG, "DATABASE: UPLOADING photos: ${allUploadingPhotos.size}")
-                Log.d(TAG, "DATABASE: SYNCED photos: ${allSyncedPhotos.size}")
                 
                 // Check all photos regardless of status
                 val allPhotos = allLocalOnlyPhotos + allUploadedPhotos + allUploadingPhotos + allSyncedPhotos
                 allPhotos.forEach { photo ->
-                    Log.d(TAG, "DATABASE: Photo ${photo.id} - wineryId: ${photo.wineryId}, localPath: ${photo.localPath}, status: ${photo.uploadStatus}")
                     if (photo.localPath != null) {
                         val file = File(photo.localPath)
-                        Log.d(TAG, "DATABASE: File exists: ${file.exists()}, size: ${if (file.exists()) file.length() else "N/A"}")
                     }
                 }
                 
-                Log.d(TAG, "=== PHOTO VALIDATION COMPLETED ===")
                 
             } catch (e: Exception) {
-                Log.e(TAG, "Error during photo validation and migration", e)
             }
         }
     }
@@ -1053,7 +872,6 @@ class WineryPhotoService(
                 val sizeHash = bytes.size.toString()
                 "${contentHash}_${sizeHash}".replace("-", "")
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to generate content hash, using timestamp fallback", e)
                 System.currentTimeMillis().toString()
             }
         }
@@ -1069,7 +887,6 @@ class WineryPhotoService(
             val sizeHash = bytes.size.toString()
             "${contentHash}_${sizeHash}".replace("-", "")
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to generate file hash, using filename fallback", e)
             file.name.hashCode().toString().replace("-", "")
         }
     }
@@ -1082,7 +899,6 @@ class WineryPhotoService(
             val fileHash = generateFileHash(file)
             "photo_${wineryId}_${fileHash}".take(50) // Limit length for database
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to generate photo ID, using UUID fallback", e)
             UUID.randomUUID().toString()
         }
     }
@@ -1095,7 +911,6 @@ class WineryPhotoService(
             try {
                 val oldFile = File(oldPath)
                 if (!oldFile.exists()) {
-                    Log.w(TAG, "Cannot migrate - old file doesn't exist: $oldPath")
                     return@withContext null
                 }
                 
@@ -1107,28 +922,22 @@ class WineryPhotoService(
                 oldFile.copyTo(newFile, overwrite = true)
                 
                 if (newFile.exists() && newFile.length() > 0) {
-                    Log.d(TAG, "Successfully copied file from $oldPath to ${newFile.absolutePath}")
                     
                     // Optionally delete old file (but be cautious)
                     try {
                         if (oldPath.contains("/storage/emulated/0/Pictures/")) {
                             // Don't delete from public Pictures directory - user might want to keep it
-                            Log.d(TAG, "Keeping original file in public directory: $oldPath")
                         } else {
                             oldFile.delete()
-                            Log.d(TAG, "Deleted old file: $oldPath")
                         }
                     } catch (e: Exception) {
-                        Log.w(TAG, "Could not delete old file: $oldPath", e)
                     }
                     
                     newFile.absolutePath
                 } else {
-                    Log.e(TAG, "Migration failed - new file is empty or doesn't exist")
                     null
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to migrate photo file from $oldPath", e)
                 null
             }
         }
@@ -1140,12 +949,9 @@ class WineryPhotoService(
     private suspend fun savePhotoToDatabase(photoEntity: WineryPhotoEntity): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "SAVE: Starting photo save (TRUNCATE mode): ${photoEntity.id}")
-                Log.d(TAG, "SAVE: Photo entity details: wineryId=${photoEntity.wineryId}, localPath=${photoEntity.localPath}")
                 
                 // Insert photo via Room DAO
                 wineryPhotoDao.insertPhoto(photoEntity)
-                Log.d(TAG, "SAVE: Photo inserted via Room DAO")
                 
                 // With TRUNCATE mode, data should be immediately visible
                 // Immediate verification
@@ -1153,29 +959,23 @@ class WineryPhotoService(
                 val success = savedPhoto != null
                 
                 if (success) {
-                    Log.d(TAG, "SAVE: SUCCESS - Photo verified: $savedPhoto")
                     
                     // Additional verification - count all photos for this winery
                     val allPhotos = wineryPhotoDao.getPhotosByWineryIdSync(photoEntity.wineryId)
-                    Log.d(TAG, "SAVE: Total photos for winery ${photoEntity.wineryId}: ${allPhotos.size}")
                     allPhotos.forEach { photo ->
-                        Log.d(TAG, "SAVE: Found photo: ${photo.id} with path: ${photo.localPath}, status: ${photo.uploadStatus}")
                     }
                     
                     // Also verify we can count photos properly
                     val photoCount = wineryPhotoDao.getPhotoCountForWinery(photoEntity.wineryId)
-                    Log.d(TAG, "SAVE: Photo count via DAO: $photoCount")
                     
                     // CRITICAL: Force a small delay to ensure database consistency
                     kotlinx.coroutines.delay(100)
                     
                 } else {
-                    Log.e(TAG, "SAVE: FAILED - Photo not found after insert")
                 }
                 
                 success
             } catch (e: Exception) {
-                Log.e(TAG, "SAVE: Exception during photo save", e)
                 false
             }
         }

@@ -2,7 +2,6 @@ package com.ausgetrunken.domain.service
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import com.ausgetrunken.domain.model.PhotoWithStatus
 import com.ausgetrunken.domain.model.UploadStatus
 import kotlinx.coroutines.Dispatchers
@@ -37,9 +36,7 @@ class NewWineryPhotoService(
         directory.apply {
             if (!exists()) {
                 val created = mkdirs()
-                Log.d(TAG, "Created photos directory: $absolutePath (success: $created)")
             }
-            Log.d(TAG, "Using photos directory: $absolutePath")
         }
     }
     
@@ -47,13 +44,11 @@ class NewWineryPhotoService(
      * Get photos with upload status for a winery - returns Flow for reactive UI
      */
     fun getWineryPhotosWithStatus(wineryId: String): Flow<List<PhotoWithStatus>> {
-        Log.d(TAG, "Getting photos with status for winery: $wineryId")
         
         return combine(
             photoStorage.getPhotoPaths(wineryId),
             uploadStatusStorage.getUploadStatusesFlow(emptyList()) // Will be updated dynamically
         ) { photoPaths, uploadStatuses ->
-            Log.d(TAG, "Combining ${photoPaths.size} photos with upload statuses")
             
             // Get current upload statuses for these specific paths
             val currentStatuses = mutableMapOf<String, com.ausgetrunken.domain.model.PhotoUploadInfo>()
@@ -62,7 +57,6 @@ class NewWineryPhotoService(
                     val status = uploadStatusStorage.getUploadStatus(path)
                     currentStatuses[path] = status
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to get status for $path", e)
                     currentStatuses[path] = com.ausgetrunken.domain.model.PhotoUploadInfo(
                         localPath = path,
                         status = UploadStatus.PENDING
@@ -81,7 +75,6 @@ class NewWineryPhotoService(
                 )
             }
             
-            Log.d(TAG, "Returning ${photosWithStatus.size} photos with status")
             photosWithStatus
         }
     }
@@ -98,41 +91,32 @@ class NewWineryPhotoService(
      */
     suspend fun addPhoto(wineryId: String, imageUri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== ADDING PHOTO ===")
-            Log.d(TAG, "Winery: $wineryId, URI: $imageUri")
             
             // Check photo limit
             val currentCount = photoStorage.getPhotoCount(wineryId)
             if (currentCount >= MAX_PHOTOS_PER_WINERY) {
-                Log.w(TAG, "Photo limit reached: $currentCount >= $MAX_PHOTOS_PER_WINERY")
                 return@withContext Result.failure(Exception("Maximum of $MAX_PHOTOS_PER_WINERY photos allowed per winery"))
             }
             
             // Copy to local storage immediately
             val localFile = copyUriToLocalStorage(imageUri, wineryId)
             if (localFile == null) {
-                Log.e(TAG, "Failed to copy URI to local storage")
                 return@withContext Result.failure(Exception("Failed to save photo locally"))
             }
             
-            Log.d(TAG, "Photo saved locally: ${localFile.absolutePath} (${localFile.length()} bytes)")
             
             // Add to photo storage immediately - this provides instant UI update
             photoStorage.addPhotoPath(wineryId, localFile.absolutePath)
-            Log.d(TAG, "Photo path added to storage")
             
             // Initialize upload status as pending
             uploadStatusStorage.updateUploadStatus(localFile.absolutePath, UploadStatus.PENDING)
             
             // Queue for background upload
             uploadService.queuePhotoForUpload(localFile.absolutePath)
-            Log.d(TAG, "Photo queued for background upload")
             
-            Log.d(TAG, "=== PHOTO ADD COMPLETED ===")
             Result.success(localFile.absolutePath)
             
         } catch (e: Exception) {
-            Log.e(TAG, "=== PHOTO ADD FAILED ===", e)
             Result.failure(e)
         }
     }
@@ -147,7 +131,6 @@ class NewWineryPhotoService(
                 return@withContext Result.failure(Exception("Source file does not exist: $filePath"))
             }
             
-            Log.d(TAG, "Adding photo from file: $filePath")
             
             // Check photo limit
             val currentCount = photoStorage.getPhotoCount(wineryId)
@@ -173,7 +156,6 @@ class NewWineryPhotoService(
             Result.success(finalFile.absolutePath)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to add photo from file", e)
             Result.failure(e)
         }
     }
@@ -183,7 +165,6 @@ class NewWineryPhotoService(
      */
     suspend fun removePhoto(wineryId: String, photoPath: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Removing photo: $photoPath")
             
             // Remove from photo storage
             photoStorage.removePhotoPath(wineryId, photoPath)
@@ -191,11 +172,9 @@ class NewWineryPhotoService(
             // Remove upload status
             uploadStatusStorage.removeUploadStatus(photoPath)
             
-            Log.d(TAG, "Photo removed successfully")
             Result.success(Unit)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to remove photo", e)
             Result.failure(e)
         }
     }
@@ -205,7 +184,6 @@ class NewWineryPhotoService(
      */
     suspend fun clearAllPhotos(wineryId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Clearing all photos for winery: $wineryId")
             
             // Get current paths to clean up upload statuses
             val currentPaths = photoStorage.getPhotoPathsSync(wineryId)
@@ -218,11 +196,9 @@ class NewWineryPhotoService(
                 uploadStatusStorage.removeUploadStatus(path)
             }
             
-            Log.d(TAG, "All photos cleared for winery: $wineryId")
             Result.success(Unit)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to clear all photos", e)
             Result.failure(e)
         }
     }
@@ -231,7 +207,6 @@ class NewWineryPhotoService(
      * Retry failed uploads for a winery
      */
     fun retryFailedUploads() {
-        Log.d(TAG, "Retrying failed uploads")
         uploadService.retryFailedUploads()
     }
     
@@ -257,15 +232,12 @@ class NewWineryPhotoService(
             }
             
             if (destFile.exists() && destFile.length() > 0) {
-                Log.d(TAG, "Successfully copied URI to local storage: ${destFile.absolutePath}")
                 destFile
             } else {
-                Log.e(TAG, "Failed to copy URI - file is empty or doesn't exist")
                 destFile.delete()
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy URI to local storage", e)
             null
         }
     }
@@ -281,15 +253,12 @@ class NewWineryPhotoService(
             sourceFile.copyTo(destFile, overwrite = true)
             
             if (destFile.exists() && destFile.length() > 0) {
-                Log.d(TAG, "Successfully copied file to local storage: ${destFile.absolutePath}")
                 destFile
             } else {
-                Log.e(TAG, "Failed to copy file - destination is empty or doesn't exist")
                 destFile.delete()
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy file to local storage", e)
             null
         }
     }
@@ -312,11 +281,8 @@ class NewWineryPhotoService(
      * Debug logging
      */
     suspend fun logServiceState(wineryId: String) {
-        Log.d(TAG, "=== PHOTO SERVICE STATE ===")
         photoStorage.logStorageState()
         uploadStatusStorage.logUploadStatuses()
         val stats = getUploadStats()
-        Log.d(TAG, "Upload stats: $stats")
-        Log.d(TAG, "=== END SERVICE STATE ===")
     }
 }

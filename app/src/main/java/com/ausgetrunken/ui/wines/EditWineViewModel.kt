@@ -191,7 +191,7 @@ class EditWineViewModel(
         viewModelScope.launch {
             winePhotoService.getWinePhotos(wineId).collect { photoUrls ->
                 winePhotos.value = photoUrls
-                println("✅ EditWineViewModel: Loaded ${photoUrls.size} photos for wine $wineId")
+                // Removed println: "✅ EditWineViewModel: Loaded ${photoUrls.size} photos for wine $wineId"
             }
         }
     }
@@ -199,7 +199,7 @@ class EditWineViewModel(
     fun addPhoto(imageUri: Uri) {
         val currentWineId = _uiState.value.wineId
         if (currentWineId.isEmpty()) {
-            println("❌ EditWineViewModel: No wine ID available for adding photo")
+            // Removed println: "❌ EditWineViewModel: No wine ID available for adding photo"
             return
         }
 
@@ -210,7 +210,7 @@ class EditWineViewModel(
                 winePhotoService.addPhoto(currentWineId, imageUri)
                     .onSuccess { remoteUrl ->
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ EditWineViewModel: Photo added successfully: $remoteUrl")
+                        // Removed println: "✅ EditWineViewModel: Photo added successfully: $remoteUrl"
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -219,7 +219,7 @@ class EditWineViewModel(
                                 errorMessage = exception.message ?: "Failed to add photo"
                             )
                         }
-                        println("❌ EditWineViewModel: Failed to add photo: ${exception.message}")
+                        // Removed println: "❌ EditWineViewModel: Failed to add photo: ${exception.message}"
                     }
             } catch (e: Exception) {
                 _uiState.update {
@@ -228,7 +228,7 @@ class EditWineViewModel(
                         errorMessage = e.message ?: "Failed to add photo"
                     )
                 }
-                println("❌ EditWineViewModel: Exception adding photo: ${e.message}")
+                // Removed println: "❌ EditWineViewModel: Exception adding photo: ${e.message}"
             }
         }
     }
@@ -236,7 +236,7 @@ class EditWineViewModel(
     fun removePhoto(photoUrl: String) {
         val currentWineId = _uiState.value.wineId
         if (currentWineId.isEmpty()) {
-            println("❌ EditWineViewModel: No wine ID available for removing photo")
+            // Removed println: "❌ EditWineViewModel: No wine ID available for removing photo"
             return
         }
 
@@ -247,7 +247,7 @@ class EditWineViewModel(
                 winePhotoService.removePhoto(currentWineId, photoUrl)
                     .onSuccess {
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ EditWineViewModel: Photo removed successfully: $photoUrl")
+                        // Removed println: "✅ EditWineViewModel: Photo removed successfully: $photoUrl"
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -256,7 +256,7 @@ class EditWineViewModel(
                                 errorMessage = exception.message ?: "Failed to remove photo"
                             )
                         }
-                        println("❌ EditWineViewModel: Failed to remove photo: ${exception.message}")
+                        // Removed println: "❌ EditWineViewModel: Failed to remove photo: ${exception.message}"
                     }
             } catch (e: Exception) {
                 _uiState.update {
@@ -265,7 +265,7 @@ class EditWineViewModel(
                         errorMessage = e.message ?: "Failed to remove photo"
                     )
                 }
-                println("❌ EditWineViewModel: Exception removing photo: ${e.message}")
+                // Removed println: "❌ EditWineViewModel: Exception removing photo: ${e.message}"
             }
         }
     }
@@ -276,7 +276,7 @@ class EditWineViewModel(
         val originalWine = this.originalWine
         
         if (!currentState.canSubmit || originalWine == null) {
-            println("❌ EditWineViewModel: Cannot submit - canSubmit=${currentState.canSubmit}, originalWine is null=${originalWine == null}")
+            // Removed println: "❌ EditWineViewModel: Cannot submit - canSubmit=${currentState.canSubmit}, originalWine is null=${originalWine == null}"
             return
         }
         
@@ -299,7 +299,7 @@ class EditWineViewModel(
                 println("🔄 EditWineViewModel: Updating wine: ${updatedWine.name}")
                 wineService.updateWine(updatedWine)
                     .onSuccess {
-                        println("✅ EditWineViewModel: Wine updated successfully!")
+                        // Removed println: "✅ EditWineViewModel: Wine updated successfully!"
                         _uiState.update {
                             it.copy(isLoading = false, isSuccess = true)
                         }
@@ -307,7 +307,7 @@ class EditWineViewModel(
                         _navigationEvents.trySend(NavigationEvent.NavigateBack)
                     }
                     .onFailure { exception ->
-                        println("❌ EditWineViewModel: Update failed: ${exception.message}")
+                        // Removed println: "❌ EditWineViewModel: Update failed: ${exception.message}"
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
@@ -316,7 +316,7 @@ class EditWineViewModel(
                         }
                     }
             } catch (e: Exception) {
-                println("❌ EditWineViewModel: Exception: ${e.message}")
+                // Removed println: "❌ EditWineViewModel: Exception: ${e.message}"
                 _uiState.update {
                     it.copy(
                         isLoading = false,

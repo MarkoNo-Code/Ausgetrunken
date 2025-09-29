@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.Instant
+import com.ausgetrunken.domain.logging.AusgetrunkenLogger
 
 class SupabaseAuthRepository(
     private val auth: Auth,
@@ -54,14 +55,14 @@ class SupabaseAuthRepository(
             // Check if user was created successfully
             val user = auth.currentUserOrNull()
 
-            println("🔍 SupabaseAuthRepository.signUp: Post-registration user check:")
-            println("  - User exists: ${user != null}")
+            AusgetrunkenLogger.d("Auth", "SignUp: Post-registration user check")
+            // Removed println: "  - User exists: ${user != null}"
             if (user != null) {
-                println("  - User ID: ${user.id}")
-                println("  - User email: ${user.email}")
-                println("  - emailConfirmedAt: ${user.emailConfirmedAt}")
-                println("  - aud: ${user.aud}")
-                println("  - Full user object: $user")
+                // Removed println: "  - User ID: ${user.id}"
+                // Removed println: "  - User email: ${user.email}"
+                // Removed println: "  - emailConfirmedAt: ${user.emailConfirmedAt}"
+                // Removed println: "  - aud: ${user.aud}"
+                // Removed println: "  - Full user object: $user"
             }
 
             // HYBRID APPROACH PART 1: IMMEDIATE PROFILE CREATION
@@ -112,10 +113,10 @@ class SupabaseAuthRepository(
                                             eq("id", user.id)
                                         }
                                     }
-                                println("✅ HYBRID SOLUTION: Immediate correction successful - ${existingProfile.userType} → ${userType.name}")
+                                // Removed println: "✅ HYBRID SOLUTION: Immediate correction successful - ${existingProfile.userType} → ${userType.name}"
                             }
                         } catch (correctionError: Exception) {
-                            println("❌ HYBRID SOLUTION: Immediate correction failed: ${correctionError.message}")
+                            // Removed println: "❌ HYBRID SOLUTION: Immediate correction failed: ${correctionError.message}"
                         }
                     }
                 }
@@ -125,17 +126,17 @@ class SupabaseAuthRepository(
                 // Registration successful but user needs email confirmation
                 // HYBRID APPROACH: Even without immediate user object, trigger will run
                 // Our post-login backup will catch any issues
-                println("✅ SupabaseAuthRepository.signUp: User is null - email confirmation required")
-                println("✅ HYBRID SOLUTION: Post-login backup will ensure correct user type")
+                // Removed println: "✅ SupabaseAuthRepository.signUp: User is null - email confirmation required"
+                // Removed println: "✅ HYBRID SOLUTION: Post-login backup will ensure correct user type"
                 return Result.failure(Exception("EMAIL_CONFIRMATION_REQUIRED:Registration successful! Please check your email for confirmation link before signing in."))
             }
             
             // Only create user profile if user is confirmed
             // Note: user.aud == "authenticated" doesn't mean email is confirmed, it just means they have a valid session
             // We should ONLY create profile if emailConfirmedAt is not null (actually confirmed)
-            println("🔍 SupabaseAuthRepository.signUp: Email confirmation check:")
-            println("  - emailConfirmedAt: ${user.emailConfirmedAt}")
-            println("  - aud: ${user.aud}")
+            AusgetrunkenLogger.d("Auth", "SignUp: Email confirmation check")
+            // Removed println: "  - emailConfirmedAt: ${user.emailConfirmedAt}"
+            // Removed println: "  - aud: ${user.aud}"
 
             if (user.emailConfirmedAt != null) {
                 // Check if user profile already exists before creating
@@ -150,7 +151,7 @@ class SupabaseAuthRepository(
                     
                     if (existingProfile == null) {
                         // Create user profile in database only if it doesn't exist
-                        println("📝 SupabaseAuthRepository.signUp: Creating user profile with type: ${userType.name}")
+                        AusgetrunkenLogger.d("Auth", "SignUp: Creating user profile with type: ${userType.name}")
                         postgrest.from("user_profiles").insert(
                             buildJsonObject {
                                 put("id", user.id)
@@ -159,9 +160,9 @@ class SupabaseAuthRepository(
                                 put("profile_completed", false)
                             }
                         )
-                        println("✅ SupabaseAuthRepository.signUp: User profile created successfully with type: ${userType.name}")
+                        // Removed println: "✅ SupabaseAuthRepository.signUp: User profile created successfully with type: ${userType.name}"
                     } else {
-                        println("ℹ️ SupabaseAuthRepository.signUp: User profile already exists with type: ${existingProfile.userType}")
+                        // Removed println: "ℹ️ SupabaseAuthRepository.signUp: User profile already exists with type: ${existingProfile.userType}"
 
                         // PROACTIVE FIX: Always verify and correct user type, even if profile exists
                         if (existingProfile.userType != userType.name) {
@@ -180,12 +181,12 @@ class SupabaseAuthRepository(
                                             eq("id", user.id)
                                         }
                                     }
-                                println("✅ SupabaseAuthRepository.signUp: Corrected user type from ${existingProfile.userType} to ${userType.name}")
+                                // Removed println: "✅ SupabaseAuthRepository.signUp: Corrected user type from ${existingProfile.userType} to ${userType.name}"
                             } catch (correctionError: Exception) {
-                                println("❌ SupabaseAuthRepository.signUp: Failed to correct user type: ${correctionError.message}")
+                                // Removed println: "❌ SupabaseAuthRepository.signUp: Failed to correct user type: ${correctionError.message}"
                             }
                         } else {
-                            println("✅ SupabaseAuthRepository.signUp: User type is already correct: ${existingProfile.userType}")
+                            // Removed println: "✅ SupabaseAuthRepository.signUp: User type is already correct: ${existingProfile.userType}"
                         }
                     }
                 } catch (dbError: Exception) {
@@ -207,15 +208,14 @@ class SupabaseAuthRepository(
                                         eq("id", user.id)
                                     }
                                 }
-                            println("✅ SupabaseAuthRepository.signUp: Successfully updated existing profile with correct user type: ${userType.name}")
+                            // Removed println: "✅ SupabaseAuthRepository.signUp: Successfully updated existing profile with correct user type: ${userType.name}"
                         } catch (updateError: Exception) {
-                            println("❌ SupabaseAuthRepository.signUp: Failed to update existing profile: ${updateError.message}")
+                            // Removed println: "❌ SupabaseAuthRepository.signUp: Failed to update existing profile: ${updateError.message}"
                             updateError.printStackTrace()
                         }
                     } else {
                         // ENHANCED: Always try to fix user type regardless of error type
-                        println("🔧 SupabaseAuthRepository.signUp: Profile creation failed, but attempting user type fix anyway")
-                        println("🔧 SupabaseAuthRepository.signUp: Error was: ${dbError.message}")
+                        AusgetrunkenLogger.e("Auth", "SignUp: Profile creation failed, attempting user type fix. Error: ${dbError.message}")
 
                         try {
                             // Check if profile exists and fix user type if wrong
@@ -244,25 +244,25 @@ class SupabaseAuthRepository(
                                                 eq("id", user.id)
                                             }
                                         }
-                                    println("✅ SupabaseAuthRepository.signUp: Fixed user type from ${existingProfile.userType} to ${userType.name}")
+                                    // Removed println: "✅ SupabaseAuthRepository.signUp: Fixed user type from ${existingProfile.userType} to ${userType.name}"
                                 } else {
-                                    println("ℹ️ SupabaseAuthRepository.signUp: User type already correct: ${existingProfile.userType}")
+                                    // Removed println: "ℹ️ SupabaseAuthRepository.signUp: User type already correct: ${existingProfile.userType}"
                                 }
                             }
                         } catch (fixError: Exception) {
-                            println("❌ SupabaseAuthRepository.signUp: Failed to fix user type: ${fixError.message}")
+                            // Removed println: "❌ SupabaseAuthRepository.signUp: Failed to fix user type: ${fixError.message}"
                         }
 
                         // Profile creation is critical - if it fails for other reasons, we should know about it
-                        println("❌ SupabaseAuthRepository.signUp: CRITICAL - Failed to create/check user profile: ${dbError.message}")
-                        println("❌ SupabaseAuthRepository.signUp: This may cause authentication issues later!")
+                        // Removed println: "❌ SupabaseAuthRepository.signUp: CRITICAL - Failed to create/check user profile: ${dbError.message}"
+                        // Removed println: "❌ SupabaseAuthRepository.signUp: This may cause authentication issues later!"
                         dbError.printStackTrace()
                         // Still don't fail registration completely, but make it very obvious something went wrong
                     }
                 }
             } else {
                 // User needs email confirmation, profile will be created on first login after email confirmation
-                println("📧 SupabaseAuthRepository.signUp: User email not confirmed - profile creation deferred")
+                AusgetrunkenLogger.i("Auth", "SignUp: User email not confirmed - profile creation deferred")
                 throw Exception("Registration successful! Please check your email for confirmation link. Your profile will be created when you first sign in after confirming your email.")
             }
             
@@ -310,11 +310,11 @@ class SupabaseAuthRepository(
                 
                 if (existingProfile != null) {
                     println("🔍 SupabaseAuthRepository.signIn: Profile details:")
-                    println("  - Email: ${existingProfile.email}")
-                    println("  - UserType: ${existingProfile.userType}")
-                    println("  - FlaggedForDeletion: ${existingProfile.flaggedForDeletion}")
-                    println("  - DeletionType: ${existingProfile.deletionType}")
-                    println("  - DeletionFlaggedAt: ${existingProfile.deletionFlaggedAt}")
+                    // Removed println: "  - Email: ${existingProfile.email}"
+                    // Removed println: "  - UserType: ${existingProfile.userType}"
+                    // Removed println: "  - FlaggedForDeletion: ${existingProfile.flaggedForDeletion}"
+                    // Removed println: "  - DeletionType: ${existingProfile.deletionType}"
+                    // Removed println: "  - DeletionFlaggedAt: ${existingProfile.deletionFlaggedAt}"
 
                     // HYBRID APPROACH PART 2: POST-LOGIN BACKUP CORRECTION
                     // This is the self-healing backup system for the hybrid solution
@@ -333,7 +333,7 @@ class SupabaseAuthRepository(
                                 } else null
                             }
                     } catch (e: Exception) {
-                        println("❌ HYBRID BACKUP: Metadata extraction error: ${e.message}")
+                        // Removed println: "❌ HYBRID BACKUP: Metadata extraction error: ${e.message}"
                         null
                     }
 
@@ -367,7 +367,7 @@ class SupabaseAuthRepository(
 
                     // Check if account is flagged for deletion
                     if (existingProfile.flaggedForDeletion) {
-                        println("❌ SupabaseAuthRepository.signIn: Account IS flagged for deletion - blocking login")
+                        // Removed println: "❌ SupabaseAuthRepository.signIn: Account IS flagged for deletion - blocking login"
                         
                         // Sign out immediately and block login
                         auth.signOut()
@@ -381,7 +381,7 @@ class SupabaseAuthRepository(
                         
                         throw Exception("Login not allowed. Your account has been flagged for deletion $deletionType. Please contact support if you believe this is an error.")
                     } else {
-                        println("✅ SupabaseAuthRepository.signIn: Account is NOT flagged for deletion - allowing login")
+                        // Removed println: "✅ SupabaseAuthRepository.signIn: Account is NOT flagged for deletion - allowing login"
                         
                         // SINGLE SESSION ENFORCEMENT: Update session info to invalidate other sessions
                         println("🔐 SupabaseAuthRepository: Enforcing single session - updating session ID")
@@ -413,12 +413,12 @@ class SupabaseAuthRepository(
                                 }
                             
                             if (hadPreviousSession) {
-                                println("✅ SupabaseAuthRepository: Previous session invalidated - other devices will be logged out")
+                                // Removed println: "✅ SupabaseAuthRepository: Previous session invalidated - other devices will be logged out"
                             } else {
-                                println("✅ SupabaseAuthRepository: Session info updated")
+                                // Removed println: "✅ SupabaseAuthRepository: Session info updated"
                             }
                         } catch (sessionError: Exception) {
-                            println("❌ SupabaseAuthRepository: Failed to update session info: ${sessionError.message}")
+                            // Removed println: "❌ SupabaseAuthRepository: Failed to update session info: ${sessionError.message}"
                             // Don't fail login if session update fails, but log it
                         }
                     }
@@ -451,7 +451,7 @@ class SupabaseAuthRepository(
                                 } else null
                             }
                     } catch (e: Exception) {
-                        println("❌ HYBRID DEBUG: Metadata extraction error: ${e.message}")
+                        // Removed println: "❌ HYBRID DEBUG: Metadata extraction error: ${e.message}"
                         null
                     }
 
@@ -478,7 +478,7 @@ class SupabaseAuthRepository(
                             put("last_session_activity", Instant.now().toString())
                         }
                     )
-                    println("✅ SupabaseAuthRepository: User profile created with type: $registeredUserType")
+                    // Removed println: "✅ SupabaseAuthRepository: User profile created with type: $registeredUserType"
                 }
             } catch (dbError: Exception) {
                 // If it's a flagged account error, re-throw it
@@ -486,7 +486,7 @@ class SupabaseAuthRepository(
                     throw dbError
                 }
                 // Log other errors but don't fail login
-                println("Warning: Could not create/check user profile: ${dbError.message}")
+                // Removed println: "Warning: Could not create/check user profile: ${dbError.message}"
             }
             
             // Save session tokens for persistent login with session ID
@@ -513,7 +513,7 @@ class SupabaseAuthRepository(
     
     suspend fun signOut(): Result<Unit> {
         return try {
-            println("🗑️ SupabaseAuthRepository: Starting logout process")
+            AusgetrunkenLogger.i("Auth", "Starting logout process")
             
             // Get user info before clearing everything
             val sessionInfo = tokenStorage.getSessionInfo()
@@ -522,7 +522,7 @@ class SupabaseAuthRepository(
             println("🗑️ SupabaseAuthRepository: Clearing local session first")
             auth.signOut()
             tokenStorage.clearSession()
-            println("✅ SupabaseAuthRepository: Local session cleared successfully")
+            // Removed println: "✅ SupabaseAuthRepository: Local session cleared successfully"
             
             // Then try to clear remote session (don't fail logout if this fails)
             if (sessionInfo != null) {
@@ -541,28 +541,28 @@ class SupabaseAuthRepository(
                                 eq("id", sessionInfo.userId)
                             }
                         }
-                    println("✅ SupabaseAuthRepository: Remote session cleared successfully")
+                    // Removed println: "✅ SupabaseAuthRepository: Remote session cleared successfully"
                 } catch (remoteError: Exception) {
-                    println("⚠️ SupabaseAuthRepository: Failed to clear remote session: ${remoteError.message}")
-                    println("⚠️ SupabaseAuthRepository: This is not critical - user is logged out locally")
+                    // Removed println: "⚠️ SupabaseAuthRepository: Failed to clear remote session: ${remoteError.message}"
+                    // Removed println: "⚠️ SupabaseAuthRepository: This is not critical - user is logged out locally"
                     // Don't fail logout if remote cleanup fails
                 }
             } else {
-                println("⚠️ SupabaseAuthRepository: No session info found for remote cleanup")
+                // Removed println: "⚠️ SupabaseAuthRepository: No session info found for remote cleanup"
             }
             
-            println("✅ SupabaseAuthRepository: Logout completed successfully")
+            // Removed println: "✅ SupabaseAuthRepository: Logout completed successfully"
             Result.success(Unit)
         } catch (e: Exception) {
-            println("❌ SupabaseAuthRepository: Logout failed: ${e.message}")
+            // Removed println: "❌ SupabaseAuthRepository: Logout failed: ${e.message}"
             
             // Even if logout fails, try to clear local session as fallback
             try {
                 auth.signOut()
                 tokenStorage.clearSession()
-                println("✅ SupabaseAuthRepository: Fallback local session clear completed")
+                // Removed println: "✅ SupabaseAuthRepository: Fallback local session clear completed"
             } catch (fallbackError: Exception) {
-                println("❌ SupabaseAuthRepository: Even fallback session clear failed: ${fallbackError.message}")
+                // Removed println: "❌ SupabaseAuthRepository: Even fallback session clear failed: ${fallbackError.message}"
             }
             
             Result.failure(e)
@@ -575,17 +575,17 @@ class SupabaseAuthRepository(
         
         // Step 1: Check if we have local tokens
         if (sessionInfo == null) {
-            println("❌ SupabaseAuthRepository: No local session found")
+            // Removed println: "❌ SupabaseAuthRepository: No local session found"
             return Result.success(null)
         }
         
         if (!tokenStorage.isTokenValid()) {
-            println("❌ SupabaseAuthRepository: Local tokens expired")
+            // Removed println: "❌ SupabaseAuthRepository: Local tokens expired"
             tokenStorage.clearSession()
             return Result.success(null)
         }
         
-        println("✅ SupabaseAuthRepository: Found valid local tokens for user: ${sessionInfo.userId}")
+        // Removed println: "✅ SupabaseAuthRepository: Found valid local tokens for user: ${sessionInfo.userId}"
         
         // Step 2: Check remote database for matching session ID
         try {
@@ -600,14 +600,14 @@ class SupabaseAuthRepository(
                 .decodeSingleOrNull<UserProfile>()
             
             if (userProfile == null) {
-                println("❌ SupabaseAuthRepository: User profile not found remotely")
+                // Removed println: "❌ SupabaseAuthRepository: User profile not found remotely"
                 tokenStorage.clearSession()
                 return Result.success(null)
             }
             
             // Check if account is flagged for deletion
             if (userProfile.flaggedForDeletion) {
-                println("❌ SupabaseAuthRepository: Account flagged for deletion")
+                // Removed println: "❌ SupabaseAuthRepository: Account flagged for deletion"
                 tokenStorage.clearSession()
                 return if (userProfile.deletionType == "ADMIN") {
                     Result.failure(Exception("FLAGGED_ACCOUNT:Your account has been flagged for deletion by an administrator."))
@@ -626,24 +626,24 @@ class SupabaseAuthRepository(
             when {
                 // Both sessions exist and don't match - user logged in elsewhere
                 localSessionId != null && remoteSessionId != null && localSessionId != remoteSessionId -> {
-                    println("❌ SupabaseAuthRepository: Session mismatch - logged in elsewhere")
+                    // Removed println: "❌ SupabaseAuthRepository: Session mismatch - logged in elsewhere"
                     tokenStorage.clearSession()
                     return Result.failure(Exception("SESSION_INVALIDATED:You logged in from another device."))
                 }
                 // Remote session is null but we have local session - likely after logout, allow restoration
                 localSessionId != null && remoteSessionId == null -> {
-                    println("⚠️ SupabaseAuthRepository: Remote session is null, local session exists - allowing restoration (post-logout case)")
+                    // Removed println: "⚠️ SupabaseAuthRepository: Remote session is null, local session exists - allowing restoration (post-logout case")
                     // This is normal after logout - the remote session was cleared but local tokens are still valid
                     // We'll restore the session and update the remote session ID below
                 }
                 // Both are null or match - proceed normally
                 else -> {
-                    println("✅ SupabaseAuthRepository: Session comparison passed")
+                    // Removed println: "✅ SupabaseAuthRepository: Session comparison passed"
                 }
             }
             
             // Step 4: Restore Supabase session
-            println("✅ SupabaseAuthRepository: Session IDs match, restoring Supabase session...")
+            // Removed println: "✅ SupabaseAuthRepository: Session IDs match, restoring Supabase session..."
             
             // Try to import session into Supabase
             val userSession = UserSession(
@@ -661,7 +661,7 @@ class SupabaseAuthRepository(
             
             val currentUser = auth.currentUserOrNull()
             if (currentUser != null) {
-                println("✅ SupabaseAuthRepository: Session restored successfully for: ${currentUser.email}")
+                // Removed println: "✅ SupabaseAuthRepository: Session restored successfully for: ${currentUser.email}"
                 
                 // If remote session was null, update it with our local session ID
                 if (localSessionId != null && remoteSessionId == null) {
@@ -679,24 +679,24 @@ class SupabaseAuthRepository(
                                     eq("id", sessionInfo.userId)
                                 }
                             }
-                        println("✅ SupabaseAuthRepository: Remote session ID updated successfully")
+                        // Removed println: "✅ SupabaseAuthRepository: Remote session ID updated successfully"
                     } catch (updateError: Exception) {
-                        println("⚠️ SupabaseAuthRepository: Failed to update remote session ID: ${updateError.message}")
+                        // Removed println: "⚠️ SupabaseAuthRepository: Failed to update remote session ID: ${updateError.message}"
                         // Don't fail restoration if this update fails
                     }
                 }
                 
                 return Result.success(currentUser)
             } else {
-                println("⚠️ SupabaseAuthRepository: Supabase session import failed, but tokens are valid")
-                println("⚠️ SupabaseAuthRepository: Session is valid based on token/remote comparison, will proceed without Supabase UserInfo")
+                // Removed println: "⚠️ SupabaseAuthRepository: Supabase session import failed, but tokens are valid"
+                // Removed println: "⚠️ SupabaseAuthRepository: Session is valid based on token/remote comparison, will proceed without Supabase UserInfo"
                 // The session is valid based on token comparison, but we couldn't import into Supabase
                 // We'll return a special result that indicates valid session with minimal user data
                 return Result.failure(Exception("VALID_SESSION_NO_USER:${sessionInfo.userId}:${userProfile.email}"))
             }
                 
         } catch (e: Exception) {
-            println("❌ SupabaseAuthRepository: Database check failed: ${e.message}")
+            // Removed println: "❌ SupabaseAuthRepository: Database check failed: ${e.message}"
             
             // Check if this is a JWT expired error - attempt token refresh
             if (e.message?.contains("JWT expired", ignoreCase = true) == true) {
@@ -726,7 +726,7 @@ class SupabaseAuthRepository(
                     val currentSession = auth.currentSessionOrNull()
                     
                     if (currentUser != null && currentSession != null) {
-                        println("✅ SupabaseAuthRepository: Token refresh successful!")
+                        // Removed println: "✅ SupabaseAuthRepository: Token refresh successful!"
                         
                         // Update stored tokens with new ones
                         tokenStorage.saveLoginSession(
@@ -738,13 +738,13 @@ class SupabaseAuthRepository(
                         
                         return Result.success(currentUser)
                     } else {
-                        println("❌ SupabaseAuthRepository: Token refresh failed, clearing session")
+                        // Removed println: "❌ SupabaseAuthRepository: Token refresh failed, clearing session"
                         tokenStorage.clearSession()
                         return Result.success(null)
                     }
                     
                 } catch (refreshError: Exception) {
-                    println("❌ SupabaseAuthRepository: Token refresh failed: ${refreshError.message}")
+                    // Removed println: "❌ SupabaseAuthRepository: Token refresh failed: ${refreshError.message}"
                     tokenStorage.clearSession()
                     return Result.success(null)
                 }
@@ -771,17 +771,17 @@ class SupabaseAuthRepository(
                 .decodeSingle<UserProfile>()
             
             println("🔍 SupabaseAuthRepository.getUserType: Database response:")
-            println("  - User ID: ${response.id}")
-            println("  - Email: ${response.email}")
-            println("  - User Type (raw): '${response.userType}'")
-            println("  - Flagged for deletion: ${response.flaggedForDeletion}")
+            // Removed println: "  - User ID: ${response.id}"
+            // Removed println: "  - Email: ${response.email}"
+            // Removed println: "  - User Type (raw: '${response.userType}'")
+            // Removed println: "  - Flagged for deletion: ${response.flaggedForDeletion}"
             
             val userType = UserType.valueOf(response.userType)
             println("🔍 SupabaseAuthRepository.getUserType: Final UserType: $userType")
             Result.success(userType)
         } catch (e: Exception) {
-            println("❌ SupabaseAuthRepository.getUserType: Error getting user type: ${e.message}")
-            println("❌ SupabaseAuthRepository.getUserType: Error class: ${e.javaClass.simpleName}")
+            // Removed println: "❌ SupabaseAuthRepository.getUserType: Error getting user type: ${e.message}"
+            // Removed println: "❌ SupabaseAuthRepository.getUserType: Error class: ${e.javaClass.simpleName}"
             e.printStackTrace()
             Result.failure(e)
         }
@@ -923,7 +923,7 @@ class SupabaseAuthRepository(
             val updatedUser = auth.currentUserOrNull()
 
             if (updatedUser != null) {
-                println("✅ SupabaseAuthRepository.updateUserEmail: Email update initiated successfully")
+                // Removed println: "✅ SupabaseAuthRepository.updateUserEmail: Email update initiated successfully"
                 println("📧 SupabaseAuthRepository.updateUserEmail: Current user email: ${updatedUser.email}")
                 println("📧 SupabaseAuthRepository.updateUserEmail: Email confirmed at: ${updatedUser.emailConfirmedAt}")
 
@@ -950,10 +950,10 @@ class SupabaseAuthRepository(
                                     eq("id", user.id)
                                 }
                             }
-                        println("✅ SupabaseAuthRepository.updateUserEmail: Database updated successfully")
+                        // Removed println: "✅ SupabaseAuthRepository.updateUserEmail: Database updated successfully"
                         Result.success("Email updated successfully to $cleanEmail")
                     } catch (dbError: Exception) {
-                        println("❌ SupabaseAuthRepository.updateUserEmail: Failed to update database: ${dbError.message}")
+                        // Removed println: "❌ SupabaseAuthRepository.updateUserEmail: Failed to update database: ${dbError.message}"
                         // Email was updated in auth but not in database - this is problematic
                         Result.success("Email updated in authentication but failed to update profile. Please contact support.")
                     }
@@ -963,7 +963,7 @@ class SupabaseAuthRepository(
             }
 
         } catch (e: Exception) {
-            println("❌ SupabaseAuthRepository.updateUserEmail: Error updating email: ${e.message}")
+            // Removed println: "❌ SupabaseAuthRepository.updateUserEmail: Error updating email: ${e.message}"
 
             val errorMessage = when {
                 e.message?.contains("User already registered", ignoreCase = true) == true ||
@@ -1014,10 +1014,10 @@ class SupabaseAuthRepository(
                                 eq("id", refreshedUser.id)
                             }
                         }
-                    println("✅ SupabaseAuthRepository.handleEmailChangeConfirmation: Email confirmed and database updated")
+                    // Removed println: "✅ SupabaseAuthRepository.handleEmailChangeConfirmation: Email confirmed and database updated"
                     Result.success(Unit)
                 } catch (dbError: Exception) {
-                    println("❌ SupabaseAuthRepository.handleEmailChangeConfirmation: Failed to update database: ${dbError.message}")
+                    // Removed println: "❌ SupabaseAuthRepository.handleEmailChangeConfirmation: Failed to update database: ${dbError.message}"
                     Result.failure(Exception("Email confirmed but failed to update profile"))
                 }
             } else {

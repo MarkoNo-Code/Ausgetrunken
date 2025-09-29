@@ -133,15 +133,15 @@ abstract class BaseViewModel : ViewModel() {
         val contextInfo = if (context.isNotEmpty()) " [$context]" else ""
         val viewModelName = this::class.simpleName
         
-        println("❌ $viewModelName$contextInfo")
-        println("   Error Code: ${error.errorCode}")
-        println("   Message: ${error.message}")
-        println("   User Message: ${error.userMessage}")
-        println("   Category: ${error.category}")
-        println("   Can Retry: ${error.canRetry}")
+        // Removed println: "❌ $viewModelName$contextInfo"
+        // Removed println: "   Error Code: ${error.errorCode}"
+        // Removed println: "   Message: ${error.message}"
+        // Removed println: "   User Message: ${error.userMessage}"
+        // Removed println: "   Category: ${error.category}"
+        // Removed println: "   Can Retry: ${error.canRetry}"
         
         if (error.metadata.isNotEmpty()) {
-            println("   Metadata: ${error.metadata}")
+            // Removed println: "   Metadata: ${error.metadata}"
         }
         
         error.cause?.printStackTrace()

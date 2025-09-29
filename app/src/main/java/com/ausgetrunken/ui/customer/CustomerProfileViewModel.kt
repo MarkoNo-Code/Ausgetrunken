@@ -39,24 +39,24 @@ class CustomerProfileViewModel(
                 if (userId != null) {
                     userRepository.getUserById(userId).collectLatest { userProfile ->
                         if (userProfile != null) {
-                            println("✅ CustomerProfileViewModel: Profile loaded from database: ${userProfile.email}")
+                            // Removed println: "✅ CustomerProfileViewModel: Profile loaded from database: ${userProfile.email}"
                             _uiState.value = _uiState.value.copy(
                                 userProfile = userProfile,
                                 isLoading = false
                             )
                         } else {
-                            println("⚠️ CustomerProfileViewModel: No profile found in database for user $userId")
+                            // Removed println: "⚠️ CustomerProfileViewModel: No profile found in database for user $userId"
                             // Try to sync from Supabase
                             userRepository.syncUserFromSupabase(userId)
                                 .onSuccess { syncedUser ->
-                                    println("✅ CustomerProfileViewModel: Profile synced from Supabase: ${syncedUser.email}")
+                                    // Removed println: "✅ CustomerProfileViewModel: Profile synced from Supabase: ${syncedUser.email}"
                                     _uiState.value = _uiState.value.copy(
                                         userProfile = syncedUser,
                                         isLoading = false
                                     )
                                 }
                                 .onFailure { syncError ->
-                                    println("❌ CustomerProfileViewModel: Failed to sync profile: ${syncError.message}")
+                                    // Removed println: "❌ CustomerProfileViewModel: Failed to sync profile: ${syncError.message}"
                                     _uiState.value = _uiState.value.copy(
                                         isLoading = false,
                                         errorMessage = "Could not load profile data"
@@ -69,15 +69,15 @@ class CustomerProfileViewModel(
                 // Try to restore session to get current user info (still useful for some data)
                 authService.restoreSession()
                     .onSuccess { user ->
-                        println("✅ CustomerProfileViewModel: Session restored successfully")
+                        // Removed println: "✅ CustomerProfileViewModel: Session restored successfully"
                         _uiState.value = _uiState.value.copy(user = user)
                     }
                     .onFailure { error ->
                         val errorMessage = error.message ?: ""
                         if (errorMessage.startsWith("VALID_SESSION_NO_USER:")) {
-                            println("✅ CustomerProfileViewModel: Valid session without UserInfo, profile data from database is sufficient")
+                            // Removed println: "✅ CustomerProfileViewModel: Valid session without UserInfo, profile data from database is sufficient"
                         } else {
-                            println("⚠️ CustomerProfileViewModel: Session restore failed: ${error.message}")
+                            // Removed println: "⚠️ CustomerProfileViewModel: Session restore failed: ${error.message}"
                         }
                     }
 
@@ -174,14 +174,14 @@ class CustomerProfileViewModel(
                     // Update in local database
                     userRepository.updateUserName(userId, newName)
                         .onSuccess {
-                            println("✅ CustomerProfileViewModel: Name updated successfully in database")
+                            // Removed println: "✅ CustomerProfileViewModel: Name updated successfully in database"
                             _uiState.value = _uiState.value.copy(
                                 isUpdatingName = false,
                                 userName = newName
                             )
                         }
                         .onFailure { error ->
-                            println("❌ CustomerProfileViewModel: Failed to update name: ${error.message}")
+                            // Removed println: "❌ CustomerProfileViewModel: Failed to update name: ${error.message}"
                             _uiState.value = _uiState.value.copy(
                                 isUpdatingName = false,
                                 errorMessage = "Failed to update name: ${error.message}"

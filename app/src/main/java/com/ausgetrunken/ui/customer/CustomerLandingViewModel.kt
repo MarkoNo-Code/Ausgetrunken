@@ -177,7 +177,7 @@ class CustomerLandingViewModel(
                 
                 // Check for valid session first
                 if (!authRepository.hasValidSession()) {
-                    println("❌ CustomerLandingViewModel: No valid session for subscription loading")
+                    // Removed println: "❌ CustomerLandingViewModel: No valid session for subscription loading"
                     return@launch
                 }
                 
@@ -186,12 +186,12 @@ class CustomerLandingViewModel(
                 var userIdFromSession: String? = null
                 
                 if (currentUser == null) {
-                    println("⚠️ CustomerLandingViewModel: No UserInfo available, attempting session restoration...")
+                    // Removed println: "⚠️ CustomerLandingViewModel: No UserInfo available, attempting session restoration..."
                     authRepository.restoreSession()
                         .onSuccess { user ->
                             if (user != null) {
                                 currentUser = user
-                                println("✅ CustomerLandingViewModel: Session restored successfully")
+                                // Removed println: "✅ CustomerLandingViewModel: Session restored successfully"
                             }
                         }
                         .onFailure { error ->
@@ -200,14 +200,14 @@ class CustomerLandingViewModel(
                                 val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                                 if (parts.size >= 2) {
                                     userIdFromSession = parts[0]
-                                    println("✅ CustomerLandingViewModel: Extracted userId from session: $userIdFromSession")
+                                    // Removed println: "✅ CustomerLandingViewModel: Extracted userId from session: $userIdFromSession"
                                 }
                             }
                         }
                 }
                 
                 val userId = currentUser?.id ?: userIdFromSession ?: return@launch.also {
-                    println("❌ CustomerLandingViewModel: Unable to determine user ID for subscription loading")
+                    // Removed println: "❌ CustomerLandingViewModel: Unable to determine user ID for subscription loading"
                 }
                 
                 println("👤 CustomerLandingViewModel: Loading subscriptions for user: $userId")
@@ -220,22 +220,22 @@ class CustomerLandingViewModel(
                 println("🔄 CustomerLandingViewModel: Syncing all subscription data from Supabase to local database...")
                 val syncResult = subscriptionService.syncSubscriptions(userId)
                 syncResult.onSuccess { syncedSubscriptions ->
-                    println("✅ CustomerLandingViewModel: Synced ${syncedSubscriptions.size} total subscriptions from Supabase to local database")
+                    // Removed println: "✅ CustomerLandingViewModel: Synced ${syncedSubscriptions.size} total subscriptions from Supabase to local database"
                 }.onFailure { syncError ->
-                    println("⚠️ CustomerLandingViewModel: Full sync failed: ${syncError.message}")
+                    // Removed println: "⚠️ CustomerLandingViewModel: Full sync failed: ${syncError.message}"
                 }
                 
                 // Now get real-time active subscriptions for UI display
                 val supabaseResult = subscriptionService.getUserSubscriptionsFromSupabase(userId)
                 supabaseResult.onSuccess { supabaseSubscriptions ->
-                    println("✅ CustomerLandingViewModel: Loaded ${supabaseSubscriptions.size} active subscriptions from Supabase")
+                    // Removed println: "✅ CustomerLandingViewModel: Loaded ${supabaseSubscriptions.size} active subscriptions from Supabase"
                     val subscribedIds = supabaseSubscriptions.map { it.wineryId }.toSet()
                     _uiState.value = _uiState.value.copy(
                         subscribedWineryIds = subscribedIds,
                         isSubscriptionDataLoading = false
                     )
                 }.onFailure { supabaseError ->
-                    println("⚠️ CustomerLandingViewModel: Supabase active subscription fetch failed, falling back to local: ${supabaseError.message}")
+                    // Removed println: "⚠️ CustomerLandingViewModel: Supabase active subscription fetch failed, falling back to local: ${supabaseError.message}"
                     
                     // Fallback to local data if Supabase fails
                     val localSubscriptions = subscriptionService.getUserSubscriptions(userId).firstOrNull() ?: emptyList()
@@ -247,7 +247,7 @@ class CustomerLandingViewModel(
                     )
                 }
             } catch (e: Exception) {
-                println("❌ CustomerLandingViewModel: Error loading subscriptions: ${e.message}")
+                // Removed println: "❌ CustomerLandingViewModel: Error loading subscriptions: ${e.message}"
                 e.printStackTrace()
                 // Handle error silently for subscriptions - don't crash the app
                 _uiState.value = _uiState.value.copy(isSubscriptionDataLoading = false)
@@ -262,7 +262,7 @@ class CustomerLandingViewModel(
                 
                 // Check for valid session first
                 if (!authRepository.hasValidSession()) {
-                    println("❌ CustomerLandingViewModel: No valid session for subscription toggle")
+                    // Removed println: "❌ CustomerLandingViewModel: No valid session for subscription toggle"
                     return@launch
                 }
                 
@@ -271,12 +271,12 @@ class CustomerLandingViewModel(
                 var userIdFromSession: String? = null
                 
                 if (currentUser == null) {
-                    println("⚠️ CustomerLandingViewModel: No UserInfo available, attempting session restoration...")
+                    // Removed println: "⚠️ CustomerLandingViewModel: No UserInfo available, attempting session restoration..."
                     authRepository.restoreSession()
                         .onSuccess { user ->
                             if (user != null) {
                                 currentUser = user
-                                println("✅ CustomerLandingViewModel: Session restored successfully")
+                                // Removed println: "✅ CustomerLandingViewModel: Session restored successfully"
                             }
                         }
                         .onFailure { error ->
@@ -285,14 +285,14 @@ class CustomerLandingViewModel(
                                 val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                                 if (parts.size >= 2) {
                                     userIdFromSession = parts[0]
-                                    println("✅ CustomerLandingViewModel: Extracted userId from session: $userIdFromSession")
+                                    // Removed println: "✅ CustomerLandingViewModel: Extracted userId from session: $userIdFromSession"
                                 }
                             }
                         }
                 }
                 
                 val userId = currentUser?.id ?: userIdFromSession ?: return@launch.also {
-                    println("❌ CustomerLandingViewModel: Unable to determine user ID for subscription toggle")
+                    // Removed println: "❌ CustomerLandingViewModel: Unable to determine user ID for subscription toggle"
                 }
                 println("👤 CustomerLandingViewModel: User ID: $userId")
                 
@@ -310,11 +310,11 @@ class CustomerLandingViewModel(
                 if (isCurrentlySubscribed) {
                     val result = subscriptionService.unsubscribeFromWinery(userId, wineryId)
                     result.onSuccess {
-                        println("✅ CustomerLandingViewModel: Unsubscribe successful, refreshing subscription list")
+                        // Removed println: "✅ CustomerLandingViewModel: Unsubscribe successful, refreshing subscription list"
                         // Refresh subscriptions from Supabase to ensure consistency
                         loadSubscriptions()
                     }.onFailure { error ->
-                        println("❌ CustomerLandingViewModel: Unsubscribe failed: ${error.message}")
+                        // Removed println: "❌ CustomerLandingViewModel: Unsubscribe failed: ${error.message}"
                         error.printStackTrace()
                         _uiState.value = _uiState.value.copy(
                             errorMessage = "Failed to unsubscribe: ${error.message}"
@@ -324,11 +324,11 @@ class CustomerLandingViewModel(
                     println("🔄 CustomerLandingViewModel: Attempting to subscribe to winery $wineryId")
                     val result = subscriptionService.subscribeToWinery(userId, wineryId)
                     result.onSuccess {
-                        println("✅ CustomerLandingViewModel: Subscription successful, refreshing subscription list")
+                        // Removed println: "✅ CustomerLandingViewModel: Subscription successful, refreshing subscription list"
                         // Refresh subscriptions from Supabase to ensure consistency
                         loadSubscriptions()
                     }.onFailure { error ->
-                        println("❌ CustomerLandingViewModel: Subscription failed: ${error.message}")
+                        // Removed println: "❌ CustomerLandingViewModel: Subscription failed: ${error.message}"
                         error.printStackTrace()
                         
                         // Provide user-friendly error messages

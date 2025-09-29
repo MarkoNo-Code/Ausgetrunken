@@ -168,18 +168,18 @@ class AddWineryViewModel(
                             }
 
                             photoResult.onSuccess { localPath ->
-                                println("✅ AddWineryViewModel: Photo uploaded successfully: $localPath")
+                                // Removed println: "✅ AddWineryViewModel: Photo uploaded successfully: $localPath"
                             }.onFailure { error ->
-                                println("❌ AddWineryViewModel: Photo upload failed: $error")
+                                // Removed println: "❌ AddWineryViewModel: Photo upload failed: $error"
                             }
                         } catch (e: Exception) {
-                            println("❌ AddWineryViewModel: Photo upload exception: ${e.message}")
+                            // Removed println: "❌ AddWineryViewModel: Photo upload exception: ${e.message}"
                         }
                     }
 
                     // Wines can be added later in the winery detail screen
 
-                    println("AddWineryViewModel: Winery created successfully, wineryId: $wineryId")
+                    // Removed println: "AddWineryViewModel: Winery created successfully, wineryId: $wineryId"
                     _uiState.value = _uiState.value.copy(
                         isSubmitting = false,
                         error = null

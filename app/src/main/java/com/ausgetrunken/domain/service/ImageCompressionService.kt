@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -39,9 +38,6 @@ class ImageCompressionService(
      */
     suspend fun compressImage(sourceUri: Uri, targetFile: File): Result<Long> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== STARTING IMAGE COMPRESSION ===")
-            Log.d(TAG, "Source URI: $sourceUri")
-            Log.d(TAG, "Target file: ${targetFile.absolutePath}")
             
             // Read original image
             val inputStream = context.contentResolver.openInputStream(sourceUri)
@@ -58,12 +54,9 @@ class ImageCompressionService(
             val originalHeight = options.outHeight
             val originalFileSize = getFileSizeFromUri(sourceUri)
             
-            Log.d(TAG, "Original dimensions: ${originalWidth}x${originalHeight}")
-            Log.d(TAG, "Original file size: ${originalFileSize / 1024}KB")
             
             // Calculate optimal sample size
             val sampleSize = calculateSampleSize(originalWidth, originalHeight, MAX_WIDTH, MAX_HEIGHT)
-            Log.d(TAG, "Calculated sample size: $sampleSize")
             
             // Load and decode bitmap with sample size
             val inputStream2 = context.contentResolver.openInputStream(sourceUri)
@@ -79,7 +72,6 @@ class ImageCompressionService(
                 return@withContext Result.failure(Exception("Failed to decode bitmap"))
             }
             
-            Log.d(TAG, "Decoded bitmap dimensions: ${decodedBitmap.width}x${decodedBitmap.height}")
             
             // Handle image rotation based on EXIF data
             val rotatedBitmap = handleImageRotation(sourceUri, decodedBitmap)
@@ -98,7 +90,6 @@ class ImageCompressionService(
                 rotatedBitmap
             }
             
-            Log.d(TAG, "Final bitmap dimensions: ${finalBitmap.width}x${finalBitmap.height}")
             
             // Compress and save with adaptive quality
             val finalFileSize = compressAndSaveBitmap(finalBitmap, targetFile, originalFileSize)
@@ -106,15 +97,10 @@ class ImageCompressionService(
             // Clean up bitmap
             finalBitmap.recycle()
             
-            Log.d(TAG, "Compression completed successfully")
-            Log.d(TAG, "Final file size: ${finalFileSize / 1024}KB")
-            Log.d(TAG, "Compression ratio: ${(originalFileSize.toFloat() / finalFileSize * 100).toInt()}% of original")
-            Log.d(TAG, "=== IMAGE COMPRESSION COMPLETED ===")
             
             Result.success(finalFileSize)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Image compression failed", e)
             Result.failure(e)
         }
     }
@@ -124,20 +110,17 @@ class ImageCompressionService(
      */
     suspend fun compressImageFile(imageFile: File): Result<Long> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Compressing existing file: ${imageFile.absolutePath}")
             
             if (!imageFile.exists()) {
                 return@withContext Result.failure(Exception("Image file does not exist"))
             }
             
             val originalSize = imageFile.length()
-            Log.d(TAG, "Original file size: ${originalSize / 1024}KB")
             
             // Load bitmap from file
             val originalBitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
                 ?: return@withContext Result.failure(Exception("Failed to decode image file"))
             
-            Log.d(TAG, "Original dimensions: ${originalBitmap.width}x${originalBitmap.height}")
             
             // Resize if needed
             val resizedBitmap = if (originalBitmap.width > MAX_WIDTH || originalBitmap.height > MAX_HEIGHT) {
@@ -148,17 +131,14 @@ class ImageCompressionService(
                 originalBitmap
             }
             
-            Log.d(TAG, "Resized dimensions: ${resizedBitmap.width}x${resizedBitmap.height}")
             
             // Compress and save
             val finalSize = compressAndSaveBitmap(resizedBitmap, imageFile, originalSize)
             resizedBitmap.recycle()
             
-            Log.d(TAG, "File compression completed. New size: ${finalSize / 1024}KB")
             Result.success(finalSize)
             
         } catch (e: Exception) {
-            Log.e(TAG, "File compression failed", e)
             Result.failure(e)
         }
     }
@@ -197,7 +177,6 @@ class ImageCompressionService(
         val scaledWidth = (width * scale).toInt()
         val scaledHeight = (height * scale).toInt()
         
-        Log.d(TAG, "Scaling from ${width}x${height} to ${scaledWidth}x${scaledHeight} (scale: $scale)")
         
         return Bitmap.createScaledBitmap(original, scaledWidth, scaledHeight, true)
     }
@@ -222,7 +201,6 @@ class ImageCompressionService(
                 }
                 
                 if (rotationDegrees != 0f) {
-                    Log.d(TAG, "Rotating image by $rotationDegrees degrees")
                     val matrix = Matrix().apply {
                         postRotate(rotationDegrees)
                     }
@@ -231,7 +209,6 @@ class ImageCompressionService(
             }
             bitmap
         } catch (e: Exception) {
-            Log.w(TAG, "Could not read/apply EXIF rotation", e)
             bitmap
         }
     }
@@ -249,7 +226,6 @@ class ImageCompressionService(
                 outputStream.close()
                 
                 val compressedSize = compressedBytes.size.toLong()
-                Log.d(TAG, "Compression attempt ${attempts + 1}: Quality=$quality, Size=${compressedSize / 1024}KB")
                 
                 // Check if size is acceptable or if we can't compress further
                 if (compressedSize <= MAX_FILE_SIZE_KB * 1024 || quality <= MIN_JPEG_QUALITY) {
@@ -258,7 +234,6 @@ class ImageCompressionService(
                         fileOut.write(compressedBytes)
                     }
                     
-                    Log.d(TAG, "Final compression: Quality=$quality, Size=${compressedSize / 1024}KB")
                     return compressedSize
                 }
                 
@@ -267,7 +242,6 @@ class ImageCompressionService(
                 attempts++
                 
             } catch (e: IOException) {
-                Log.e(TAG, "Error during compression attempt ${attempts + 1}", e)
                 break
             }
         }
@@ -283,11 +257,9 @@ class ImageCompressionService(
                 fileOut.write(bytes)
             }
             
-            Log.w(TAG, "Using fallback compression with quality $MIN_JPEG_QUALITY")
             return bytes.size.toLong()
             
         } catch (e: IOException) {
-            Log.e(TAG, "Fallback compression failed", e)
             throw e
         }
     }
@@ -298,7 +270,6 @@ class ImageCompressionService(
                 inputStream.available().toLong()
             } ?: 0L
         } catch (e: Exception) {
-            Log.w(TAG, "Could not determine file size from URI", e)
             0L
         }
     }

@@ -45,12 +45,12 @@ class SubscriptionsViewModel(
                 var userIdFromSession: String? = null
                 
                 if (currentUser == null) {
-                    println("⚠️ SubscriptionsViewModel: No UserInfo available, attempting session restoration...")
+                    // Removed println: "⚠️ SubscriptionsViewModel: No UserInfo available, attempting session restoration..."
                     authService.restoreSession()
                         .onSuccess { user ->
                             if (user != null) {
                                 currentUser = user
-                                println("✅ SubscriptionsViewModel: Session restored successfully")
+                                // Removed println: "✅ SubscriptionsViewModel: Session restored successfully"
                             }
                         }
                         .onFailure { error ->
@@ -59,7 +59,7 @@ class SubscriptionsViewModel(
                                 val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                                 if (parts.size >= 2) {
                                     userIdFromSession = parts[0]
-                                    println("✅ SubscriptionsViewModel: Extracted userId from session: $userIdFromSession")
+                                    // Removed println: "✅ SubscriptionsViewModel: Extracted userId from session: $userIdFromSession"
                                 }
                             }
                         }
@@ -98,21 +98,21 @@ class SubscriptionsViewModel(
                             )
                         }
                         
-                        println("✅ SubscriptionsViewModel: Real-time subscriptions loaded successfully")
+                        // Removed println: "✅ SubscriptionsViewModel: Real-time subscriptions loaded successfully"
                         _uiState.value = _uiState.value.copy(
                             subscriptions = subscriptionsWithWineries,
                             isLoading = false
                         )
                     }
                     .onFailure { error ->
-                        println("❌ SubscriptionsViewModel: Failed to load real-time subscriptions: ${error.message}")
+                        // Removed println: "❌ SubscriptionsViewModel: Failed to load real-time subscriptions: ${error.message}"
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             errorMessage = "Failed to load subscriptions: ${error.message}"
                         )
                     }
             } catch (e: Exception) {
-                println("❌ SubscriptionsViewModel: Exception during real-time subscription loading: ${e.message}")
+                // Removed println: "❌ SubscriptionsViewModel: Exception during real-time subscription loading: ${e.message}"
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = "Failed to load subscriptions: ${e.message}"
@@ -166,18 +166,18 @@ class SubscriptionsViewModel(
 
                 subscriptionService.unsubscribeFromWinery(userId, wineryId)
                     .onSuccess {
-                        println("✅ SubscriptionsViewModel: Successfully unsubscribed from winery: $wineryId")
+                        // Removed println: "✅ SubscriptionsViewModel: Successfully unsubscribed from winery: $wineryId"
                         // Reload subscriptions immediately to reflect changes across devices
                         loadSubscriptions()
                     }
                     .onFailure { error ->
-                        println("❌ SubscriptionsViewModel: Failed to unsubscribe: ${error.message}")
+                        // Removed println: "❌ SubscriptionsViewModel: Failed to unsubscribe: ${error.message}"
                         _uiState.value = _uiState.value.copy(
                             errorMessage = "Failed to unsubscribe: ${error.message}"
                         )
                     }
             } catch (e: Exception) {
-                println("❌ SubscriptionsViewModel: Exception during unsubscribe: ${e.message}")
+                // Removed println: "❌ SubscriptionsViewModel: Exception during unsubscribe: ${e.message}"
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "Failed to unsubscribe: ${e.message}"
                 )
@@ -242,17 +242,17 @@ class SubscriptionsViewModel(
                     specialOffer,
                     general
                 ).onSuccess {
-                    println("✅ SubscriptionsViewModel: Successfully updated notification preferences for winery: $wineryId")
+                    // Removed println: "✅ SubscriptionsViewModel: Successfully updated notification preferences for winery: $wineryId"
                     // Reload subscriptions to reflect changes across devices
                     loadSubscriptions()
                 }.onFailure { error ->
-                    println("❌ SubscriptionsViewModel: Failed to update notification preferences: ${error.message}")
+                    // Removed println: "❌ SubscriptionsViewModel: Failed to update notification preferences: ${error.message}"
                     _uiState.value = _uiState.value.copy(
                         errorMessage = "Failed to update preferences: ${error.message}"
                     )
                 }
             } catch (e: Exception) {
-                println("❌ SubscriptionsViewModel: Exception during notification preferences update: ${e.message}")
+                // Removed println: "❌ SubscriptionsViewModel: Exception during notification preferences update: ${e.message}"
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "Failed to update preferences: ${e.message}"
                 )

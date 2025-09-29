@@ -55,8 +55,8 @@ class WineDetailViewModel(
         viewModelScope.launch {
             winePhotoService.getWinePhotos(wineId).collect { photoUrls ->
                 winePhotos.value = photoUrls
-                println("✅ WineDetailViewModel: Loaded ${photoUrls.size} photos for wine $wineId")
-                println("✅ WineDetailViewModel: Photos: $photoUrls")
+                // Removed println: "✅ WineDetailViewModel: Loaded ${photoUrls.size} photos for wine $wineId"
+                // Removed println: "✅ WineDetailViewModel: Photos: $photoUrls"
             }
         }
     }

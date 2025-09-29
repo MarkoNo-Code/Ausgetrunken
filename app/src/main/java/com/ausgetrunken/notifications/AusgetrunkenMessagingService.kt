@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.ausgetrunken.MainActivity
 import com.ausgetrunken.R
@@ -37,26 +36,23 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         println("🔔 FCM: Message received from: ${remoteMessage.from}")
-        Log.d(TAG, "From: ${remoteMessage.from}")
         
         println("🔔 FCM: Full message details:")
-        println("   - Message ID: ${remoteMessage.messageId}")
-        println("   - Data payload: ${remoteMessage.data}")
-        println("   - Notification: ${remoteMessage.notification}")
+        // Removed println: "   - Message ID: ${remoteMessage.messageId}"
+        // Removed println: "   - Data payload: ${remoteMessage.data}"
+        // Removed println: "   - Notification: ${remoteMessage.notification}"
 
         // Handle data payload
         if (remoteMessage.data.isNotEmpty()) {
             println("🔔 FCM: Processing data payload: ${remoteMessage.data}")
-            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
             handleDataMessage(remoteMessage.data)
         }
 
         // Handle notification payload
         remoteMessage.notification?.let {
             println("🔔 FCM: Processing notification payload:")
-            println("   - Title: ${it.title}")
-            println("   - Body: ${it.body}")
-            Log.d(TAG, "Message Notification Body: ${it.body}")
+            // Removed println: "   - Title: ${it.title}"
+            // Removed println: "   - Body: ${it.body}"
             showNotification(it.title, it.body, remoteMessage.data)
         }
         
@@ -70,7 +66,6 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
     }
 
     override fun onNewToken(token: String) {
-        Log.d(TAG, "Refreshed token: $token")
         
         // Send token to server
         serviceScope.launch {
@@ -81,12 +76,9 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
                 
                 if (userId != null) {
                     notificationRepository.updateUserFcmToken(userId, token)
-                    Log.d(TAG, "FCM token updated for user: $userId")
                 } else {
-                    Log.w(TAG, "No user ID found, cannot update FCM token")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update FCM token", e)
             }
         }
     }
@@ -96,34 +88,29 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
         val wineryId = data["wineryId"]
         val wineId = data["wineId"]
         
-        Log.d(TAG, "Notification type: $notificationType, Winery: $wineryId, Wine: $wineId")
         
         // You can add custom logic here based on notification type
         when (notificationType) {
             "LOW_STOCK" -> {
                 // Handle low stock notification
-                Log.d(TAG, "Handling low stock notification")
             }
             "CRITICAL_STOCK" -> {
                 // Handle critical stock notification
-                Log.d(TAG, "Handling critical stock notification")
             }
             "NEW_WINE" -> {
                 // Handle new wine notification
-                Log.d(TAG, "Handling new wine notification")
             }
             "GENERAL" -> {
                 // Handle general notification
-                Log.d(TAG, "Handling general notification")
             }
         }
     }
 
     private fun showNotification(title: String?, body: String?, data: Map<String, String>) {
         println("🔔 FCM: showNotification called")
-        println("   - Title: $title")
-        println("   - Body: $body")
-        println("   - Data: $data")
+        // Removed println: "   - Title: $title"
+        // Removed println: "   - Body: $body"
+        // Removed println: "   - Data: $data"
         
         try {
             val intent = Intent(this, MainActivity::class.java).apply {
@@ -158,14 +145,13 @@ class AusgetrunkenMessagingService : FirebaseMessagingService(), KoinComponent {
             if (notificationManager.areNotificationsEnabled()) {
                 println("🔔 FCM: Notifications are enabled, showing notification")
                 notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
-                println("✅ FCM: Notification displayed successfully")
+                // Removed println: "✅ FCM: Notification displayed successfully"
             } else {
-                println("❌ FCM: Notifications are disabled for this app")
+                // Removed println: "❌ FCM: Notifications are disabled for this app"
             }
             
         } catch (e: Exception) {
-            println("❌ FCM: Error showing notification: ${e.message}")
-            Log.e(TAG, "Failed to show notification", e)
+            // Removed println: "❌ FCM: Error showing notification: ${e.message}"
         }
     }
 

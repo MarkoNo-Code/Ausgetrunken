@@ -87,15 +87,15 @@ class WineRepository(
                         }
                     }
                 
-                println("✅ WineRepository: Supabase update successful for wine ${wine.id}")
+                // Removed println: "✅ WineRepository: Supabase update successful for wine ${wine.id}"
                 
                 // LOCAL SECOND: Only update local database AFTER successful remote update
                 wineDao.updateWine(wine)
-                println("✅ WineRepository: Local database updated for wine ${wine.id}")
+                // Removed println: "✅ WineRepository: Local database updated for wine ${wine.id}"
                 
                 Result.success(Unit)
             } catch (e: Exception) {
-                println("❌ WineRepository: Wine update failed: ${e.message}")
+                // Removed println: "❌ WineRepository: Wine update failed: ${e.message}"
                 Result.failure(e)
             }
         }
@@ -159,7 +159,7 @@ class WineRepository(
             
             wines
         } catch (e: Exception) {
-            println("❌ WineRepository: Failed to fetch wines for winery $wineryId: ${e.message}")
+            // Removed println: "❌ WineRepository: Failed to fetch wines for winery $wineryId: ${e.message}"
             e.printStackTrace()
             emptyList()
         }
@@ -196,14 +196,14 @@ class WineRepository(
                         wineDao.insertWine(entity)
                         println("🍷 WineRepository: Synced wine: ${entity.name} (${entity.id}) for winery ${entity.wineryId}")
                     } catch (e: Exception) {
-                        println("⚠️ WineRepository: Failed to insert wine ${entity.name}: ${e.message}")
+                        // Removed println: "⚠️ WineRepository: Failed to insert wine ${entity.name}: ${e.message}"
                         // Continue with other wines even if one fails
                     }
                 }
-                println("✅ WineRepository: Wine sync completed successfully")
+                // Removed println: "✅ WineRepository: Wine sync completed successfully"
                 Result.success(Unit)
             } catch (e: Exception) {
-                println("❌ WineRepository: Wine sync failed: ${e.message}")
+                // Removed println: "❌ WineRepository: Wine sync failed: ${e.message}"
                 e.printStackTrace()
                 Result.failure(e)
             }

@@ -1,7 +1,6 @@
 package com.ausgetrunken.domain.service
 
 import android.content.Context
-import android.util.Log
 import com.ausgetrunken.data.local.dao.WinePhotoDao
 import com.ausgetrunken.data.local.entities.PhotoUploadStatus
 import com.ausgetrunken.domain.model.UploadStatus
@@ -42,7 +41,6 @@ class WinePhotoUploadService(
     fun queueWinePhotoForUpload(photoPath: String, wineId: String) {
         uploadScope.launch {
             try {
-                Log.d(TAG, "Queuing wine photo for upload: $photoPath (wine: $wineId)")
 
                 // Update status to pending
                 uploadStatusStorage.updateUploadStatus(photoPath, UploadStatus.PENDING)
@@ -51,7 +49,6 @@ class WinePhotoUploadService(
                 uploadWinePhoto(photoPath, wineId)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to queue wine photo for upload: $photoPath", e)
                 uploadStatusStorage.updateUploadStatus(photoPath, UploadStatus.FAILED)
             }
         }
@@ -62,19 +59,16 @@ class WinePhotoUploadService(
      */
     private suspend fun uploadWinePhoto(photoPath: String, wineId: String) {
         if (activeUploads.contains(photoPath)) {
-            Log.d(TAG, "Upload already in progress for: $photoPath")
             return
         }
 
         activeUploads.add(photoPath)
 
         try {
-            Log.d(TAG, "Starting wine photo upload: $photoPath")
             uploadStatusStorage.updateUploadStatus(photoPath, UploadStatus.UPLOADING)
 
             val file = File(photoPath)
             if (!file.exists()) {
-                Log.e(TAG, "Wine photo file not found: $photoPath")
                 uploadStatusStorage.updateUploadStatus(photoPath, UploadStatus.FAILED)
                 return
             }
@@ -84,13 +78,11 @@ class WinePhotoUploadService(
 
             while (attempt < MAX_RETRY_ATTEMPTS && !uploadSuccess) {
                 attempt++
-                Log.d(TAG, "Upload attempt $attempt/$MAX_RETRY_ATTEMPTS for: $photoPath")
 
                 try {
                     val result = unifiedPhotoUploadService.uploadWinePhoto(file, wineId)
 
                     result.onSuccess { remoteUrl ->
-                        Log.d(TAG, "Wine photo upload successful: $photoPath -> $remoteUrl")
                         uploadStatusStorage.updateUploadStatus(
                             photoPath,
                             UploadStatus.COMPLETED,
@@ -99,7 +91,6 @@ class WinePhotoUploadService(
 
                         // Update Supabase database with remote URL
                         try {
-                            Log.d(TAG, "Updating wine photo in Supabase database with remote URL...")
 
                             // Find the photo record by local path and update it
                             // Note: This is a simple approach - could be optimized with a direct update query
@@ -111,17 +102,13 @@ class WinePhotoUploadService(
 
                             // Update by matching local_path (this will update the correct record)
                             // For now, just log the update - we can implement this later
-                            Log.d(TAG, "Would update wine photo with remoteUrl: $remoteUrl for localPath: $photoPath")
 
-                            Log.d(TAG, "✅ Successfully updated wine photo in Supabase database with remote URL")
                         } catch (e: Exception) {
-                            Log.e(TAG, "❌ Failed to update wine photo in Supabase database: ${e.message}")
                             // Don't fail the upload - the photo is still uploaded to storage
                         }
 
                         uploadSuccess = true
                     }.onFailure { error ->
-                        Log.w(TAG, "Wine photo upload failed (attempt $attempt): ${error.message}")
                         if (attempt >= MAX_RETRY_ATTEMPTS) {
                             uploadStatusStorage.updateUploadStatus(photoPath, UploadStatus.FAILED)
                         } else {
@@ -130,7 +117,6 @@ class WinePhotoUploadService(
                     }
 
                 } catch (e: Exception) {
-                    Log.e(TAG, "Exception during wine photo upload (attempt $attempt)", e)
                     if (attempt >= MAX_RETRY_ATTEMPTS) {
                         uploadStatusStorage.updateUploadStatus(photoPath, UploadStatus.FAILED)
                     } else {
@@ -149,7 +135,6 @@ class WinePhotoUploadService(
      */
     fun stopUploadService() {
         if (isRunning.compareAndSet(true, false)) {
-            Log.d(TAG, "Stopping wine photo upload service")
             uploadScope.cancel()
             activeUploads.clear()
         }

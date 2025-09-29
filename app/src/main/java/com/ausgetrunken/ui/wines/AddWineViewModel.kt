@@ -137,7 +137,7 @@ class AddWineViewModel(
                         winePhotos.value = currentPhotos
 
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ AddWineViewModel: Photo added successfully: $remoteUrl")
+                        // Removed println: "✅ AddWineViewModel: Photo added successfully: $remoteUrl"
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -146,7 +146,7 @@ class AddWineViewModel(
                                 errorMessage = exception.message ?: "Failed to add photo"
                             )
                         }
-                        println("❌ AddWineViewModel: Failed to add photo: ${exception.message}")
+                        // Removed println: "❌ AddWineViewModel: Failed to add photo: ${exception.message}"
                     }
             } catch (e: Exception) {
                 _uiState.update {
@@ -155,7 +155,7 @@ class AddWineViewModel(
                         errorMessage = e.message ?: "Failed to add photo"
                     )
                 }
-                println("❌ AddWineViewModel: Exception adding photo: ${e.message}")
+                // Removed println: "❌ AddWineViewModel: Exception adding photo: ${e.message}"
             }
         }
     }
@@ -174,7 +174,7 @@ class AddWineViewModel(
                         winePhotos.value = currentPhotos
 
                         _uiState.update { it.copy(isLoading = false) }
-                        println("✅ AddWineViewModel: Photo removed successfully: $photoUrl")
+                        // Removed println: "✅ AddWineViewModel: Photo removed successfully: $photoUrl"
                     }
                     .onFailure { exception ->
                         _uiState.update {
@@ -183,7 +183,7 @@ class AddWineViewModel(
                                 errorMessage = exception.message ?: "Failed to remove photo"
                             )
                         }
-                        println("❌ AddWineViewModel: Failed to remove photo: ${exception.message}")
+                        // Removed println: "❌ AddWineViewModel: Failed to remove photo: ${exception.message}"
                     }
             } catch (e: Exception) {
                 _uiState.update {
@@ -192,7 +192,7 @@ class AddWineViewModel(
                         errorMessage = e.message ?: "Failed to remove photo"
                     )
                 }
-                println("❌ AddWineViewModel: Exception removing photo: ${e.message}")
+                // Removed println: "❌ AddWineViewModel: Exception removing photo: ${e.message}"
             }
         }
     }
@@ -221,12 +221,12 @@ class AddWineViewModel(
             var userIdFromSession: String? = null
             
             if (currentUser == null) {
-                println("⚠️ AddWineViewModel: No UserInfo available, attempting session restoration...")
+                // Removed println: "⚠️ AddWineViewModel: No UserInfo available, attempting session restoration..."
                 authService.restoreSession()
                     .onSuccess { user ->
                         if (user != null) {
                             currentUser = user
-                            println("✅ AddWineViewModel: Session restored successfully")
+                            // Removed println: "✅ AddWineViewModel: Session restored successfully"
                         }
                     }
                     .onFailure { error ->
@@ -235,7 +235,7 @@ class AddWineViewModel(
                             val parts = errorMessage.removePrefix("VALID_SESSION_NO_USER:").split(":")
                             if (parts.size >= 2) {
                                 userIdFromSession = parts[0]
-                                println("✅ AddWineViewModel: Extracted userId from session: $userIdFromSession")
+                                // Removed println: "✅ AddWineViewModel: Extracted userId from session: $userIdFromSession"
                             }
                         }
                     }

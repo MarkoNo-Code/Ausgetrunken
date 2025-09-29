@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.ausgetrunken.domain.service.NotificationService
@@ -32,7 +31,6 @@ class FCMTokenManager(
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
                     // Permission already granted
-                    Log.d(TAG, "Notification permission already granted")
                     initializeFCMToken()
                 }
                 else -> {
@@ -55,10 +53,8 @@ class FCMTokenManager(
             NOTIFICATION_PERMISSION_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && 
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "Notification permission granted")
                     initializeFCMToken()
                 } else {
-                    Log.w(TAG, "Notification permission denied")
                 }
             }
         }
@@ -68,7 +64,6 @@ class FCMTokenManager(
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val token = FirebaseMessaging.getInstance().token.await()
-                Log.d(TAG, "FCM token retrieved: $token")
                 
                 // Get current user ID from SharedPreferences
                 val sharedPrefs = context.getSharedPreferences("ausgetrunken_prefs", Context.MODE_PRIVATE)
@@ -76,16 +71,13 @@ class FCMTokenManager(
                 
                 if (userId != null) {
                     notificationService.updateUserFcmToken(userId, token)
-                    Log.d(TAG, "FCM token updated for user: $userId")
                 } else {
-                    Log.w(TAG, "No user ID found, storing token for later update")
                     // Store token temporarily until user logs in
                     sharedPrefs.edit()
                         .putString("pending_fcm_token", token)
                         .apply()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to retrieve FCM token", e)
             }
         }
     }
@@ -121,11 +113,9 @@ class FCMTokenManager(
                     .putString("current_user_id", userId)
                     .apply()
                 
-                println("✅ FCMTokenManager: FCM token updated successfully for user: $userId")
-                Log.d(TAG, "FCM token updated for user: $userId, token: ${token.take(20)}...")
+                // Removed println: "✅ FCMTokenManager: FCM token updated successfully for user: $userId"
             } catch (e: Exception) {
-                println("❌ FCMTokenManager: Failed to update FCM token for user: $userId - Error: ${e.message}")
-                Log.e(TAG, "Failed to update FCM token for user: $userId", e)
+                // Removed println: "❌ FCMTokenManager: Failed to update FCM token for user: $userId - Error: ${e.message}"
                 e.printStackTrace()
             }
         }
@@ -142,9 +132,9 @@ class FCMTokenManager(
                 if (currentUserId != null) {
                     // Clear the FCM token from the user's profile to prevent cross-user notifications
                     notificationService.clearUserFcmToken(currentUserId)
-                    println("✅ FCMTokenManager: FCM token cleared from database for user: $currentUserId")
+                    // Removed println: "✅ FCMTokenManager: FCM token cleared from database for user: $currentUserId"
                 } else {
-                    println("⚠️ FCMTokenManager: No current user ID found during token cleanup")
+                    // Removed println: "⚠️ FCMTokenManager: No current user ID found during token cleanup"
                 }
                 
                 sharedPrefs.edit()
@@ -152,10 +142,8 @@ class FCMTokenManager(
                     .remove("pending_fcm_token")
                     .apply()
                 
-                Log.d(TAG, "User FCM token cleared from both database and local storage")
             } catch (e: Exception) {
-                println("❌ FCMTokenManager: Error clearing FCM token: ${e.message}")
-                Log.e(TAG, "Failed to clear FCM token", e)
+                // Removed println: "❌ FCMTokenManager: Error clearing FCM token: ${e.message}"
             }
         }
     }

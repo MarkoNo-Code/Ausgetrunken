@@ -1,7 +1,6 @@
 package com.ausgetrunken.domain.service
 
 import android.content.Context
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -33,7 +32,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Save a photo path for a vineyard - immediately persisted
      */
     suspend fun addPhotoPath(wineryId: String, filePath: String) {
-        Log.d(TAG, "Adding photo path for winery $wineryId: $filePath")
 
         try {
             val key = stringSetPreferencesKey("photos_$wineryId")
@@ -41,10 +39,8 @@ class SimplePhotoStorage(private val context: Context) {
                 val currentPaths = preferences[key]?.toMutableSet() ?: mutableSetOf()
                 currentPaths.add(filePath)
                 preferences[key] = currentPaths
-                Log.d(TAG, "✅ Photo path saved. Total paths for winery: ${currentPaths.size}")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to save photo path", e)
             throw e
         }
     }
@@ -53,7 +49,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Get all photo paths for a vineyard - returns Flow for reactive UI
      */
     fun getPhotoPaths(wineryId: String): Flow<List<String>> {
-        Log.d(TAG, "Getting photo paths for winery: $wineryId")
 
         val key = stringSetPreferencesKey("photos_$wineryId")
         return dataStore.data
@@ -63,11 +58,9 @@ class SimplePhotoStorage(private val context: Context) {
                 // Filter out paths to files that no longer exist
                 val validPaths = paths.filter { path ->
                     val exists = File(path).exists()
-                    Log.d(TAG, "Checking path $path: exists=$exists")
                     exists
                 }
                 
-                Log.d(TAG, "Returning ${validPaths.size} valid photo paths for winery $wineryId")
                 validPaths.sortedByDescending { File(it).lastModified() } // Most recent first
             }
     }
@@ -83,7 +76,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Remove a photo path from a vineyard
      */
     suspend fun removePhotoPath(wineryId: String, filePath: String) {
-        Log.d(TAG, "Removing photo path for winery $wineryId: $filePath")
 
         try {
             val key = stringSetPreferencesKey("photos_$wineryId")
@@ -91,7 +83,6 @@ class SimplePhotoStorage(private val context: Context) {
                 val currentPaths = preferences[key]?.toMutableSet() ?: mutableSetOf()
                 val removed = currentPaths.remove(filePath)
                 preferences[key] = currentPaths
-                Log.d(TAG, if (removed) "✅ Photo path removed" else "⚠️ Photo path not found")
             }
             
             // Also delete the actual file
@@ -99,13 +90,10 @@ class SimplePhotoStorage(private val context: Context) {
                 val file = File(filePath)
                 if (file.exists()) {
                     val deleted = file.delete()
-                    Log.d(TAG, "Physical file deletion: $deleted")
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Could not delete physical file: $filePath", e)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to remove photo path", e)
             throw e
         }
     }
@@ -114,7 +102,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Clear all photos for a vineyard
      */
     suspend fun clearAllPhotos(wineryId: String) {
-        Log.d(TAG, "Clearing all photos for winery: $wineryId")
 
         try {
             // Get current paths to delete physical files
@@ -131,13 +118,10 @@ class SimplePhotoStorage(private val context: Context) {
                 try {
                     File(path).delete()
                 } catch (e: Exception) {
-                    Log.w(TAG, "Could not delete file: $path", e)
                 }
             }
             
-            Log.d(TAG, "✅ Cleared ${currentPaths.size} photos for winery $wineryId")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to clear photos", e)
             throw e
         }
     }
@@ -155,7 +139,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Save a photo path for a wine - immediately persisted
      */
     suspend fun addWinePhoto(wineId: String, filePath: String) {
-        Log.d(TAG, "Adding wine photo for wine $wineId: $filePath")
 
         try {
             val key = stringSetPreferencesKey("wine_photos_$wineId")
@@ -163,10 +146,8 @@ class SimplePhotoStorage(private val context: Context) {
                 val currentPaths = preferences[key]?.toMutableSet() ?: mutableSetOf()
                 currentPaths.add(filePath)
                 preferences[key] = currentPaths
-                Log.d(TAG, "✅ Wine photo path saved. Total paths for wine: ${currentPaths.size}")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to save wine photo path", e)
             throw e
         }
     }
@@ -175,7 +156,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Get all photo paths for a wine - returns Flow for reactive UI
      */
     fun getWinePhotos(wineId: String): Flow<List<String>> {
-        Log.d(TAG, "Getting wine photo paths for wine: $wineId")
 
         val key = stringSetPreferencesKey("wine_photos_$wineId")
         return dataStore.data
@@ -185,11 +165,9 @@ class SimplePhotoStorage(private val context: Context) {
                 // Filter out paths to files that no longer exist
                 val validPaths = paths.filter { path ->
                     val exists = File(path).exists()
-                    Log.d(TAG, "Checking wine photo path $path: exists=$exists")
                     exists
                 }
 
-                Log.d(TAG, "Returning ${validPaths.size} valid wine photo paths for wine $wineId")
                 validPaths.sortedByDescending { File(it).lastModified() } // Most recent first
             }
     }
@@ -205,7 +183,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Remove a photo path from a wine
      */
     suspend fun removeWinePhoto(wineId: String, filePath: String) {
-        Log.d(TAG, "Removing wine photo for wine $wineId: $filePath")
 
         try {
             val key = stringSetPreferencesKey("wine_photos_$wineId")
@@ -213,7 +190,6 @@ class SimplePhotoStorage(private val context: Context) {
                 val currentPaths = preferences[key]?.toMutableSet() ?: mutableSetOf()
                 val removed = currentPaths.remove(filePath)
                 preferences[key] = currentPaths
-                Log.d(TAG, if (removed) "✅ Wine photo path removed" else "⚠️ Wine photo path not found")
             }
 
             // Also delete the actual file
@@ -221,13 +197,10 @@ class SimplePhotoStorage(private val context: Context) {
                 val file = File(filePath)
                 if (file.exists()) {
                     val deleted = file.delete()
-                    Log.d(TAG, "Physical wine photo file deletion: $deleted")
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Could not delete physical wine photo file: $filePath", e)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to remove wine photo path", e)
             throw e
         }
     }
@@ -236,7 +209,6 @@ class SimplePhotoStorage(private val context: Context) {
      * Clear all photos for a wine
      */
     suspend fun clearWinePhotos(wineId: String) {
-        Log.d(TAG, "Clearing all photos for wine: $wineId")
 
         try {
             // Get current paths to delete physical files
@@ -253,13 +225,10 @@ class SimplePhotoStorage(private val context: Context) {
                 try {
                     File(path).delete()
                 } catch (e: Exception) {
-                    Log.w(TAG, "Could not delete wine photo file: $path", e)
                 }
             }
 
-            Log.d(TAG, "✅ Cleared ${currentPaths.size} photos for wine $wineId")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to clear wine photos", e)
             throw e
         }
     }
@@ -277,32 +246,25 @@ class SimplePhotoStorage(private val context: Context) {
     suspend fun logStorageState() {
         try {
             val allData = dataStore.data.first()
-            Log.d(TAG, "=== PHOTO STORAGE STATE ===")
             allData.asMap().forEach { (key, value) ->
                 when {
                     key.name.startsWith("photos_") -> {
                         val wineryId = key.name.removePrefix("photos_")
                         val paths = value as? Set<String> ?: emptySet()
-                        Log.d(TAG, "Winery $wineryId: ${paths.size} photos")
                         paths.forEach { path ->
                             val exists = File(path).exists()
-                            Log.d(TAG, "  - $path (exists: $exists)")
                         }
                     }
                     key.name.startsWith("wine_photos_") -> {
                         val wineId = key.name.removePrefix("wine_photos_")
                         val paths = value as? Set<String> ?: emptySet()
-                        Log.d(TAG, "Wine $wineId: ${paths.size} photos")
                         paths.forEach { path ->
                             val exists = File(path).exists()
-                            Log.d(TAG, "  - $path (exists: $exists)")
                         }
                     }
                 }
             }
-            Log.d(TAG, "=== END STORAGE STATE ===")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to log storage state", e)
         }
     }
 }

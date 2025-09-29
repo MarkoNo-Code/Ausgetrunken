@@ -53,7 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.zIndex
-import android.util.Log
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -99,11 +98,7 @@ fun CustomerWineryDetailScreen(
     viewModel: WineryDetailViewModel = koinViewModel()
 ) {
     LaunchedEffect(wineryId) {
-        Log.d(
-            "CustomerWineryDetailScreen",
-            "🔴 CUSTOMER WineryDetailScreen loaded for wineryId: $wineryId"
-        )
-        Log.d("CustomerWineryDetailScreen", "🔴 This is the CUSTOMER view with bell icon!")
+        // Performance optimized: Logging disabled for improved app performance
     }
 
     val uiState by viewModel.uiState.collectAsState()

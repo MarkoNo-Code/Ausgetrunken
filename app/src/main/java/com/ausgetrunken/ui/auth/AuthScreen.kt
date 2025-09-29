@@ -105,11 +105,11 @@ fun AuthScreen(
                     onNavigateToProfile()
                 }
                 null -> {
-                    println("⚠️ AuthScreen: Null user type, no navigation")
+                    // Removed println: "⚠️ AuthScreen: Null user type, no navigation"
                 } // Handle null case
             }
         } else {
-            println("⚠️ AuthScreen: No navigation - isLoginSuccessful: ${uiState.isLoginSuccessful}, userType: ${uiState.userType}")
+            // Removed println: "⚠️ AuthScreen: No navigation - isLoginSuccessful: ${uiState.isLoginSuccessful}, userType: ${uiState.userType}"
         }
     }
     

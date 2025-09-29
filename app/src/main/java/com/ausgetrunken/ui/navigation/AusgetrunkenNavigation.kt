@@ -25,6 +25,7 @@ import com.ausgetrunken.ui.wines.EditWineScreen
 import com.ausgetrunken.ui.wines.WineDetailScreen
 import com.ausgetrunken.ui.winery.AddWineryScreen
 import com.ausgetrunken.ui.winery.WineryDetailScreen
+import com.ausgetrunken.domain.logging.AusgetrunkenLogger
 
 @Composable
 fun AusgetrunkenNavigation(
@@ -281,7 +282,7 @@ fun AusgetrunkenNavigation(
             // Get current coordinates from previous backstack entry if available
             val currentLat = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lat") ?: 0.0
             val currentLng = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lng") ?: 0.0
-            android.util.Log.d("Navigation", "🗺️ LocationPicker starting with: wineryId=$wineryId, lat=$currentLat, lng=$currentLng")
+            AusgetrunkenLogger.d("Navigation", "LocationPicker starting with: wineryId=$wineryId, lat=$currentLat, lng=$currentLng")
 
             LocationPickerScreen(
                 wineryId = wineryId,
@@ -289,7 +290,7 @@ fun AusgetrunkenNavigation(
                 initialLongitude = currentLng,
                 onLocationSelected = { latitude, longitude, address ->
                     // CORRECT PATTERN: Set result in savedStateHandle and popBackStack()
-                    android.util.Log.d("Navigation", "🎯 Setting location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
+                    AusgetrunkenLogger.d("Navigation", "Setting location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("location_result", Triple(latitude, longitude, address))
@@ -303,7 +304,7 @@ fun AusgetrunkenNavigation(
             // Get current coordinates from previous backstack entry if available
             val currentLat = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lat") ?: 0.0
             val currentLng = navController.previousBackStackEntry?.savedStateHandle?.get<Double>("current_lng") ?: 0.0
-            android.util.Log.d("Navigation", "🗺️ AddWineryLocationPicker starting with: lat=$currentLat, lng=$currentLng")
+            AusgetrunkenLogger.d("Navigation", "AddWineryLocationPicker starting with: lat=$currentLat, lng=$currentLng")
 
             LocationPickerScreen(
                 wineryId = "add_winery", // Placeholder ID for add winery flow
@@ -311,7 +312,7 @@ fun AusgetrunkenNavigation(
                 initialLongitude = currentLng,
                 onLocationSelected = { latitude, longitude, address ->
                     // CORRECT PATTERN: Set result in savedStateHandle and popBackStack()
-                    android.util.Log.d("Navigation", "🎯 Setting AddWinery location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
+                    AusgetrunkenLogger.d("Navigation", "Setting AddWinery location result and navigating back: lat=$latitude, lng=$longitude, address=$address")
                     navController.previousBackStackEntry
                         ?.savedStateHandle
                         ?.set("location_result", Triple(latitude, longitude, address))

@@ -1,7 +1,6 @@
 package com.ausgetrunken.notifications
 
 import android.content.Context
-import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
 
@@ -11,12 +10,10 @@ object FCMTestUtils {
     suspend fun getCurrentToken(): String? {
         return try {
             val token = FirebaseMessaging.getInstance().token.await()
-            Log.d(TAG, "Current FCM token: $token")
             println("🎯 FCM Test Utils: Current Token = $token")
             token
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get FCM token", e)
-            println("❌ FCM Test Utils: Failed to get token - ${e.message}")
+            // Removed println: "❌ FCM Test Utils: Failed to get token - ${e.message}"
             null
         }
     }
@@ -26,8 +23,6 @@ object FCMTestUtils {
         val userId = sharedPrefs.getString("current_user_id", null)
         val pendingToken = sharedPrefs.getString("pending_fcm_token", null)
         
-        Log.d(TAG, "Current user ID: $userId")
-        Log.d(TAG, "Pending token: $pendingToken")
         
         println("🔍 FCM Test Utils: User ID = $userId")
         println("🔍 FCM Test Utils: Pending token = ${pendingToken?.take(20)}...")
@@ -56,10 +51,8 @@ object FCMTestUtils {
             if (task.isSuccessful) {
                 val token = task.result
                 println("🎯 Current FCM Token: $token")
-                Log.d(TAG, "Complete debug - FCM token: $token")
             } else {
-                println("❌ Failed to get current FCM token: ${task.exception?.message}")
-                Log.e(TAG, "Failed to get FCM token in debug", task.exception)
+                // Removed println: "❌ Failed to get current FCM token: ${task.exception?.message}"
             }
         }
         
@@ -73,7 +66,6 @@ object FCMTestUtils {
                 if (!task.isSuccessful) {
                     msg = "Failed to subscribe to test topic"
                 }
-                Log.d(TAG, msg)
             }
     }
 
@@ -84,7 +76,6 @@ object FCMTestUtils {
                 if (!task.isSuccessful) {
                     msg = "Failed to unsubscribe from test topic"
                 }
-                Log.d(TAG, msg)
             }
     }
 }

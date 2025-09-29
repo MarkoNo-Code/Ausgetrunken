@@ -121,19 +121,19 @@ class UserRepository(
                     }
                 }
             
-            println("✅ UserRepository: Supabase name update successful")
+            // Removed println: "✅ UserRepository: Supabase name update successful"
             
             // LOCAL SECOND: Update local database after successful remote update
             val currentUser = userDao.getUserById(userId)
             if (currentUser != null) {
                 val updatedUser = currentUser.copy(fullName = fullName)
                 userDao.updateUser(updatedUser)
-                println("✅ UserRepository: Local database name updated")
+                // Removed println: "✅ UserRepository: Local database name updated"
             }
             
             Result.success(Unit)
         } catch (e: Exception) {
-            println("❌ UserRepository: Name update failed: ${e.message}")
+            // Removed println: "❌ UserRepository: Name update failed: ${e.message}"
             Result.failure(e)
         }
     }
@@ -156,19 +156,19 @@ class UserRepository(
                     }
                 }
             
-            println("✅ UserRepository: Supabase profile picture URL update successful")
+            // Removed println: "✅ UserRepository: Supabase profile picture URL update successful"
             
             // LOCAL SECOND: Update local database after successful remote update
             val currentUser = userDao.getUserById(userId)
             if (currentUser != null) {
                 val updatedUser = currentUser.copy(profilePictureUrl = profilePictureUrl)
                 userDao.updateUser(updatedUser)
-                println("✅ UserRepository: Local database profile picture URL updated")
+                // Removed println: "✅ UserRepository: Local database profile picture URL updated"
             }
             
             Result.success(Unit)
         } catch (e: Exception) {
-            println("❌ UserRepository: Profile picture URL update failed: ${e.message}")
+            // Removed println: "❌ UserRepository: Profile picture URL update failed: ${e.message}"
             Result.failure(e)
         }
     }

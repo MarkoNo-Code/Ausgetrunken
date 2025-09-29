@@ -39,11 +39,11 @@ class NetworkConnectivityManager(private val context: Context) {
             } else {
                 // Quick connectivity test - you could ping a lightweight endpoint
                 // For now, we'll trust the network capabilities check
-                println("✅ NetworkConnectivityManager: Network connection available")
+                // Removed println: "✅ NetworkConnectivityManager: Network connection available"
                 true
             }
         } catch (e: Exception) {
-            println("❌ NetworkConnectivityManager: Network test failed: ${e.message}")
+            // Removed println: "❌ NetworkConnectivityManager: Network test failed: ${e.message}"
             false
         }
     }
@@ -69,7 +69,7 @@ class NetworkConnectivityManager(private val context: Context) {
                 
                 result.fold(
                     onSuccess = { data ->
-                        println("✅ NetworkConnectivityManager: Remote operation successful for $operationName")
+                        // Removed println: "✅ NetworkConnectivityManager: Remote operation successful for $operationName"
                         
                         // Update local cache with fresh remote data
                         cacheUpdate?.let { 
@@ -77,20 +77,20 @@ class NetworkConnectivityManager(private val context: Context) {
                                 it(data)
                                 println("💾 NetworkConnectivityManager: Local cache updated for $operationName")
                             } catch (e: Exception) {
-                                println("⚠️ NetworkConnectivityManager: Cache update failed for $operationName: ${e.message}")
+                                // Removed println: "⚠️ NetworkConnectivityManager: Cache update failed for $operationName: ${e.message}"
                             }
                         }
                         
                         data
                     },
                     onFailure = { error ->
-                        println("❌ NetworkConnectivityManager: Remote operation failed for $operationName: ${error.message}")
+                        // Removed println: "❌ NetworkConnectivityManager: Remote operation failed for $operationName: ${error.message}"
                         println("📱 NetworkConnectivityManager: Falling back to local data for $operationName")
                         localFallback()
                     }
                 )
             } catch (e: Exception) {
-                println("❌ NetworkConnectivityManager: Exception in remote operation for $operationName: ${e.message}")
+                // Removed println: "❌ NetworkConnectivityManager: Exception in remote operation for $operationName: ${e.message}"
                 println("📱 NetworkConnectivityManager: Falling back to local data for $operationName")
                 localFallback()
             }

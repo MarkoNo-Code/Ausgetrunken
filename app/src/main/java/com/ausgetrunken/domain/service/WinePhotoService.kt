@@ -2,7 +2,6 @@ package com.ausgetrunken.domain.service
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import com.ausgetrunken.data.local.dao.WinePhotoDao
 import com.ausgetrunken.data.local.entities.WinePhotoEntity
 import com.ausgetrunken.data.local.entities.PhotoUploadStatus
@@ -58,9 +57,7 @@ class WinePhotoService(
         directory.apply {
             if (!exists()) {
                 val created = mkdirs()
-                Log.d(TAG, "Created photos directory: $absolutePath (success: $created)")
             }
-            Log.d(TAG, "Using photos directory: $absolutePath")
         }
     }
 
@@ -68,13 +65,11 @@ class WinePhotoService(
      * Get photos with upload status for a wine - returns Flow for reactive UI
      */
     fun getWinePhotosWithStatus(wineId: String): Flow<List<PhotoWithStatus>> {
-        Log.d(TAG, "Getting photos with status for wine: $wineId")
 
         return combine(
             photoStorage.getWinePhotos(wineId),
             uploadStatusStorage.getUploadStatusesFlow(emptyList()) // Will be updated dynamically
         ) { photoPaths, uploadStatuses ->
-            Log.d(TAG, "Combining ${photoPaths.size} wine photos with upload statuses")
 
             // Get current upload statuses for these specific paths
             val currentStatuses = mutableMapOf<String, com.ausgetrunken.domain.model.PhotoUploadInfo>()
@@ -83,7 +78,6 @@ class WinePhotoService(
                     val status = uploadStatusStorage.getUploadStatus(path)
                     currentStatuses[path] = status
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to get status for $path", e)
                     currentStatuses[path] = com.ausgetrunken.domain.model.PhotoUploadInfo(
                         localPath = path,
                         status = UploadStatus.PENDING
@@ -102,7 +96,6 @@ class WinePhotoService(
                 )
             }
 
-            Log.d(TAG, "Returning ${photosWithStatus.size} wine photos with status")
             photosWithStatus
         }
     }
@@ -113,12 +106,10 @@ class WinePhotoService(
     suspend fun addPhoto(wineId: String, imageUri: Uri): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Adding photo for wine $wineId from URI: $imageUri")
 
                 // Check current photo count
                 val currentPhotos = photoStorage.getWinePhotosSync(wineId)
                 if (currentPhotos.size >= MAX_PHOTOS_PER_WINE) {
-                    Log.w(TAG, "Maximum number of photos ($MAX_PHOTOS_PER_WINE) reached for wine $wineId")
                     return@withContext Result.failure(Exception("Maximum of $MAX_PHOTOS_PER_WINE photos allowed per wine"))
                 }
 
@@ -135,15 +126,12 @@ class WinePhotoService(
                 }
 
                 if (!localFile.exists() || localFile.length() == 0L) {
-                    Log.e(TAG, "Failed to copy image file from URI")
                     return@withContext Result.failure(Exception("Failed to copy image file"))
                 }
 
-                Log.d(TAG, "Image copied to local file: ${localFile.absolutePath} (${localFile.length()} bytes)")
 
                 // Add to photo storage immediately - this provides instant UI update
                 photoStorage.addWinePhoto(wineId, localFile.absolutePath)
-                Log.d(TAG, "Photo path added to wine storage")
 
                 // Initialize upload status as pending
                 uploadStatusStorage.updateUploadStatus(localFile.absolutePath, UploadStatus.PENDING)
@@ -163,7 +151,6 @@ class WinePhotoService(
 
                 // SYNC TO SUPABASE DATABASE TABLE
                 try {
-                    Log.d(TAG, "Inserting wine photo record into Supabase wine_photos table...")
                     val supabasePhoto = SupabaseWinePhoto(
                         id = photoEntity.id,
                         wineId = photoEntity.wineId,
@@ -177,25 +164,19 @@ class WinePhotoService(
                     )
 
                     postgrest.from("wine_photos").insert(supabasePhoto)
-                    Log.d(TAG, "✅ Successfully inserted wine photo record into Supabase table")
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Failed to insert wine photo record into Supabase table: ${e.message}")
                     // Don't fail the entire operation - local database is still updated
-                    Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
                 }
 
                 // Save to local database
                 winePhotoDao.insertPhoto(photoEntity)
-                Log.d(TAG, "Wine photo saved to local database: ${photoEntity.id}")
 
                 // Queue for background upload
                 winePhotoUploadService.queueWinePhotoForUpload(localFile.absolutePath, wineId)
-                Log.d(TAG, "Wine photo queued for background upload")
 
                 Result.success(localFile.absolutePath)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to add photo for wine $wineId", e)
                 Result.failure(e)
             }
         }
@@ -207,18 +188,15 @@ class WinePhotoService(
     suspend fun addPhoto(wineId: String, photoPath: String): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Adding photo for wine $wineId from path: $photoPath")
 
                 // Check current photo count
                 val currentPhotos = photoStorage.getWinePhotosSync(wineId)
                 if (currentPhotos.size >= MAX_PHOTOS_PER_WINE) {
-                    Log.w(TAG, "Maximum number of photos ($MAX_PHOTOS_PER_WINE) reached for wine $wineId")
                     return@withContext Result.failure(Exception("Maximum of $MAX_PHOTOS_PER_WINE photos allowed per wine"))
                 }
 
                 val sourceFile = File(photoPath)
                 if (!sourceFile.exists()) {
-                    Log.e(TAG, "Source photo file does not exist: $photoPath")
                     return@withContext Result.failure(Exception("Photo file does not exist"))
                 }
 
@@ -230,11 +208,9 @@ class WinePhotoService(
                 // Copy file to our managed directory
                 sourceFile.copyTo(localFile, overwrite = false)
 
-                Log.d(TAG, "Image copied to local file: ${localFile.absolutePath} (${localFile.length()} bytes)")
 
                 // Add to photo storage immediately - this provides instant UI update
                 photoStorage.addWinePhoto(wineId, localFile.absolutePath)
-                Log.d(TAG, "Photo path added to wine storage")
 
                 // Initialize upload status as pending
                 uploadStatusStorage.updateUploadStatus(localFile.absolutePath, UploadStatus.PENDING)
@@ -254,7 +230,6 @@ class WinePhotoService(
 
                 // SYNC TO SUPABASE DATABASE TABLE
                 try {
-                    Log.d(TAG, "Inserting wine photo record into Supabase wine_photos table...")
                     val supabasePhoto = SupabaseWinePhoto(
                         id = photoEntity.id,
                         wineId = photoEntity.wineId,
@@ -268,25 +243,19 @@ class WinePhotoService(
                     )
 
                     postgrest.from("wine_photos").insert(supabasePhoto)
-                    Log.d(TAG, "✅ Successfully inserted wine photo record into Supabase table")
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Failed to insert wine photo record into Supabase table: ${e.message}")
                     // Don't fail the entire operation - local database is still updated
-                    Log.w(TAG, "Continuing with local database save despite Supabase table insert failure")
                 }
 
                 // Save to local database
                 winePhotoDao.insertPhoto(photoEntity)
-                Log.d(TAG, "Wine photo saved to local database: ${photoEntity.id}")
 
                 // Queue for background upload
                 winePhotoUploadService.queueWinePhotoForUpload(localFile.absolutePath, wineId)
-                Log.d(TAG, "Wine photo queued for background upload")
 
                 Result.success(localFile.absolutePath)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to add photo for wine $wineId", e)
                 Result.failure(e)
             }
         }
@@ -298,7 +267,6 @@ class WinePhotoService(
     suspend fun removePhoto(wineId: String, photoPath: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Removing photo for wine $wineId: $photoPath")
 
                 // Remove from storage
                 photoStorage.removeWinePhoto(wineId, photoPath)
@@ -306,11 +274,9 @@ class WinePhotoService(
                 // Remove upload status
                 uploadStatusStorage.removeUploadStatus(photoPath)
 
-                Log.d(TAG, "Photo removed successfully")
                 Result.success(Unit)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to remove photo for wine $wineId", e)
                 Result.failure(e)
             }
         }
@@ -322,7 +288,6 @@ class WinePhotoService(
     suspend fun clearAllPhotos(wineId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Clearing all photos for wine $wineId")
 
                 val currentPhotos = photoStorage.getWinePhotosSync(wineId)
 
@@ -334,11 +299,9 @@ class WinePhotoService(
                 // Clear from storage (this will also handle local file deletion)
                 photoStorage.clearWinePhotos(wineId)
 
-                Log.d(TAG, "All photos cleared for wine $wineId")
                 Result.success(Unit)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to clear photos for wine $wineId", e)
                 Result.failure(e)
             }
         }

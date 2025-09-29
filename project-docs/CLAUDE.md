@@ -50,6 +50,29 @@ This project is located at: `C:\Users\marko\Documents\Claude-Projects\Ausgetrunk
 - **Data Layer**: Repository pattern with Room + Supabase
 - **UI Layer**: Jetpack Compose with Material Design 3
 
+## 🏗️ Development Philosophy
+
+> 🎯 **CRITICAL PRINCIPLE**: Always implement the most robust, future-oriented solution
+>
+> **NO temporary fixes, hacks, or quick solutions**
+> - Every implementation must be production-ready and maintainable
+> - Choose architectural patterns that scale and evolve with the project
+> - Prioritize long-term code quality over short-term convenience
+> - Build systems that are self-documenting and easily understood by future developers
+>
+> **When faced with multiple approaches:**
+> 1. ❌ Avoid: Quick fixes, temporary workarounds, "we'll fix it later" solutions
+> 2. ✅ Choose: Comprehensive, well-architected, future-proof implementations
+> 3. ✅ Invest: Extra time upfront for solutions that prevent future technical debt
+>
+> **This principle applies to ALL aspects:**
+> - Logging systems
+> - Error handling
+> - State management
+> - API integrations
+> - Performance optimizations
+> - Testing strategies
+
 ## Android Development Setup
 
 ### Required Environment Variables

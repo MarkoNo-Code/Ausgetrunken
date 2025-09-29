@@ -34,7 +34,7 @@ class SimpleAuthManager(
             return hasTokens && hasUser
             
         } catch (e: Exception) {
-            println("❌ SimpleAuthManager: Session check failed: ${e.message}")
+            // Removed println: "❌ SimpleAuthManager: Session check failed: ${e.message}"
             false
         }
     }

@@ -2,7 +2,6 @@ package com.ausgetrunken.domain.service
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,7 +31,6 @@ class ProfilePictureService(
         directory.apply {
             if (!exists()) {
                 val created = mkdirs()
-                Log.d(TAG, "Created profile pictures directory: $absolutePath (success: $created)")
             }
         }
     }
@@ -43,18 +41,13 @@ class ProfilePictureService(
      */
     suspend fun uploadProfilePicture(userId: String, imageUri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== UPLOADING PROFILE PICTURE ===")
-            Log.d(TAG, "User ID: $userId")
-            Log.d(TAG, "Image URI: $imageUri")
             
             // Copy to local storage first for backup/caching
             val localFile = copyUriToLocalStorage(imageUri, userId)
             if (localFile == null || !localFile.exists() || localFile.length() == 0L) {
-                Log.e(TAG, "Failed to save profile picture locally")
                 return@withContext Result.failure(Exception("Failed to save profile picture locally"))
             }
             
-            Log.d(TAG, "Profile picture saved locally: ${localFile.absolutePath} (${localFile.length()} bytes)")
             
             // Delete any existing profile picture from Supabase first
             deleteExistingProfilePicture(userId)
@@ -63,18 +56,14 @@ class ProfilePictureService(
             val fileName = "profile_${userId}_${UUID.randomUUID()}.jpg"
             val filePath = "users/$fileName"
             
-            Log.d(TAG, "Uploading to Supabase: $filePath")
             storage.from(BUCKET_NAME).upload(filePath, localFile.readBytes(), upsert = false)
             
             // Get public URL
             val publicUrl = storage.from(BUCKET_NAME).publicUrl(filePath)
             
-            Log.d(TAG, "✅ Profile picture uploaded successfully: $publicUrl")
-            Log.d(TAG, "=== UPLOAD COMPLETED ===")
             Result.success(publicUrl)
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to upload profile picture: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -85,9 +74,6 @@ class ProfilePictureService(
      */
     suspend fun uploadProfilePicture(userId: String, filePath: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "=== UPLOADING PROFILE PICTURE FROM FILE ===")
-            Log.d(TAG, "User ID: $userId")
-            Log.d(TAG, "File path: $filePath")
             
             val sourceFile = File(filePath)
             if (!sourceFile.exists()) {
@@ -105,18 +91,14 @@ class ProfilePictureService(
             val fileName = "profile_${userId}_${UUID.randomUUID()}.jpg"
             val supabaseFilePath = "users/$fileName"
             
-            Log.d(TAG, "Uploading to Supabase: $supabaseFilePath")
             storage.from(BUCKET_NAME).upload(supabaseFilePath, sourceFile.readBytes(), upsert = false)
             
             // Get public URL
             val publicUrl = storage.from(BUCKET_NAME).publicUrl(supabaseFilePath)
             
-            Log.d(TAG, "✅ Profile picture uploaded successfully: $publicUrl")
-            Log.d(TAG, "=== UPLOAD COMPLETED ===")
             Result.success(publicUrl)
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to upload profile picture: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -126,25 +108,18 @@ class ProfilePictureService(
      */
     suspend fun deleteProfilePicture(profilePictureUrl: String): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try {
-            Log.d(TAG, "=== DELETING PROFILE PICTURE ===")
-            Log.d(TAG, "URL to delete: $profilePictureUrl")
             
             // Extract file path from public URL
             val filePath = extractFilePathFromUrl(profilePictureUrl)
-            Log.d(TAG, "Extracted file path: $filePath")
             
             if (filePath.isNotEmpty()) {
-                Log.d(TAG, "Deleting from bucket '$BUCKET_NAME' with path: $filePath")
                 storage.from(BUCKET_NAME).delete(filePath)
-                Log.d(TAG, "✅ Profile picture deleted successfully from Supabase")
             } else {
-                Log.w(TAG, "Could not extract file path from URL, skipping deletion")
             }
             
             Result.success(Unit)
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to delete profile picture: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -155,7 +130,6 @@ class ProfilePictureService(
      */
     private suspend fun deleteExistingProfilePicture(userId: String) {
         try {
-            Log.d(TAG, "Checking for existing profile pictures for user: $userId")
             
             // List files in the user's directory
             val userFolderPath = "users"
@@ -166,22 +140,17 @@ class ProfilePictureService(
                 it.name.startsWith("profile_${userId}_") 
             }
             
-            Log.d(TAG, "Found ${userFiles.size} existing profile pictures for user $userId")
             
             // Delete each existing file
             userFiles.forEach { file ->
                 try {
                     val filePath = "$userFolderPath/${file.name}"
-                    Log.d(TAG, "Deleting existing profile picture: $filePath")
                     storage.from(BUCKET_NAME).delete(filePath)
-                    Log.d(TAG, "✅ Deleted existing profile picture: ${file.name}")
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to delete existing profile picture ${file.name}: ${e.message}")
                 }
             }
             
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to check/delete existing profile pictures: ${e.message}")
         }
     }
     
@@ -200,15 +169,12 @@ class ProfilePictureService(
             }
             
             if (destFile.exists() && destFile.length() > 0) {
-                Log.d(TAG, "Successfully copied URI to local storage: ${destFile.absolutePath}")
                 destFile
             } else {
-                Log.e(TAG, "Failed to copy URI - file is empty or doesn't exist")
                 destFile.delete()
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy URI to local storage", e)
             null
         }
     }
@@ -227,7 +193,6 @@ class ProfilePictureService(
                 ""
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract file path from URL: $url", e)
             ""
         }
     }
