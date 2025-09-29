@@ -73,6 +73,34 @@ This project is located at: `C:\Users\marko\Documents\Claude-Projects\Ausgetrunk
 > - Performance optimizations
 > - Testing strategies
 
+## 🌐 Localization Philosophy
+
+> 🚨 **CRITICAL LOCALIZATION RULE**: NEVER use hard-coded strings in production code
+>
+> **ALL user-facing text MUST come from string resources:**
+> - ❌ NEVER: `"Close"`, `"Loading..."`, `"Error occurred"`
+> - ✅ ALWAYS: `stringResource(R.string.cd_close)`, `stringResource(R.string.loading)`, `stringResource(R.string.error_occurred)`
+>
+> **String Resource Guidelines:**
+> - **User Interface**: All buttons, labels, titles → `R.string.button_save`, `R.string.title_profile`
+> - **Content Descriptions**: Accessibility text → `R.string.cd_close`, `R.string.cd_profile_image`
+> - **Messages**: Success/error/info messages → `R.string.msg_save_success`, `R.string.error_network`
+> - **Placeholders**: Empty state text → `R.string.placeholder_no_items`, `R.string.placeholder_loading`
+>
+> **Why This Matters:**
+> - **Internationalization**: Enables easy translation to multiple languages
+> - **Consistency**: Centralized text management prevents duplicate/inconsistent messaging
+> - **Maintenance**: Single source of truth for all user-facing text
+> - **Accessibility**: Proper content descriptions for screen readers
+> - **Professional Quality**: Standard practice for production Android apps
+>
+> **Exception Policy**: Hard-coded strings are ONLY acceptable for:
+> - Debug/development logging (console output)
+> - Internal system keys/identifiers
+> - Configuration values that never change
+>
+> **Implementation**: When adding new text, ALWAYS create string resource first, then reference it
+
 ## Android Development Setup
 
 ### Required Environment Variables

@@ -75,6 +75,7 @@
     
     <!-- Content Descriptions -->
     <string name="cd_back">Back</string>
+    <string name="cd_close">Close</string>
     <string name="cd_profile">Profile</string>
     <string name="cd_notification_center">Notification Center</string>
     <string name="cd_delete_account">Delete Account</string>

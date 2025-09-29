@@ -1,9 +1,11 @@
 package com.ausgetrunken.ui.wines
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.ausgetrunken.R
+import com.ausgetrunken.ui.components.FullScreenImageViewer
 import coil.request.ImageRequest
 import java.io.File
 
@@ -32,6 +35,9 @@ fun WinePhotosFullscreenCarousel(
     photos: List<String>,
     modifier: Modifier = Modifier
 ) {
+    var showFullScreenViewer by remember { mutableStateOf(false) }
+    var selectedPhotoIndex by remember { mutableIntStateOf(0) }
+
     if (photos.isEmpty()) {
         // Show placeholder when no photos
         Box(
@@ -51,6 +57,11 @@ fun WinePhotosFullscreenCarousel(
     } else {
         val pagerState = rememberPagerState(pageCount = { photos.size })
 
+        // Update selected photo index when user swipes
+        LaunchedEffect(pagerState.currentPage) {
+            selectedPhotoIndex = pagerState.currentPage
+        }
+
         Box(
             modifier = modifier
                 .fillMaxWidth()
@@ -67,7 +78,12 @@ fun WinePhotosFullscreenCarousel(
                         .crossfade(true)
                         .build(),
                     contentDescription = "Wine Photo",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable {
+                            selectedPhotoIndex = page
+                            showFullScreenViewer = true
+                        },
                     contentScale = ContentScale.Crop
                 )
             }
@@ -112,6 +128,15 @@ fun WinePhotosFullscreenCarousel(
                 }
             }
         }
+
+        // Full-screen image viewer
+        if (showFullScreenViewer) {
+            FullScreenImageViewer(
+                photos = photos,
+                initialPhotoIndex = selectedPhotoIndex,
+                onDismiss = { showFullScreenViewer = false }
+            )
+        }
     }
 }
 
@@ -120,6 +145,9 @@ fun WinePhotosCarousel(
     photos: List<String>,
     modifier: Modifier = Modifier
 ) {
+    var showFullScreenViewer by remember { mutableStateOf(false) }
+    var selectedPhotoIndex by remember { mutableIntStateOf(0) }
+
     if (photos.isEmpty()) {
         // Show placeholder when no photos
         Card(
@@ -166,9 +194,13 @@ fun WinePhotosCarousel(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(photos) { photo ->
+                    itemsIndexed(photos) { index, photo ->
                         WinePhotoItem(
                             photoUrl = photo,
+                            onClick = {
+                                selectedPhotoIndex = index
+                                showFullScreenViewer = true
+                            },
                             modifier = Modifier.size(150.dp)
                         )
                     }
@@ -177,16 +209,26 @@ fun WinePhotosCarousel(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+
+        // Full-screen image viewer
+        if (showFullScreenViewer) {
+            FullScreenImageViewer(
+                photos = photos,
+                initialPhotoIndex = selectedPhotoIndex,
+                onDismiss = { showFullScreenViewer = false }
+            )
+        }
     }
 }
 
 @Composable
 private fun WinePhotoItem(
     photoUrl: String,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
