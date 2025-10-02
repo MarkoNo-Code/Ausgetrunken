@@ -78,17 +78,22 @@ fun CustomerWineryCard(
     onSubscriptionToggle: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    // Animation for loading state
-    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-    val rotationAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
+    // Only create animation when actually loading - prevents recomposition issues
+    val rotationAngle = if (isLoading) {
+        val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+        val angle by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "rotation"
+        )
+        angle
+    } else {
+        0f
+    }
     
     Card(
         modifier = modifier

@@ -243,12 +243,15 @@ private fun WineriesList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(wineries) { winery ->
+        items(
+            items = wineries,
+            key = { winery -> winery.id }
+        ) { winery ->
             CustomerWineryCard(
                 winery = winery,
                 onWineryClick = onWineryClick,
                 isSubscribed = subscribedWineryIds.contains(winery.id),
-                isLoading = isSubscriptionDataLoading || subscriptionLoadingIds.contains(winery.id),
+                isLoading = subscriptionLoadingIds.contains(winery.id),
                 onSubscriptionToggle = onSubscriptionToggle
             )
         }
