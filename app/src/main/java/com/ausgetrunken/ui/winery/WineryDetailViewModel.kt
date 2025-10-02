@@ -408,33 +408,41 @@ class WineryDetailViewModel(
     
     fun toggleWinerySubscription() {
         val winery = _uiState.value.winery ?: return
-        
+
+        // Set loading state immediately for visual feedback
+        _uiState.value = _uiState.value.copy(isSubscriptionLoading = true)
+
         execute("toggleSubscription") {
             AppResult.catchingSuspend {
                 // Get current user from auth service (not AuthenticatedRepository)
                 val currentAuthUser = authService.getCurrentUser().first()
                 if (currentAuthUser == null) {
+                    _uiState.value = _uiState.value.copy(isSubscriptionLoading = false)
                     throw Exception("User not authenticated")
                 }
-                
+
                 // CRITICAL: Check real-time subscription status from database, not UI state
                 // UI state might be out of sync with actual database state
                 val isCurrentlySubscribed = subscriptionService.isSubscribed(currentAuthUser.id, winery.id)
-                
+
                 val result = if (isCurrentlySubscribed) {
                     subscriptionService.unsubscribeFromWinery(currentAuthUser.id, winery.id)
                 } else {
                     subscriptionService.subscribeToWinery(currentAuthUser.id, winery.id)
                 }
-                
+
                 result.fold(
                     onSuccess = {
                         _uiState.value = _uiState.value.copy(
-                            isSubscribed = !isCurrentlySubscribed
+                            isSubscribed = !isCurrentlySubscribed,
+                            isSubscriptionLoading = false
                         )
                         Unit
                     },
                     onFailure = { error ->
+                        // Clear loading state on error
+                        _uiState.value = _uiState.value.copy(isSubscriptionLoading = false)
+
                         // Provide user-friendly error messages for subscription conflicts
                         val userFriendlyMessage = when {
                             error.message?.contains("unique constraint", ignoreCase = true) == true ||
